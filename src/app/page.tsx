@@ -1,90 +1,146 @@
 "use client";
 
-import { useState } from "react";
-import type { Tournament, Team } from "@/types";
-import TournamentCreator from "@/components/tournament-creator";
-import TeamRegistration from "@/components/team-registration";
-import TournamentHome from "@/components/tournament-home";
-import { Card, CardContent } from "@/components/ui/card";
-import { ClipboardList } from "lucide-react";
-import { ThemeToggle } from "@/components/theme-toggle";
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ClipboardList, Bot, Users, Trophy, SwatchBook, ListChecks } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme-toggle';
 
-type AppState = "configuring" | "teams" | "fixture";
-
-export default function Home() {
-  const [appState, setAppState] = useState<AppState>("configuring");
-  const [tournament, setTournament] = useState<Tournament | null>(null);
-  const [teams, setTeams] = useState<Team[]>([]);
-
-  const handleTournamentCreated = (data: Tournament) => {
-    setTournament(data);
-    setAppState("teams");
-  };
-
-  const handleTeamsRegistered = (registeredTeams: Team[]) => {
-    setTeams(registeredTeams);
-    setAppState("fixture");
-  };
-
-  const handleReset = () => {
-    setTournament(null);
-    setTeams([]);
-    setAppState("configuring");
-  };
-
-  const renderContent = () => {
-    switch (appState) {
-      case "configuring":
-        return <TournamentCreator onTournamentCreated={handleTournamentCreated} />;
-      case "teams":
-        if (!tournament) return null;
-        return (
-          <TeamRegistration
-            numberOfTeams={tournament.numberOfTeams}
-            onTeamsRegistered={handleTeamsRegistered}
-          />
-        );
-      case "fixture":
-        if (!tournament || !teams.length) return null;
-        return (
-          <TournamentHome
-            tournament={tournament}
-            teams={teams}
-            onReset={handleReset}
-          />
-        );
-      default:
-        return null;
-    }
-  };
-
+export default function LandingPage() {
   return (
-    <main className="min-h-screen bg-background">
-      {appState === 'fixture' ? (
-        renderContent()
-      ) : (
-         <div className="relative min-h-screen flex flex-col items-center justify-center p-4 overflow-hidden">
-            <div className="absolute top-4 right-4 z-20">
-                <ThemeToggle />
-            </div>
-            <div className="absolute inset-0 bg-gradient-to-br from-background via-card to-background opacity-40"></div>
-            <div className="relative z-10 w-full max-w-6xl">
-                <header className="mb-12 text-center">
-                    <h1 className="text-6xl sm:text-7xl md:text-8xl font-bold tracking-wider uppercase text-primary font-headline flex items-center justify-center gap-4">
-                        <ClipboardList className="w-12 h-12 sm:w-16 md:w-20 text-accent" />
-                        Committee
-                    </h1>
-                    <p className="mt-4 text-xl text-muted-foreground">
-                        Your Ultimate Tournament Companion
-                    </p>
-                </header>
-
-                <div className="w-full">
-                    {renderContent()}
-                </div>
-            </div>
+    <div className="flex flex-col min-h-screen bg-background">
+      <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container flex h-14 items-center">
+          <Link href="/" className="flex items-center gap-2 font-bold">
+            <ClipboardList className="h-6 w-6 text-primary" />
+            <span className="text-lg">Committee</span>
+          </Link>
+          <nav className="ml-auto flex items-center gap-4">
+             <ThemeToggle />
+            <Button asChild>
+              <Link href="/create">Create Tournament</Link>
+            </Button>
+          </nav>
         </div>
-      )}
-    </main>
+      </header>
+
+      <main className="flex-1">
+        {/* Hero Section */}
+        <section className="py-20 md:py-32">
+          <div className="container text-center">
+            <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl">
+              The Ultimate Tournament Platform
+            </h1>
+            <p className="mt-4 max-w-2xl mx-auto text-lg text-muted-foreground">
+              Create, manage, and share stunning tournament brackets with ease. Powered by AI for intelligent fixture generation.
+            </p>
+            <div className="mt-8 flex justify-center gap-4">
+              <Button size="lg" asChild>
+                <Link href="/create">Get Started for Free</Link>
+              </Button>
+            </div>
+             <div className="mt-16" data-ai-hint="tournament bracket">
+              <img src="https://placehold.co/1200x600.png" alt="Tournament bracket illustration" className="rounded-lg shadow-2xl mx-auto border" />
+            </div>
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section id="features" className="py-20 bg-muted/40">
+          <div className="container">
+            <div className="text-center mb-12">
+              <h2 className="text-3xl font-bold">Powerful Features, Effortlessly Simple</h2>
+              <p className="mt-2 text-muted-foreground">Everything you need to run a successful tournament.</p>
+            </div>
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+              <Card>
+                <CardHeader>
+                  <div className="mb-4 bg-primary/10 text-primary p-3 rounded-full w-fit">
+                    <Bot className="h-6 w-6" />
+                  </div>
+                  <CardTitle>AI Fixture Generation</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    Automatically generate fair and balanced fixtures for round-robin, single-elimination, or hybrid tournaments. Our AI handles the complexity.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <div className="mb-4 bg-primary/10 text-primary p-3 rounded-full w-fit">
+                     <SwatchBook className="h-6 w-6" />
+                  </div>
+                  <CardTitle>Flexible Tournament Types</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    Whether it's a simple knockout bracket or a complex group stage, Committee supports multiple formats to fit your needs.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                  <div className="mb-4 bg-primary/10 text-primary p-3 rounded-full w-fit">
+                    <Users className="h-6 w-6" />
+                  </div>
+                  <CardTitle>AI-Powered Team Logos</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    Bring your teams to life by generating unique, professional logos with a single click using generative AI.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                    <div className="mb-4 bg-primary/10 text-primary p-3 rounded-full w-fit">
+                        <ListChecks className="h-6 w-6" />
+                    </div>
+                  <CardTitle>Live Score Tracking</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    Update match scores in real-time. Points tables and knockout brackets update automatically as results come in.
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader>
+                    <div className="mb-4 bg-primary/10 text-primary p-3 rounded-full w-fit">
+                        <Trophy className="h-6 w-6" />
+                    </div>
+                  <CardTitle>Champion Celebration</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    Crown your winner in style. A dedicated champion view glorifies the tournament victor at the end of the competition.
+                  </p>
+                </CardContent>
+              </Card>
+               <Card>
+                <CardHeader>
+                    <div className="mb-4 bg-primary/10 text-primary p-3 rounded-full w-fit">
+                         <SwatchBook className="h-6 w-6" />
+                    </div>
+                  <CardTitle>Light & Dark Modes</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-muted-foreground">
+                    A beautiful interface that looks great in any lighting condition, with full support for both light and dark themes.
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="py-6 border-t">
+        <div className="container text-center text-muted-foreground">
+          <p>&copy; {new Date().getFullYear()} Committee. All rights reserved.</p>
+        </div>
+      </footer>
+    </div>
   );
 }
