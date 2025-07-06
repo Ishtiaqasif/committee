@@ -61,8 +61,8 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreChange }
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div className="lg:col-span-2 space-y-6">
-        {fixture.rounds.map((round) => (
-          <Card key={round.round}>
+        {fixture.rounds.map((round, roundIndex) => (
+          <Card key={`round-${round.round}-${roundIndex}`}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Dices className="text-accent"/> Round {round.round}
