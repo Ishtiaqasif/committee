@@ -11,7 +11,7 @@ import SingleEliminationBracket from "@/components/single-elimination-bracket";
 import TeamsList from "@/components/teams-list";
 import PointsTableView, { calculatePointsTable } from "@/components/points-table-view";
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset } from "@/components/ui/sidebar";
-import { Loader, Trophy, RefreshCw, Gamepad2, ListOrdered, Users, Settings } from "lucide-react";
+import { Loader, Trophy, RefreshCw, Gamepad2, ListOrdered, Users, Settings, LayoutDashboard } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,6 +26,7 @@ import {
 import QualificationSummaryView from "./qualification-summary-view";
 import { ThemeToggle } from "./theme-toggle";
 import TournamentSettings from "./tournament-settings";
+import TournamentOverview from "./tournament-overview";
 
 interface TournamentHomeProps {
   tournament: Tournament;
@@ -39,7 +40,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
   const [scores, setScores] = useState<Record<string, Score>>({});
-  const [activeView, setActiveView] = useState('fixtures');
+  const [activeView, setActiveView] = useState('overview');
   const [hybridStage, setHybridStage] = useState<'group' | 'qualification-summary' | 'knockout'>('group');
 
   useEffect(() => {
@@ -48,7 +49,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
         const parsedFixture = JSON.parse(tournament.fixture);
         setFixture(parsedFixture);
         setScores(tournament.scores || {});
-        setActiveView('fixtures');
+        setActiveView('overview');
       } catch (error) {
         console.error("Failed to parse fixture:", error);
         toast({
@@ -349,6 +350,8 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     }
 
     switch (activeView) {
+      case 'overview':
+        return <TournamentOverview tournament={tournament} fixture={fixture} scores={scores} teams={teams} />;
       case 'fixtures':
         return (
             <div>
@@ -386,6 +389,12 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
             </SidebarHeader>
             <SidebarContent>
                  <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton onClick={() => setActiveView('overview')} isActive={activeView === 'overview'}>
+                            <LayoutDashboard/>
+                            Overview
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
                     <SidebarMenuItem>
                         <SidebarMenuButton onClick={() => setActiveView('fixtures')} isActive={activeView === 'fixtures'}>
                             <Gamepad2/>
