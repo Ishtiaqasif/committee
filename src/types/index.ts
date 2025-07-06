@@ -19,8 +19,7 @@ export type Tournament = TournamentCreationData & {
   id: string;
   creatorId: string;
   createdAt: any; 
-  fixture?: string; // This will be populated from storage
-  fixtureStoragePath?: string; // This is what's stored in Firestore
+  fixture?: string;
   scores?: Record<string, Score>;
   winner?: { name: string, logo?: string };
 };

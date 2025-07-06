@@ -12,7 +12,7 @@ export async function createTournament(tournamentData: TournamentCreationData, u
         }
     });
 
-    const newTournament: Omit<Tournament, 'id' | 'fixture' | 'scores' | 'fixtureStoragePath'> = {
+    const newTournament: Omit<Tournament, 'id' | 'fixture' | 'scores'> = {
         ...(dataToSave as TournamentCreationData),
         creatorId: userId,
         createdAt: serverTimestamp(),
@@ -27,24 +27,7 @@ export async function getTournament(tournamentId: string): Promise<Tournament | 
     const docSnap = await getDoc(docRef);
 
     if (docSnap.exists()) {
-        const data = docSnap.data() as Omit<Tournament, 'id'>;
-
-        // If there's a fixture in storage, download it and add it to the object
-        if (data.fixtureStoragePath) {
-            try {
-                const fixtureRef = ref(storage, data.fixtureStoragePath);
-                const url = await getDownloadURL(fixtureRef);
-                const response = await fetch(url);
-                if (!response.ok) {
-                    throw new Error(`Failed to download fixture: ${response.statusText}`);
-                }
-                data.fixture = await response.text();
-            } catch (error) {
-                console.error("Error fetching fixture from storage:", error);
-                // Return tournament data without the fixture if download fails
-            }
-        }
-        return { id: docSnap.id, ...data } as Tournament;
+        return { id: docSnap.id, ...docSnap.data() } as Tournament;
     } else {
         return null;
     }
@@ -99,24 +82,5 @@ export async function getTournamentsForUser(userId: string): Promise<Tournament[
 
 export async function updateTournament(tournamentId: string, data: Partial<Tournament>): Promise<void> {
     const tournamentRef = doc(db, "tournaments", tournamentId);
-
-    const dataForFirestore = { ...data };
-
-    // If a fixture is being updated, upload it to storage instead of saving in the doc
-    if (dataForFirestore.fixture) {
-        const fixtureString = dataForFirestore.fixture;
-        delete dataForFirestore.fixture; // Remove from what we save to Firestore doc
-
-        const storageRef = ref(storage, `fixtures/${tournamentId}.json`);
-        try {
-            // Uploading the raw JSON string
-            await uploadString(storageRef, fixtureString, 'raw', { contentType: 'application/json' });
-            dataForFirestore.fixtureStoragePath = storageRef.fullPath;
-        } catch (error) {
-            console.error("Error uploading fixture to Firebase Storage:", error);
-            throw new Error("Failed to save the tournament fixture.");
-        }
-    }
-
-    await updateDoc(tournamentRef, dataForFirestore);
+    await updateDoc(tournamentRef, data);
 }
