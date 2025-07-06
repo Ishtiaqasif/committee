@@ -7,7 +7,7 @@ import type { Team, Tournament } from '@/types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Clipboard, Check, Users, Shield, Link as LinkIcon, ArrowRight, Loader } from 'lucide-react';
+import { Clipboard, Check, Users, Shield, Link as LinkIcon, ArrowRight, Loader, User } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import Image from 'next/image';
 
@@ -92,11 +92,21 @@ export default function TeamInvitation({ tournament, onTeamsFinalized }: TeamInv
                                 {teams.map(team => (
                                     <div key={team.id} className="flex items-center gap-3 p-2 bg-secondary/50 rounded-md">
                                         {team.logo ? (
-                                            <Image src={team.logo} alt={`${team.name} logo`} width={24} height={24} className="rounded-full" />
+                                            <Image src={team.logo} alt={`${team.name} logo`} width={32} height={32} className="rounded-full bg-background object-cover" />
                                         ) : (
-                                            <Shield className="h-5 w-5 text-primary/80" />
+                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
+                                                <Shield className="h-4 w-4 text-muted-foreground" />
+                                            </div>
                                         )}
-                                        <span className="font-medium">{team.name}</span>
+                                        <div className="flex flex-col overflow-hidden">
+                                            <span className="font-medium truncate">{team.name}</span>
+                                            {team.ownerName && (
+                                                <span className="text-xs text-muted-foreground flex items-center gap-1.5 truncate">
+                                                    <User className="h-3 w-3 flex-shrink-0" />
+                                                    {team.ownerName}
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                 ))}
                             </div>

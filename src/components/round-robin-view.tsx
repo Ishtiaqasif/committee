@@ -3,7 +3,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import type { Team, PointsTableEntry, Match, Round, Group, Score, Tournament } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dices, MapPin, Lock, ArrowRight, Shield, ArrowLeft } from 'lucide-react';
+import { Dices, MapPin, Lock, ArrowRight, Shield, ArrowLeft, Trophy } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
 import ScoreEntryDialog from './score-entry-dialog';
@@ -290,12 +290,6 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
     }
     return null;
   }, [activeRound, maxRound, isHybrid, pointsTable, fixture, teams]);
-  
-  useEffect(() => {
-      if (finalWinner?.name) {
-          onTournamentUpdate({ winner: finalWinner });
-      }
-  }, [finalWinner, onTournamentUpdate]);
 
   const NavigationFooter = () => (
     <div className="mt-8 flex flex-col items-center justify-center gap-2">
@@ -320,12 +314,19 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
                 <Button size="lg" onClick={onProceedToKnockout} disabled={!isRoundComplete}>
                     Proceed to Knockout Stage <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
-            ) : (
-                 !finalWinner && (
+            ) : finalWinner ? (
+                 <div className="space-y-2">
                     <p className="text-lg font-semibold text-primary">
-                        All rounds are complete!
+                        Tournament Complete! The winner is {finalWinner.name}.
                     </p>
-                )
+                    <Button size="lg" onClick={() => onTournamentUpdate({ winner: finalWinner })}>
+                        <Trophy className="mr-2 h-4 w-4" /> Crown Champion & Finish
+                    </Button>
+                </div>
+            ) : (
+                <p className="text-lg font-semibold text-primary">
+                    All rounds are complete!
+                </p>
             )}
         </div>
       )}
@@ -343,7 +344,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
     </div>
   );
 
-  if (finalWinner) {
+  if (finalWinner && onTournamentUpdate.winner) {
       return <ChampionView winner={finalWinner} />;
   }
 

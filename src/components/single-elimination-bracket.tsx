@@ -170,13 +170,7 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTou
     return null;
   }, [isRoundComplete, hasNextRound, scores, processedFixture.rounds]);
 
-  useEffect(() => {
-    if (finalWinner) {
-      onTournamentUpdate({ winner: finalWinner });
-    }
-  }, [finalWinner, onTournamentUpdate]);
-
-  if (finalWinner) {
+  if (finalWinner && tournament.winner) {
     return <ChampionView winner={finalWinner} />;
   }
 
@@ -233,12 +227,22 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTou
               Enter all match results for the current round to proceed.
               </p>
           )}
+          {isRoundComplete && !hasNextRound && finalWinner && (
+            <div className="mt-8 text-center space-y-2">
+              <p className="text-lg font-semibold text-primary">
+                Final match complete! {finalWinner.name} is the potential champion.
+              </p>
+              <Button size="lg" onClick={() => onTournamentUpdate({ winner: finalWinner })}>
+                <Trophy className="mr-2 h-4 w-4" /> Crown Champion & Finish
+              </Button>
+            </div>
+          )}
+          {isRoundComplete && !hasNextRound && !finalWinner && (
+            <div className="mt-8 text-center text-lg font-semibold text-primary">
+              Enter final match score to determine the winner!
+            </div>
+          )}
       </div>
-       {isRoundComplete && !hasNextRound && !finalWinner && (
-        <div className="mt-8 text-center text-lg font-semibold text-primary">
-          Enter final match score to determine the winner!
-        </div>
-      )}
     </div>
   );
 }
