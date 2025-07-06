@@ -17,6 +17,8 @@ interface RoundRobinViewProps {
   teams: Team[];
   scores: Record<string, Score>;
   onScoreUpdate: (matchIdentifier: string, newScore: Score) => void;
+  isHybrid?: boolean;
+  onProceedToKnockout?: () => void;
 }
 
 const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate, teams, viewMode }: { group: Group, activeRound: number, scores: RoundRobinViewProps['scores'], onScoreUpdate: RoundRobinViewProps['onScoreUpdate'], teams: Team[], viewMode: 'full' | 'short' }) => {
@@ -145,7 +147,7 @@ const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate, team
 }
 
 
-export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate }: RoundRobinViewProps) {
+export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, isHybrid, onProceedToKnockout }: RoundRobinViewProps) {
   const [activeRound, setActiveRound] = useState(1);
   const [viewMode, setViewMode] = useState<'short' | 'full'>('short');
 
@@ -240,8 +242,16 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate }
         </p>
       )}
       {isRoundComplete && !hasNextRound && (
-        <div className="mt-8 text-center text-lg font-semibold text-primary">
-          All rounds are complete!
+        <div className="mt-4 text-center">
+            {isHybrid && onProceedToKnockout ? (
+                <Button size="lg" onClick={onProceedToKnockout} disabled={!isRoundComplete}>
+                    Proceed to Knockout Stage <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+            ) : (
+                <p className="text-lg font-semibold text-primary">
+                    All rounds are complete!
+                </p>
+            )}
         </div>
       )}
     </div>

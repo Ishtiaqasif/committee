@@ -2,14 +2,14 @@
 
 import { useState, useTransition } from "react";
 import { generateTournamentFixture } from "@/ai/flows/generate-tournament-fixture";
-import type { Tournament, Team, Fixture, Score } from "@/types";
+import type { Tournament, Team, Fixture, Score, PointsTableEntry, Round, Match } from "@/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import RoundRobinView from "@/components/round-robin-view";
 import SingleEliminationBracket from "@/components/single-elimination-bracket";
 import TeamsList from "@/components/teams-list";
-import PointsTableView from "@/components/points-table-view";
-import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarFooter, SidebarInset, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
+import PointsTableView, { calculatePointsTable } from "@/components/points-table-view";
+import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
 import { Loader, Trophy, RefreshCw, Gamepad2, ListOrdered, Users } from "lucide-react";
 import {
   AlertDialog,
@@ -22,7 +22,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface TournamentHomeProps {
   tournament: Tournament;
@@ -36,6 +35,7 @@ export default function TournamentHome({ tournament, teams, onReset }: Tournamen
   const { toast } = useToast();
   const [scores, setScores] = useState<Record<string, Score>>({});
   const [activeView, setActiveView] = useState('fixtures');
+  const [hybridStage, setHybridStage] = useState<'group' | 'knockout'>('group');
 
   const handleGenerateFixture = () => {
     startTransition(async () => {
@@ -138,24 +138,131 @@ export default function TournamentHome({ tournament, teams, onReset }: Tournamen
     }))
   }
 
+  const handleProceedToKnockout = () => {
+    if (!fixture || !fixture.groupStage || !fixture.knockoutStage) return;
+
+    if (!fixture.groupStage.groups) {
+      toast({
+        variant: "destructive",
+        title: "Configuration Error",
+        description: "Hybrid tournaments with an 'all-play-all' group stage are not yet supported for automatic knockout progression.",
+      });
+      return;
+    }
+
+    const groupStandings: Record<string, PointsTableEntry[]> = {};
+    fixture.groupStage.groups.forEach(group => {
+      const groupTeams = group.teams.map(name => teams.find(t => t.name === name)!).filter(Boolean) as Team[];
+      const table = calculatePointsTable(groupTeams, group.rounds, scores, group.groupName);
+      groupStandings[group.groupName] = table;
+    });
+
+    const getTeamFromPlaceholder = (placeholder: string): Team | undefined => {
+      const patterns = [
+        /^(Winner) (Group .+)$/,
+        /^(Runner-up) (Group .+)$/,
+        /^(\d+)(?:st|nd|rd|th) Place (Group .+)$/
+      ];
+
+      for (const pattern of patterns) {
+        const match = placeholder.match(pattern);
+        if (match) {
+          const rankStr = match[1];
+          const groupName = match[2];
+          const table = groupStandings[groupName];
+
+          if (!table) continue;
+
+          let index = -1;
+          if (rankStr === 'Winner') index = 0;
+          else if (rankStr === 'Runner-up') index = 1;
+          else {
+            const rankNum = parseInt(rankStr, 10);
+            if (!isNaN(rankNum)) index = rankNum - 1;
+          }
+
+          if (index !== -1 && table[index]) {
+            return teams.find(t => t.name === table[index].teamName);
+          }
+        }
+      }
+      return undefined;
+    };
+
+    const newKnockoutStage = JSON.parse(JSON.stringify(fixture.knockoutStage));
+    let allTeamsFound = true;
+
+    newKnockoutStage.rounds.forEach((round: Round) => {
+      round.matches.forEach((match: Match) => {
+        if (match.team1.name.toLowerCase() !== 'bye' && !teams.some(t => t.name === match.team1.name)) {
+          const team1 = getTeamFromPlaceholder(match.team1.name);
+          if (team1) {
+            match.team1 = { name: team1.name, logo: team1.logo, score: null };
+          } else {
+            allTeamsFound = false;
+            console.error(`Could not find qualifying team for placeholder: ${match.team1.name}`);
+          }
+        }
+        if (match.team2.name.toLowerCase() !== 'bye' && !teams.some(t => t.name === match.team2.name)) {
+          const team2 = getTeamFromPlaceholder(match.team2.name);
+          if (team2) {
+            match.team2 = { name: team2.name, logo: team2.logo, score: null };
+          } else {
+            allTeamsFound = false;
+            console.error(`Could not find qualifying team for placeholder: ${match.team2.name}`);
+          }
+        }
+      });
+    });
+
+    if (!allTeamsFound) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Could not map all teams to the knockout stage. The placeholder names from the AI might not match expected formats.",
+      });
+      return;
+    }
+    
+    setFixture(prev => ({ ...prev!, knockoutStage: newKnockoutStage }));
+    setHybridStage('knockout');
+    toast({
+      title: "Knockout Stage Ready!",
+      description: "The bracket is set with the qualifying teams.",
+    });
+  };
+
   const renderFixtureView = () => {
     if (!fixture) return null;
 
     if (tournament.tournamentType === 'hybrid' && fixture.groupStage && fixture.knockoutStage) {
-      return (
-        <Tabs defaultValue="group-stage" className="mt-6">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="group-stage">Group Stage</TabsTrigger>
-            <TabsTrigger value="knockout-stage">Knockout Stage</TabsTrigger>
-          </TabsList>
-          <TabsContent value="group-stage" className="mt-6">
-            <RoundRobinView fixture={fixture.groupStage} teams={teams} scores={scores} onScoreUpdate={handleScoreUpdate} />
-          </TabsContent>
-          <TabsContent value="knockout-stage" className="mt-6">
-            <SingleEliminationBracket fixture={fixture.knockoutStage} onScoreUpdate={handleScoreUpdate} scores={scores} knockoutHomeAndAway={tournament.knockoutHomeAndAway}/>
-          </TabsContent>
-        </Tabs>
-      );
+      if (hybridStage === 'group') {
+        return (
+          <div className="mt-4">
+            <h3 className="text-2xl font-bold mb-4 text-primary">Group Stage</h3>
+            <RoundRobinView 
+              fixture={fixture.groupStage} 
+              teams={teams} 
+              scores={scores} 
+              onScoreUpdate={handleScoreUpdate}
+              isHybrid={true}
+              onProceedToKnockout={handleProceedToKnockout}
+            />
+          </div>
+        )
+      } else { // 'knockout' stage
+        return (
+          <div className="mt-4">
+            <h3 className="text-2xl font-bold mb-4 text-primary">Knockout Stage</h3>
+            <SingleEliminationBracket 
+              fixture={fixture.knockoutStage} 
+              onScoreUpdate={handleScoreUpdate} 
+              scores={scores} 
+              knockoutHomeAndAway={tournament.knockoutHomeAndAway}
+            />
+          </div>
+        )
+      }
     }
     
     if (tournament.tournamentType === 'round-robin' && (fixture.rounds || fixture.groups)) {

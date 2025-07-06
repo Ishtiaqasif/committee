@@ -13,7 +13,7 @@ interface PointsTableViewProps {
   tournamentType: string;
 }
 
-const calculatePointsTable = (teams: Team[], rounds: TournamentRound[], scores: Record<string, Score>, groupName?: string): PointsTableEntry[] => {
+export const calculatePointsTable = (teams: Team[], rounds: TournamentRound[], scores: Record<string, Score>, groupName?: string): PointsTableEntry[] => {
     const table: Record<string, PointsTableEntry> = teams.reduce((acc, team) => {
       acc[team.name] = { teamName: team.name, played: 0, won: 0, lost: 0, drawn: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0, logo: team.logo };
       return acc;
