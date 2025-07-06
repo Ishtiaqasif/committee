@@ -231,24 +231,29 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate }
   };
   
   const ProceedFooter = () => {
-    if (isRoundComplete && hasNextRound) {
-        return (
-            <div className="mt-8 flex justify-center">
-                <Button size="lg" onClick={handleProceed}>
-                    Proceed to Next Round <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-            </div>
-        );
+    if (hasNextRound) {
+      return (
+        <div className="mt-8 flex flex-col items-center justify-center gap-2">
+          <Button size="lg" onClick={handleProceed} disabled={!isRoundComplete}>
+            Proceed to Next Round <ArrowRight className="ml-2 h-4 w-4" />
+          </Button>
+          {!isRoundComplete && (
+            <p className="text-sm text-muted-foreground">
+              Enter all match results for the current round to proceed.
+            </p>
+          )}
+        </div>
+      );
     }
-    if(isRoundComplete && !hasNextRound) {
+    if (isRoundComplete && !hasNextRound) {
       return (
         <div className="mt-8 text-center text-lg font-semibold text-primary">
           All rounds are complete!
         </div>
-      )
+      );
     }
     return null;
-  }
+  };
   
   if (fixture.groups && fixture.groups.length > 0) {
     return (

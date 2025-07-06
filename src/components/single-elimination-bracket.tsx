@@ -202,11 +202,16 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, score
           </div>
         )}
       </div>
-      {isRoundComplete && hasNextRound && (
-        <div className="mt-8 flex justify-center">
-          <Button size="lg" onClick={handleProceed}>
+      {hasNextRound && (
+        <div className="mt-8 flex flex-col items-center justify-center gap-2">
+          <Button size="lg" onClick={handleProceed} disabled={!isRoundComplete}>
             Proceed to Next Round <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
+          {!isRoundComplete && (
+            <p className="text-sm text-muted-foreground">
+              Enter all match results for the current round to proceed.
+            </p>
+          )}
         </div>
       )}
        {isRoundComplete && !hasNextRound && !finalWinner && (
