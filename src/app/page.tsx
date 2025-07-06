@@ -26,21 +26,27 @@ export default function LandingPage() {
 
       <main className="flex-1">
         {/* Hero Section */}
-        <section className="py-20 md:py-32">
-          <div className="container text-center">
-            <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl">
-              The Ultimate Tournament Platform
-            </h1>
-            <p className="mt-4 max-w-2xl mx-auto text-lg text-muted-foreground">
-              Create, manage, and share stunning tournament brackets with ease. Powered by AI for intelligent fixture generation.
-            </p>
-            <div className="mt-8 flex justify-center gap-4">
-              <Button size="lg" asChild>
-                <Link href="/create">Get Started for Free</Link>
-              </Button>
+        <section className="w-full py-20 md:py-32">
+          <div className="container grid items-center gap-8 px-4 md:px-6 lg:grid-cols-2 lg:gap-16">
+            <div className="space-y-6 text-center lg:text-left">
+                <h1 className="text-4xl font-extrabold tracking-tight lg:text-6xl">
+                    The Ultimate Tournament Platform
+                </h1>
+                <p className="max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                    Create, manage, and share stunning tournament brackets with ease. Powered by AI for intelligent fixture generation.
+                </p>
+                <div className="flex flex-col gap-4 min-[400px]:flex-row justify-center lg:justify-start">
+                    <Button size="lg" asChild>
+                      <Link href="/create">Get Started for Free</Link>
+                    </Button>
+                </div>
             </div>
-             <div className="mt-16" data-ai-hint="tournament bracket">
-              <img src="https://placehold.co/1200x600.png" alt="Tournament bracket illustration" className="rounded-lg shadow-2xl mx-auto border" />
+            <div data-ai-hint="tournament bracket esports">
+                <img
+                    src="https://placehold.co/1200x800.png"
+                    alt="Tournament bracket illustration"
+                    className="mx-auto aspect-[3/2] overflow-hidden rounded-xl object-cover object-center shadow-2xl"
+                />
             </div>
           </div>
         </section>
