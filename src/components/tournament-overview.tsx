@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Flame, Swords, CheckCircle, ListTodo, Trophy, Loader, Link as LinkIcon, Clipboard, Check, ExternalLink } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { Label } from '@/components/ui/label';
 import ChampionView from './champion-view';
 import Link from 'next/link';
 
