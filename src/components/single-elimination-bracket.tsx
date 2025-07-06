@@ -12,6 +12,7 @@ interface SingleEliminationBracketProps {
   fixture: { rounds: Round[] };
   scores: Record<string, Score>;
   onScoreUpdate: (matchIdentifier: string, newScore: Score) => void;
+  knockoutHomeAndAway: boolean;
 }
 
 const MatchComponent = ({ match, round, onScoreUpdate, currentScores, isActive }: { match: Match, round: number, onScoreUpdate: SingleEliminationBracketProps['onScoreUpdate'], currentScores: any, isActive: boolean }) => {
@@ -68,7 +69,7 @@ const MatchComponent = ({ match, round, onScoreUpdate, currentScores, isActive }
   )
 }
 
-export default function SingleEliminationBracket({ fixture, onScoreUpdate, scores }: SingleEliminationBracketProps) {
+export default function SingleEliminationBracket({ fixture, onScoreUpdate, scores, knockoutHomeAndAway }: SingleEliminationBracketProps) {
     const [activeRound, setActiveRound] = useState(1);
     
     const { isRoundComplete, hasNextRound } = useMemo(() => {
@@ -152,6 +153,16 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, score
     return null;
   }, [isRoundComplete, hasNextRound, scores, processedFixture.rounds]);
 
+  const getRoundName = (round: Round) => {
+    const numTies = knockoutHomeAndAway ? round.matches.length / 2 : round.matches.length;
+
+    if (numTies === 1) return 'Final';
+    if (numTies === 2) return 'Semi-final';
+    if (numTies === 4) return 'Quarter-final';
+    if (numTies === 8) return 'Round of 16';
+
+    return `Round ${round.round}`;
+  };
 
   return (
     <div>
@@ -161,7 +172,7 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, score
           return (
             <div key={`round-${round.round}-${roundIndex}`} className="flex flex-col items-center flex-shrink-0">
               <h3 className="text-2xl font-bold mb-6 text-primary tracking-wide">
-                {roundIndex === processedFixture.rounds.length - 1 && round.matches.length === 1 ? 'Final' : `Round ${round.round}`}
+                {getRoundName(round)}
               </h3>
               <div className="flex flex-col gap-8 justify-around h-full">
                 {round.matches.map((match) => (

@@ -147,7 +147,7 @@ export default function TournamentHome({ tournament, teams, onReset }: Tournamen
             <RoundRobinView fixture={fixture.groupStage} teams={teams} scores={scores} onScoreUpdate={handleScoreUpdate} />
           </TabsContent>
           <TabsContent value="knockout-stage" className="mt-6">
-            <SingleEliminationBracket fixture={fixture.knockoutStage} onScoreUpdate={handleScoreUpdate} scores={scores} />
+            <SingleEliminationBracket fixture={fixture.knockoutStage} onScoreUpdate={handleScoreUpdate} scores={scores} knockoutHomeAndAway={tournament.knockoutHomeAndAway}/>
           </TabsContent>
         </Tabs>
       );
@@ -158,7 +158,7 @@ export default function TournamentHome({ tournament, teams, onReset }: Tournamen
     }
 
     if (tournament.tournamentType === 'single elimination' && fixture.rounds) {
-      return <SingleEliminationBracket fixture={{rounds: fixture.rounds}} onScoreUpdate={handleScoreUpdate} scores={scores}/>;
+      return <SingleEliminationBracket fixture={{rounds: fixture.rounds}} onScoreUpdate={handleScoreUpdate} scores={scores} knockoutHomeAndAway={tournament.knockoutHomeAndAway}/>;
     }
 
     return <p>Could not display fixture.</p>;
