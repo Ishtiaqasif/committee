@@ -3,8 +3,17 @@ import { db } from "./config";
 import type { Tournament, TournamentCreationData, Team } from "@/types";
 
 export async function createTournament(tournamentData: TournamentCreationData, userId: string): Promise<string> {
+    const dataToSave = { ...tournamentData };
+
+    Object.keys(dataToSave).forEach(keyStr => {
+        const key = keyStr as keyof TournamentCreationData;
+        if (dataToSave[key] === undefined) {
+            delete dataToSave[key];
+        }
+    });
+
     const newTournament: Omit<Tournament, 'id'> = {
-        ...tournamentData,
+        ...dataToSave,
         creatorId: userId,
         createdAt: serverTimestamp()
     };
