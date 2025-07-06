@@ -21,6 +21,45 @@ const formSchema = z.object({
   teamName: z.string().min(1, 'Team name is required.'),
 });
 
+// Helper function to resize and compress the image
+const compressImage = (dataUri: string, maxWidth: number, maxHeight: number): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const img = new window.Image();
+        img.src = dataUri;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let { width, height } = img;
+
+            if (width > height) {
+                if (width > maxWidth) {
+                    height *= maxWidth / width;
+                    width = maxWidth;
+                }
+            } else {
+                if (height > maxHeight) {
+                    width *= maxHeight / height;
+                    height = maxHeight;
+                }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                return reject(new Error('Could not get canvas context'));
+            }
+            ctx.drawImage(img, 0, 0, width, height);
+
+            // Using image/png to preserve transparency. Resizing is the primary method of size reduction.
+            resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = (error) => {
+            reject(error);
+        };
+    });
+};
+
+
 export default function RegisterTeamPage() {
   const params = useParams();
   const tournamentId = params.tournamentId as string;
@@ -75,7 +114,8 @@ export default function RegisterTeamPage() {
     setIsGeneratingLogo(true);
     try {
         const result = await generateTeamLogo({ teamName });
-        setLogo(result.logoDataUri);
+        const compressedLogo = await compressImage(result.logoDataUri, 128, 128);
+        setLogo(compressedLogo);
         toast({ title: 'Logo Generated!', description: 'A unique logo for your team has been created.' });
     } catch (error) {
         console.error(error);
