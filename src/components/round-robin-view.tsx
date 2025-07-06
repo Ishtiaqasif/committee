@@ -1,10 +1,10 @@
 "use client"
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { Team, PointsTableEntry, Match, Round, Group, Score } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dices, MapPin, Lock } from 'lucide-react';
+import { Dices, MapPin, Lock, ArrowRight } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
 import ScoreEntryDialog from './score-entry-dialog';
@@ -17,7 +17,7 @@ interface RoundRobinViewProps {
   onScoreUpdate: (matchIdentifier: string, newScore: Score) => void;
 }
 
-const GroupedRoundRobinView = ({ group, scores, onScoreUpdate }: { group: Group, scores: RoundRobinViewProps['scores'], onScoreUpdate: RoundRobinViewProps['onScoreUpdate']}) => {
+const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate }: { group: Group, activeRound: number, scores: RoundRobinViewProps['scores'], onScoreUpdate: RoundRobinViewProps['onScoreUpdate']}) => {
   const groupTeams = useMemo(() => group.teams.map(name => ({ name })), [group.teams]);
 
   const pointsTable = useMemo(() => {
@@ -59,10 +59,12 @@ const GroupedRoundRobinView = ({ group, scores, onScoreUpdate }: { group: Group,
     return Object.values(table).sort((a, b) => b.points - a.points || (b.won - a.won));
   }, [scores, groupTeams, group]);
 
+  const displayedRounds = group.rounds.filter(r => r.round === activeRound);
+
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div className="lg:col-span-2 space-y-6">
-        {group.rounds.map((round, roundIndex) => (
+        {displayedRounds.map((round, roundIndex) => (
           <Card key={`round-${round.round}-${roundIndex}`}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -92,7 +94,7 @@ const GroupedRoundRobinView = ({ group, scores, onScoreUpdate }: { group: Group,
                             onScoreSave={(newScore) => onScoreUpdate(matchId, newScore)}
                         >
                             <Button variant="outline" size="sm" disabled={score?.locked}>
-                                {score?.score1 !== null ? 'Edit Score' : 'Enter Score'}
+                                {score?.score1 !== undefined ? 'Edit Score' : 'Enter Score'}
                             </Button>
                         </ScoreEntryDialog>
                         {score?.locked && <Lock className="h-4 w-4 text-muted-foreground" />}
@@ -109,6 +111,13 @@ const GroupedRoundRobinView = ({ group, scores, onScoreUpdate }: { group: Group,
             </CardContent>
           </Card>
         ))}
+        {displayedRounds.length === 0 && (
+          <Card>
+            <CardContent className="pt-6 text-center text-muted-foreground">
+              <p>No matches for this round.</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
       <div>
         <Card>
@@ -149,8 +158,72 @@ const GroupedRoundRobinView = ({ group, scores, onScoreUpdate }: { group: Group,
 
 
 export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate }: RoundRobinViewProps) {
+  const [activeRound, setActiveRound] = useState(1);
+
+  const { isRoundComplete, hasNextRound, allFixtureRounds } = useMemo(() => {
+    const allRounds = fixture.groups ? fixture.groups.flatMap(g => g.rounds) : fixture.rounds || [];
+    if(allRounds.length === 0) return { isRoundComplete: false, hasNextRound: false, allFixtureRounds: [] };
+
+    const currentRoundMatches = allRounds
+        .filter(r => r.round === activeRound)
+        .flatMap(r => r.matches);
+
+    if (currentRoundMatches.length === 0) {
+      const maxR = Math.max(0, ...allRounds.map(r => r.round));
+      return { isRoundComplete: true, hasNextRound: activeRound < maxR, allFixtureRounds: allRounds };
+    }
+
+    const complete = currentRoundMatches.every(match => {
+        const roundObject = allRounds.find(r => r.matches.some(m => m.match === match.match && r.round === activeRound));
+        if(!roundObject) return false;
+        const matchId = `r${roundObject.round}m${match.match}`;
+        const score = scores[matchId];
+        return score?.score1 !== null && score?.score2 !== null && score?.score1 !== undefined && score?.score2 !== undefined;
+    });
+
+    const maxRound = Math.max(...allRounds.map(r => r.round));
+    return { isRoundComplete: complete, hasNextRound: activeRound < maxRound, allFixtureRounds: allRounds };
+  }, [activeRound, fixture, scores]);
+
+  const handleProceed = () => {
+    const matchesToLock = allFixtureRounds
+        .filter(r => r.round === activeRound)
+        .flatMap(r => r.matches);
+    
+    matchesToLock.forEach(match => {
+        const roundObject = allFixtureRounds.find(r => r.matches.some(m => m.match === match.match && r.round === activeRound));
+        if (!roundObject) return;
+        const matchId = `r${roundObject.round}m${match.match}`;
+        const score = scores[matchId] || { score1: null, score2: null, locked: false };
+        onScoreUpdate(matchId, { ...score, locked: true });
+    });
+
+    setActiveRound(prev => prev + 1);
+  };
+  
+  const ProceedFooter = () => {
+    if (isRoundComplete && hasNextRound) {
+        return (
+            <div className="mt-8 flex justify-center">
+                <Button size="lg" onClick={handleProceed}>
+                    Proceed to Next Round <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+            </div>
+        );
+    }
+    if(isRoundComplete && !hasNextRound) {
+      return (
+        <div className="mt-8 text-center text-lg font-semibold text-primary">
+          All rounds are complete!
+        </div>
+      )
+    }
+    return null;
+  }
+  
   if (fixture.groups && fixture.groups.length > 0) {
     return (
+      <>
        <Tabs defaultValue={fixture.groups[0].groupName} className="w-full">
         <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${fixture.groups.length}, minmax(0, 1fr))` }}>
           {fixture.groups.map(group => (
@@ -159,14 +232,17 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate }
         </TabsList>
         {fixture.groups.map(group => (
           <TabsContent key={group.groupName} value={group.groupName} className="mt-6">
-            <GroupedRoundRobinView group={group} scores={scores} onScoreUpdate={onScoreUpdate} />
+            <GroupedRoundRobinView group={group} activeRound={activeRound} scores={scores} onScoreUpdate={onScoreUpdate} />
           </TabsContent>
         ))}
       </Tabs>
+      <ProceedFooter />
+      </>
     )
   }
   
   const allRounds = fixture.rounds || [];
+  const displayedRounds = allRounds.filter(r => r.round === activeRound);
 
   const pointsTable = useMemo(() => {
     const table: Record<string, PointsTableEntry> = teams.reduce((acc, team) => {
@@ -183,12 +259,8 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate }
           const score1 = matchScores.score1;
           const score2 = matchScores.score2;
 
-          if(table[team1Name]) {
-            table[team1Name].played += 1;
-          }
-          if(table[team2Name]) {
-            table[team2Name].played += 1;
-          }
+          if(table[team1Name]) table[team1Name].played += 1;
+          if(table[team2Name]) table[team2Name].played += 1;
 
           if (score1 > score2) {
             if(table[team1Name]) table[team1Name].won += 1;
@@ -212,9 +284,10 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate }
   }, [scores, teams, allRounds]);
 
   return (
+    <>
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div className="lg:col-span-2 space-y-6">
-        {allRounds.map((round, roundIndex) => (
+        {displayedRounds.map((round, roundIndex) => (
           <Card key={`round-${round.round}-${roundIndex}`}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
@@ -244,7 +317,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate }
                             onScoreSave={(newScore) => onScoreUpdate(matchId, newScore)}
                         >
                             <Button variant="outline" size="sm" disabled={score?.locked}>
-                                {score?.score1 !== null ? 'Edit Score' : 'Enter Score'}
+                                {score?.score1 !== undefined ? 'Edit Score' : 'Enter Score'}
                             </Button>
                         </ScoreEntryDialog>
                         {score?.locked && <Lock className="h-4 w-4 text-muted-foreground" />}
@@ -261,6 +334,13 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate }
             </CardContent>
           </Card>
         ))}
+         {displayedRounds.length === 0 && (
+          <Card>
+            <CardContent className="pt-6 text-center text-muted-foreground">
+              <p>All rounds are complete.</p>
+            </CardContent>
+          </Card>
+        )}
       </div>
       <div>
         <Card>
@@ -296,5 +376,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate }
         </Card>
       </div>
     </div>
+    <ProceedFooter />
+    </>
   )
 }
