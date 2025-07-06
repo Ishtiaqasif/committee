@@ -36,6 +36,10 @@ function CreatePageComponent() {
   useEffect(() => {
     const tournamentId = searchParams.get('id');
     if (tournamentId && user) {
+      if (tournament?.id === tournamentId) {
+        setPageLoading(false);
+        return;
+      }
       const loadTournament = async () => {
         setPageLoading(true);
         try {
@@ -44,7 +48,7 @@ function CreatePageComponent() {
             const teamsData = await getTeamsForTournament(tournamentId);
             setTournament(tournamentData);
             setTeams(teamsData);
-            if (teamsData.length === tournamentData.numberOfTeams) {
+            if (teamsData.length === tournamentData.numberOfTeams && tournamentData.fixture) {
               setAppState("fixture");
             } else {
               setAppState("inviting");
@@ -62,13 +66,13 @@ function CreatePageComponent() {
         }
       };
       loadTournament();
-    } else {
+    } else if (!tournamentId) {
       setPageLoading(false);
       setAppState("configuring");
       setTournament(null);
       setTeams([]);
     }
-  }, [searchParams, user, router, toast]);
+  }, [searchParams, user, router, toast, tournament?.id]);
 
   const handleTournamentCreated = async (data: TournamentCreationData) => {
     if (!user) {
@@ -94,10 +98,11 @@ function CreatePageComponent() {
     if (!tournament) return;
     try {
       await updateTournament(tournament.id, data);
+      // Optimistically update local state
       setTournament(prev => prev ? { ...prev, ...data } : null);
       
-      const isOnlyScoreUpdate = Object.keys(data).length === 1 && 'scores' in data;
-      if (!isOnlyScoreUpdate) {
+      const isScoreOrStateUpdate = ('scores' in data) || ('activeRound' in data) || ('hybridStage' in data);
+      if (!isScoreOrStateUpdate) {
         toast({ title: 'Success', description: 'Tournament settings updated.' });
       }
     } catch (error) {

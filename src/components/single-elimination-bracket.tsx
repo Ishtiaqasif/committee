@@ -16,6 +16,8 @@ interface SingleEliminationBracketProps {
   onScoreUpdate: (matchIdentifier: string, newScore: Score) => void;
   onTournamentUpdate: (data: Partial<Tournament>) => void;
   knockoutHomeAndAway: boolean;
+  activeRound: number;
+  onActiveRoundChange: (round: number) => void;
 }
 
 const MatchComponent = ({ match, round, onScoreUpdate, currentScores, isActive }: { match: Match, round: number, onScoreUpdate: SingleEliminationBracketProps['onScoreUpdate'], currentScores: any, isActive: boolean }) => {
@@ -78,8 +80,7 @@ const MatchComponent = ({ match, round, onScoreUpdate, currentScores, isActive }
   )
 }
 
-export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTournamentUpdate, scores, knockoutHomeAndAway }: SingleEliminationBracketProps) {
-    const [activeRound, setActiveRound] = useState(1);
+export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTournamentUpdate, scores, knockoutHomeAndAway, activeRound, onActiveRoundChange }: SingleEliminationBracketProps) {
     
     const { isRoundComplete, hasNextRound } = useMemo(() => {
         const currentRound = fixture.rounds.find(r => r.round === activeRound);
@@ -108,11 +109,11 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTou
             onScoreUpdate(matchId, { ...score, locked: true });
         });
 
-        setActiveRound(prev => prev + 1);
+        onActiveRoundChange(activeRound + 1);
     };
 
     const handleGoBack = () => {
-        setActiveRound(prev => Math.max(1, prev - 1));
+        onActiveRoundChange(Math.max(1, activeRound - 1));
     };
 
     const processedFixture = useMemo(() => {

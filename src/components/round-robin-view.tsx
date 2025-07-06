@@ -21,6 +21,8 @@ interface RoundRobinViewProps {
   onTournamentUpdate: (data: Partial<Tournament>) => void;
   isHybrid?: boolean;
   onProceedToKnockout?: () => void;
+  activeRound: number;
+  onActiveRoundChange: (round: number) => void;
 }
 
 const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate, teams, viewMode }: { group: Group, activeRound: number, scores: RoundRobinViewProps['scores'], onScoreUpdate: RoundRobinViewProps['onScoreUpdate'], teams: Team[], viewMode: 'full' | 'short' }) => {
@@ -151,8 +153,7 @@ const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate, team
 }
 
 
-export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, onTournamentUpdate, isHybrid, onProceedToKnockout }: RoundRobinViewProps) {
-  const [activeRound, setActiveRound] = useState(1);
+export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, onTournamentUpdate, isHybrid, onProceedToKnockout, activeRound, onActiveRoundChange }: RoundRobinViewProps) {
   const [viewMode, setViewMode] = useState<'short' | 'full'>('short');
 
   const { isRoundComplete, hasNextRound, maxRound } = useMemo(() => {
@@ -221,11 +222,11 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
             });
         });
     }
-    setActiveRound(prev => prev + 1);
+    onActiveRoundChange(activeRound + 1);
   };
 
   const handleGoBack = () => {
-    setActiveRound(prev => Math.max(1, prev - 1));
+    onActiveRoundChange(Math.max(1, activeRound - 1));
   };
   
   const allRounds = fixture.rounds || [];

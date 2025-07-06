@@ -22,6 +22,8 @@ export type Tournament = TournamentCreationData & {
   fixture?: string;
   scores?: Record<string, Score>;
   winner?: { name: string, logo?: string };
+  activeRound?: number;
+  hybridStage?: 'group' | 'qualification-summary' | 'knockout';
 };
 
 export interface Team {

@@ -42,8 +42,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
   const { toast } = useToast();
   const [scores, setScores] = useState<Record<string, Score>>({});
   const [activeView, setActiveView] = useState('overview');
-  const [hybridStage, setHybridStage] = useState<'group' | 'qualification-summary' | 'knockout'>('group');
-
+  
   useEffect(() => {
     if (tournament.fixture) {
       try {
@@ -149,7 +148,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
         }
 
         setFixture(mappedFixture);
-        onTournamentUpdate({ fixture: JSON.stringify(mappedFixture), scores: {} });
+        onTournamentUpdate({ fixture: JSON.stringify(mappedFixture), scores: {}, activeRound: 1, hybridStage: 'group' });
         toast({
           title: "Fixture Generated!",
           description: "The tournament fixture is ready.",
@@ -174,8 +173,12 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     onTournamentUpdate({ scores: newScores });
   }
 
+  const handleActiveRoundChange = (round: number) => {
+    onTournamentUpdate({ activeRound: round });
+  }
+
   const handleGroupStageComplete = () => {
-    setHybridStage('qualification-summary');
+    onTournamentUpdate({ hybridStage: 'qualification-summary' });
   };
 
   const handleProceedToKnockout = () => {
@@ -275,9 +278,8 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     
     const newFixture = { ...fixture!, knockoutStage: newKnockoutStage };
     setFixture(newFixture);
-    onTournamentUpdate({ fixture: JSON.stringify(newFixture) });
+    onTournamentUpdate({ fixture: JSON.stringify(newFixture), hybridStage: 'knockout', activeRound: 1 });
 
-    setHybridStage('knockout');
     toast({
       title: "Knockout Stage Ready!",
       description: "The bracket is set with the qualifying teams.",
@@ -288,7 +290,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     if (!fixture) return null;
 
     if (tournament.tournamentType === 'hybrid' && fixture.groupStage && fixture.knockoutStage) {
-      if (hybridStage === 'group') {
+      if (tournament.hybridStage === 'group' || !tournament.hybridStage) {
         return (
           <div className="mt-4">
             <h3 className="text-2xl font-bold mb-4 text-primary">Group Stage</h3>
@@ -300,10 +302,12 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
               onTournamentUpdate={onTournamentUpdate}
               isHybrid={true}
               onProceedToKnockout={handleGroupStageComplete}
+              activeRound={tournament.activeRound || 1}
+              onActiveRoundChange={handleActiveRoundChange}
             />
           </div>
         )
-      } else if (hybridStage === 'qualification-summary') {
+      } else if (tournament.hybridStage === 'qualification-summary') {
          return (
           <QualificationSummaryView
             groupStage={fixture.groupStage}
@@ -323,6 +327,8 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
               onTournamentUpdate={onTournamentUpdate}
               scores={scores} 
               knockoutHomeAndAway={tournament.knockoutHomeAndAway}
+              activeRound={tournament.activeRound || 1}
+              onActiveRoundChange={handleActiveRoundChange}
             />
           </div>
         )
@@ -330,11 +336,11 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     }
     
     if (tournament.tournamentType === 'round-robin' && (fixture.rounds || fixture.groups)) {
-      return <RoundRobinView fixture={{rounds: fixture.rounds, groups: fixture.groups}} teams={teams} scores={scores} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} />;
+      return <RoundRobinView fixture={{rounds: fixture.rounds, groups: fixture.groups}} teams={teams} scores={scores} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} />;
     }
 
     if (tournament.tournamentType === 'single elimination' && fixture.rounds) {
-      return <SingleEliminationBracket fixture={{rounds: fixture.rounds}} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} scores={scores} knockoutHomeAndAway={tournament.knockoutHomeAndAway}/>;
+      return <SingleEliminationBracket fixture={{rounds: fixture.rounds}} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} scores={scores} knockoutHomeAndAway={tournament.knockoutHomeAndAway} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} />;
     }
 
     return <p>Could not display fixture.</p>;
@@ -413,8 +419,8 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
                         <SidebarMenuButton 
                             onClick={() => setActiveView('points-table')} 
                             isActive={activeView === 'points-table'}
-                            disabled={!fixture}
-                            tooltip={!fixture ? "Generate a fixture first" : "Points Table"}
+                            disabled={!fixture || tournament.tournamentType === 'single elimination'}
+                            tooltip={!fixture ? "Generate a fixture first" : (tournament.tournamentType === 'single elimination' ? 'Not available for this format' : 'Points Table')}
                         >
                             <ListOrdered/>
                             Points Table
