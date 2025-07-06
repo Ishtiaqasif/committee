@@ -1,6 +1,7 @@
 import { doc, collection, addDoc, getDoc, getDocs, query, serverTimestamp, where, orderBy, updateDoc } from "firebase/firestore";
-import { db } from "./config";
+import { db, storage } from "./config";
 import type { Tournament, TournamentCreationData, Team } from "@/types";
+import { getDownloadURL, ref, uploadString } from "firebase/storage";
 
 export async function createTournament(tournamentData: TournamentCreationData, userId: string): Promise<string> {
     const dataToSave = { ...tournamentData };
@@ -33,7 +34,7 @@ export async function getTournament(tournamentId: string): Promise<Tournament | 
     }
 }
 
-export async function addTeamToTournament(tournamentId: string, team: Omit<Team, 'id'>): Promise<string> {
+export async function addTeamToTournament(tournamentId: string, teamData: Omit<Team, 'id'>): Promise<string> {
     const tournament = await getTournament(tournamentId);
     if (!tournament) throw new Error("Tournament not found");
 
@@ -42,9 +43,29 @@ export async function addTeamToTournament(tournamentId: string, team: Omit<Team,
         throw new Error("Tournament is already full.");
     }
 
-    const teamDocRef = await addDoc(collection(db, "tournaments", tournamentId, "teams"), team);
+    let logoUrl = '';
+    // If a logo data URI is provided, upload it to Firebase Storage
+    if (teamData.logo && teamData.logo.startsWith('data:image')) {
+        const storageRef = ref(storage, `logos/${tournamentId}/${teamData.name.replace(/\s+/g, '_')}_${Date.now()}.png`);
+        try {
+            await uploadString(storageRef, teamData.logo, 'data_url');
+            logoUrl = await getDownloadURL(storageRef);
+        } catch (error) {
+            console.error("Error uploading logo to Firebase Storage:", error);
+            // Proceed without a logo if upload fails
+        }
+    }
+
+    const teamToSave = {
+        name: teamData.name,
+        ownerName: teamData.ownerName,
+        logo: logoUrl // This will be the public URL from Storage or an empty string
+    };
+
+    const teamDocRef = await addDoc(collection(db, "tournaments", tournamentId, "teams"), teamToSave);
     return teamDocRef.id;
 }
+
 
 export async function getTeamsForTournament(tournamentId: string): Promise<Team[]> {
     const teamsRef = collection(db, "tournaments", tournamentId, "teams");
