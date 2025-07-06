@@ -33,7 +33,7 @@ export default function TeamInvitation({ tournament, onTeamsFinalized }: TeamInv
             querySnapshot.forEach((doc) => {
                 fetchedTeams.push({ id: doc.id, ...doc.data() } as Team);
             });
-            setTeams(fetchedTeams);
+            setTeams(fetchedTeams.sort((a, b) => a.name.localeCompare(b.name)));
             setIsLoading(false);
         }, (error) => {
             console.error("Error fetching teams: ", error);

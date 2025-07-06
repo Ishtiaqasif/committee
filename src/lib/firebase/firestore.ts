@@ -1,4 +1,4 @@
-import { doc, collection, addDoc, getDoc, getDocs, query, serverTimestamp, orderBy } from "firebase/firestore";
+import { doc, collection, addDoc, getDoc, getDocs, query, serverTimestamp } from "firebase/firestore";
 import { db } from "./config";
 import type { Tournament, TournamentCreationData, Team } from "@/types";
 
@@ -38,7 +38,7 @@ export async function addTeamToTournament(tournamentId: string, team: Omit<Team,
 
 export async function getTeamsForTournament(tournamentId: string): Promise<Team[]> {
     const teamsRef = collection(db, "tournaments", tournamentId, "teams");
-    const q = query(teamsRef, orderBy("name"));
+    const q = query(teamsRef);
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Team));
 }
