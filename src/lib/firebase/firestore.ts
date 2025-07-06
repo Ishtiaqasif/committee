@@ -1,4 +1,4 @@
-import { doc, collection, addDoc, getDoc, getDocs, query, serverTimestamp, where, orderBy } from "firebase/firestore";
+import { doc, collection, addDoc, getDoc, getDocs, query, serverTimestamp, where, orderBy, updateDoc } from "firebase/firestore";
 import { db } from "./config";
 import type { Tournament, TournamentCreationData, Team } from "@/types";
 
@@ -15,7 +15,8 @@ export async function createTournament(tournamentData: TournamentCreationData, u
     const newTournament: Omit<Tournament, 'id'> = {
         ...dataToSave,
         creatorId: userId,
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
+        language: 'en'
     };
     const docRef = await addDoc(collection(db, "tournaments"), newTournament);
     return docRef.id;
@@ -49,7 +50,7 @@ export async function getTeamsForTournament(tournamentId: string): Promise<Team[
     const teamsRef = collection(db, "tournaments", tournamentId, "teams");
     const q = query(teamsRef);
     const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Team));
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Team)).sort((a, b) => a.name.localeCompare(b.name));
 }
 
 export async function getTournamentsForUser(userId: string): Promise<Tournament[]> {
@@ -57,4 +58,9 @@ export async function getTournamentsForUser(userId: string): Promise<Tournament[
     const q = query(tournamentsRef, where("creatorId", "==", userId), orderBy("createdAt", "desc"));
     const querySnapshot = await getDocs(q);
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Tournament));
+}
+
+export async function updateTournament(tournamentId: string, data: Partial<TournamentCreationData>): Promise<void> {
+    const tournamentRef = doc(db, "tournaments", tournamentId);
+    await updateDoc(tournamentRef, data);
 }

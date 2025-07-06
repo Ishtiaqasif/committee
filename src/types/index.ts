@@ -12,6 +12,7 @@ export type TournamentCreationData = {
   fixtureGeneration: 'random' | 'predefined';
   roundRobinHomeAndAway: boolean;
   knockoutHomeAndAway: boolean;
+  language?: string;
 };
 
 export type Tournament = TournamentCreationData & {

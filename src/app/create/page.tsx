@@ -11,7 +11,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
-import { createTournament, getTournament, getTeamsForTournament } from "@/lib/firebase/firestore";
+import { createTournament, getTournament, getTeamsForTournament, updateTournament } from "@/lib/firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 
 type AppState = "configuring" | "inviting" | "fixture";
@@ -64,6 +64,9 @@ function CreatePageComponent() {
       loadTournament();
     } else {
       setPageLoading(false);
+      setAppState("configuring");
+      setTournament(null);
+      setTeams([]);
     }
   }, [searchParams, user, router, toast]);
 
@@ -74,14 +77,28 @@ function CreatePageComponent() {
     }
     try {
       const tournamentId = await createTournament(data, user.uid);
-      const newTournamentData = { ...data, id: tournamentId, creatorId: user.uid, createdAt: new Date() };
-      setTournament(newTournamentData);
-      setAppState("inviting");
-      toast({ title: 'Tournament Created!', description: 'You can now invite teams to register.' });
-      router.replace(`/create?id=${tournamentId}`);
+      const newTournamentData = await getTournament(tournamentId);
+      if (newTournamentData) {
+        setTournament(newTournamentData);
+        setAppState("inviting");
+        toast({ title: 'Tournament Created!', description: 'You can now invite teams to register.' });
+        router.replace(`/create?id=${tournamentId}`);
+      }
     } catch(error) {
        console.error(error);
        toast({ variant: 'destructive', title: 'Error', description: 'Failed to create tournament.' });
+    }
+  };
+  
+  const handleTournamentUpdate = async (data: Partial<TournamentCreationData>) => {
+    if (!tournament) return;
+    try {
+      await updateTournament(tournament.id, data);
+      setTournament(prev => prev ? { ...prev, ...data } : null);
+      toast({ title: 'Success', description: 'Tournament settings updated.' });
+    } catch (error) {
+      console.error("Failed to update tournament:", error);
+      toast({ variant: 'destructive', title: 'Error', description: 'Failed to update tournament settings.' });
     }
   };
 
@@ -92,7 +109,6 @@ function CreatePageComponent() {
 
   const handleReset = () => {
     router.push('/create');
-    // We don't reset state here because the useEffect will handle it on navigation
   };
 
   const renderContent = () => {
@@ -114,6 +130,7 @@ function CreatePageComponent() {
             tournament={tournament}
             teams={teams}
             onReset={handleReset}
+            onTournamentUpdate={handleTournamentUpdate}
           />
         );
       default:

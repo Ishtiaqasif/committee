@@ -3,7 +3,7 @@
 
 import { useState, useTransition } from "react";
 import { generateTournamentFixture } from "@/ai/flows/generate-tournament-fixture";
-import type { Tournament, Team, Fixture, Score, PointsTableEntry, Round, Match } from "@/types";
+import type { Tournament, Team, Fixture, Score, PointsTableEntry, Round, Match, TournamentCreationData } from "@/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import RoundRobinView from "@/components/round-robin-view";
@@ -11,7 +11,7 @@ import SingleEliminationBracket from "@/components/single-elimination-bracket";
 import TeamsList from "@/components/teams-list";
 import PointsTableView, { calculatePointsTable } from "@/components/points-table-view";
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset } from "@/components/ui/sidebar";
-import { Loader, Trophy, RefreshCw, Gamepad2, ListOrdered, Users } from "lucide-react";
+import { Loader, Trophy, RefreshCw, Gamepad2, ListOrdered, Users, Settings } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -25,14 +25,16 @@ import {
 } from "@/components/ui/alert-dialog";
 import QualificationSummaryView from "./qualification-summary-view";
 import { ThemeToggle } from "./theme-toggle";
+import TournamentSettings from "./tournament-settings";
 
 interface TournamentHomeProps {
   tournament: Tournament;
   teams: Team[];
   onReset: () => void;
+  onTournamentUpdate: (data: Partial<TournamentCreationData>) => void;
 }
 
-export default function TournamentHome({ tournament, teams, onReset }: TournamentHomeProps) {
+export default function TournamentHome({ tournament, teams, onReset, onTournamentUpdate }: TournamentHomeProps) {
   const [fixture, setFixture] = useState<Fixture | null>(null);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
@@ -330,6 +332,8 @@ export default function TournamentHome({ tournament, teams, onReset }: Tournamen
         return <TeamsList teams={teams} />;
       case 'points-table':
         return <PointsTableView fixture={fixture} teams={teams} scores={scores} tournamentType={tournament.tournamentType}/>;
+      case 'settings':
+        return <TournamentSettings tournament={tournament} onUpdate={onTournamentUpdate} />;
       default:
         return null;
     }
@@ -369,6 +373,12 @@ export default function TournamentHome({ tournament, teams, onReset }: Tournamen
                         <SidebarMenuButton onClick={() => setActiveView('teams')} isActive={activeView === 'teams'}>
                             <Users/>
                             Teams
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton onClick={() => setActiveView('settings')} isActive={activeView === 'settings'}>
+                            <Settings/>
+                            Settings
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                 </SidebarMenu>
