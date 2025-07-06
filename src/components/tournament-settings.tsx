@@ -83,6 +83,11 @@ export default function TournamentSettings({ tournament, onUpdate }: TournamentS
                         <SelectItem value="fr">Français</SelectItem>
                         <SelectItem value="de">Deutsch</SelectItem>
                         <SelectItem value="bn">বাংলা</SelectItem>
+                        <SelectItem value="hi">हिन्दी</SelectItem>
+                        <SelectItem value="ur">اردو</SelectItem>
+                        <SelectItem value="ar">العربية</SelectItem>
+                        <SelectItem value="pt">Português</SelectItem>
+                        <SelectItem value="zh">中文</SelectItem>
                       </SelectContent>
                     </Select>
                     <FormMessage />
