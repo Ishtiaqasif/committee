@@ -1,0 +1,135 @@
+"use client";
+
+import { useState, useTransition } from "react";
+import { generateTournamentFixture } from "@/ai/flows/generate-tournament-fixture";
+import type { Tournament, Team, Fixture, Match, Round } from "@/types";
+import { Button } from "@/components/ui/button";
+import { useToast } from "@/hooks/use-toast";
+import RoundRobinView from "@/components/round-robin-view";
+import SingleEliminationBracket from "@/components/single-elimination-bracket";
+import { Loader, Trophy, RefreshCw } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
+
+interface FixtureDisplayProps {
+  tournament: Tournament;
+  teams: Team[];
+  fixture: Fixture | null;
+  setFixture: (fixture: Fixture | null) => void;
+  onReset: () => void;
+}
+
+export default function FixtureDisplay({ tournament, teams, fixture, setFixture, onReset }: FixtureDisplayProps) {
+  const [isPending, startTransition] = useTransition();
+  const { toast } = useToast();
+  const [scores, setScores] = useState<Record<string, { score1: number | null; score2: number | null }>>({});
+
+  const handleGenerateFixture = () => {
+    startTransition(async () => {
+      try {
+        const result = await generateTournamentFixture({
+          tournamentType: tournament.tournamentType,
+          numberOfTeams: tournament.numberOfTeams,
+          tournamentName: tournament.tournamentName,
+        });
+
+        const parsedFixture = JSON.parse(result.fixture);
+        
+        const teamMap = teams.reduce((acc, team, index) => {
+            acc[`Team ${index + 1}`] = team.name;
+            return acc;
+        }, {} as Record<string, string>)
+
+        const mappedFixture: Fixture = {
+            rounds: parsedFixture.rounds.map((round: any) => ({
+                ...round,
+                matches: round.matches.map((match: any) => ({
+                    ...match,
+                    team1: { name: teamMap[match.team1] || match.team1, score: null },
+                    team2: { name: teamMap[match.team2] || match.team2, score: null },
+                }))
+            }))
+        }
+
+        setFixture(mappedFixture);
+        toast({
+          title: "Fixture Generated!",
+          description: "The tournament fixture is ready.",
+        });
+      } catch (error) {
+        console.error("Failed to generate fixture:", error);
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Could not generate or parse the fixture. Please try again.",
+        });
+      }
+    });
+  };
+
+  const handleScoreChange = (matchIdentifier: string, team1Score: number | null, team2Score: number | null) => {
+    setScores(prev => ({
+        ...prev,
+        [matchIdentifier]: { score1: team1Score, score2: team2Score }
+    }))
+  }
+
+  if (!fixture) {
+    return (
+      <div className="text-center">
+        <Trophy className="mx-auto h-12 w-12 text-accent" />
+        <h2 className="mt-4 text-2xl font-semibold">Teams Registered!</h2>
+        <p className="mt-2 text-muted-foreground">Ready to generate the tournament fixture.</p>
+        <Button onClick={handleGenerateFixture} disabled={isPending} size="lg" className="mt-6">
+          {isPending && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+          {isPending ? "Generating..." : "Generate Fixture"}
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+        <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
+            <div>
+                <h2 className="text-3xl font-bold text-primary">{tournament.tournamentName}</h2>
+                <p className="text-muted-foreground capitalize">{tournament.tournamentType} | {tournament.numberOfTeams} Teams</p>
+            </div>
+             <AlertDialog>
+                <AlertDialogTrigger asChild>
+                    <Button variant="outline">
+                        <RefreshCw className="mr-2 h-4 w-4" /> Reset Tournament
+                    </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                    <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                        This action cannot be undone. This will reset the entire tournament, including teams and fixtures.
+                    </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={onReset}>Continue</AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
+        </div>
+
+      {tournament.tournamentType === 'round-robin' ? (
+        <RoundRobinView fixture={fixture} teams={teams} scores={scores} onScoreChange={handleScoreChange} />
+      ) : (
+        <SingleEliminationBracket fixture={fixture} onScoreChange={handleScoreChange} scores={scores}/>
+      )}
+    </div>
+  );
+}
