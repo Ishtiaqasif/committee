@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: 'Gridiron Genesis',
+  title: 'Committee',
   description: 'Create and manage your own tournaments with AI-powered fixture generation.',
 };
 

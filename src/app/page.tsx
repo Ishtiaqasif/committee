@@ -6,7 +6,7 @@ import TournamentCreator from "@/components/tournament-creator";
 import TeamRegistration from "@/components/team-registration";
 import TournamentHome from "@/components/tournament-home";
 import { Card, CardContent } from "@/components/ui/card";
-import { Flame } from "lucide-react";
+import { Users } from "lucide-react";
 
 type AppState = "configuring" | "teams" | "fixture";
 
@@ -66,8 +66,8 @@ export default function Home() {
             <div className="w-full max-w-6xl">
                 <header className="mb-8 text-center">
                     <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-primary font-headline flex items-center justify-center gap-3">
-                        <Flame className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 text-accent" />
-                        Gridiron Genesis
+                        <Users className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 text-accent" />
+                        Committee
                     </h1>
                     <p className="mt-2 text-lg text-muted-foreground">
                         Your Ultimate Tournament Companion
