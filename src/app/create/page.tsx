@@ -1,20 +1,39 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type { Tournament, Team } from "@/types";
 import TournamentCreator from "@/components/tournament-creator";
 import TeamRegistration from "@/components/team-registration";
 import TournamentHome from "@/components/tournament-home";
-import { ClipboardList } from "lucide-react";
+import { ClipboardList, Loader } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import Link from "next/link";
+import { useAuth } from "@/context/auth-context";
+import { useRouter } from "next/navigation";
 
 type AppState = "configuring" | "teams" | "fixture";
 
 export default function CreatePage() {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  
   const [appState, setAppState] = useState<AppState>("configuring");
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/login");
+    }
+  }, [user, loading, router]);
+
+  if (loading || !user) {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center">
+        <Loader className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   const handleTournamentCreated = (data: Tournament) => {
     setTournament(data);

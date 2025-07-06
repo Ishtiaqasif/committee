@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ClipboardList, Bot, Users, Trophy, SwatchBook, ListChecks } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
+import AuthButton from '@/components/auth-button';
 
 export default function LandingPage() {
   return (
@@ -17,9 +18,7 @@ export default function LandingPage() {
           </Link>
           <nav className="ml-auto flex items-center gap-4">
              <ThemeToggle />
-            <Button asChild>
-              <Link href="/create">Create Tournament</Link>
-            </Button>
+             <AuthButton />
           </nav>
         </div>
       </header>
