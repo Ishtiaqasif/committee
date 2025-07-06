@@ -1,12 +1,13 @@
 
 "use client";
 
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import type { Tournament, Fixture, Score, Team, Round } from '@/types';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Flame, Swords, CheckCircle, ListTodo, Trophy, Loader } from 'lucide-react';
+import { Flame, Swords, CheckCircle, ListTodo, Trophy, Loader, Link as LinkIcon, Clipboard, Check } from 'lucide-react';
 import { Button } from './ui/button';
+import { Input } from './ui/input';
 
 interface TournamentOverviewProps {
   tournament: Tournament;
@@ -47,7 +48,44 @@ const getAllMatches = (fixture: Fixture | null): { id: string, roundName: string
 };
 
 export default function TournamentOverview({ tournament, fixture, scores, teams, onGenerateFixture, isGeneratingFixture }: TournamentOverviewProps) {
+  const [copied, setCopied] = useState(false);
+  const [registrationLink, setRegistrationLink] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        setRegistrationLink(`${window.location.origin}/register/${tournament.id}`);
+    }
+  }, [tournament.id]);
+
+  const handleCopyLink = () => {
+      if (!registrationLink) return;
+      navigator.clipboard.writeText(registrationLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+  };
   
+  const shareLinkCard = (
+    <Card className="mt-8 w-full">
+        <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+                <LinkIcon className="w-5 h-5 text-primary" />
+                Share Tournament
+            </CardTitle>
+            <CardDescription>
+                Use this link to invite participants or to share the public champion page.
+            </CardDescription>
+        </CardHeader>
+        <CardContent>
+            <div className="flex gap-2">
+                <Input readOnly value={registrationLink} placeholder="Loading link..." />
+                <Button variant="outline" size="icon" onClick={handleCopyLink} disabled={!registrationLink}>
+                    {copied ? <Check className="text-green-500" /> : <Clipboard />}
+                </Button>
+            </div>
+        </CardContent>
+    </Card>
+  );
+
   const stats = useMemo(() => {
     const allMatches = getAllMatches(fixture);
     const totalMatches = allMatches.length;
@@ -112,6 +150,7 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
                     {isGeneratingFixture ? "Generating..." : "Generate Fixture"}
                 </Button>
             </div>
+            {shareLinkCard}
         </div>
       );
   }
@@ -169,6 +208,7 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
           </CardContent>
         </Card>
       </div>
+      {shareLinkCard}
     </div>
   );
 }
