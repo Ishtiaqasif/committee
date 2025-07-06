@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { Trophy, Settings, MapPin, Gamepad2 } from "lucide-react";
+import { Trophy, Settings, MapPin, Gamepad2, Wand2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
@@ -49,6 +49,11 @@ const formSchema = z.object({
     message: "Must be a divisor of total teams and > 1.",
     path: ["teamsPerGroup"],
 });
+
+const TOURNAMENT_NAMES = [
+  "Cosmic Cup", "Galactic Games", "The Phoenix Fire Tournament", "Emerald Challenge", 
+  "Titan's Clash", "Vortex Invitational", "Quantum Quest Championship", "Inferno League"
+];
 
 export default function TournamentCreator({ onTournamentCreated }: TournamentCreatorProps) {
   const form = useForm<z.infer<typeof formSchema>>({
@@ -106,6 +111,11 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
     }
   }, [numberOfTeams, isSingleEliminationDisabled, form]);
 
+  const handleGenerateRandomName = () => {
+    const randomName = TOURNAMENT_NAMES[Math.floor(Math.random() * TOURNAMENT_NAMES.length)];
+    form.setValue('tournamentName', randomName, { shouldValidate: true });
+  };
+
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     onTournamentCreated(values as Tournament);
@@ -129,9 +139,15 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Tournament Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Summer Cup 2024" {...field} />
-                    </FormControl>
+                     <div className="flex gap-2">
+                        <FormControl>
+                          <Input placeholder="e.g., Summer Cup 2024" {...field} />
+                        </FormControl>
+                        <Button type="button" variant="outline" size="icon" onClick={handleGenerateRandomName}>
+                            <Wand2 className="h-4 w-4" />
+                            <span className="sr-only">Generate Random Name</span>
+                        </Button>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
