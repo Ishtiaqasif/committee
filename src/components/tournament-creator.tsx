@@ -36,6 +36,7 @@ const formSchema = z.object({
 }).refine(data => {
     if (data.tournamentType !== 'hybrid') return true;
     if (data.teamsAdvancing === undefined || data.teamsAdvancing < 2) return false;
+    // Check if it's a power of two
     return data.teamsAdvancing < data.numberOfTeams && (data.teamsAdvancing & (data.teamsAdvancing - 1)) === 0;
 }, {
     message: "Must be a power of two and less than total teams.",
@@ -96,20 +97,6 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
         form.setValue('venues', '', { shouldValidate: true });
     }
   }, [isEsports, form]);
-
-
-  const isPowerOfTwo = (n: number) => {
-    if (typeof n !== 'number' || n <= 1) return false;
-    return (n & (n - 1)) === 0;
-  };
-
-  const isSingleEliminationDisabled = !isPowerOfTwo(numberOfTeams);
-
-  useEffect(() => {
-    if (isSingleEliminationDisabled && form.getValues("tournamentType") === "single elimination") {
-      form.resetField("tournamentType");
-    }
-  }, [numberOfTeams, isSingleEliminationDisabled, form]);
 
   const handleGenerateRandomName = () => {
     const randomName = TOURNAMENT_NAMES[Math.floor(Math.random() * TOURNAMENT_NAMES.length)];
@@ -180,7 +167,7 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="round-robin">Round-robin</SelectItem>
-                          <SelectItem value="single elimination" disabled={isSingleEliminationDisabled}>
+                          <SelectItem value="single elimination">
                             Single Elimination
                           </SelectItem>
                           <SelectItem value="hybrid">Hybrid (Group + Knockout)</SelectItem>

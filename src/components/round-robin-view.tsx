@@ -11,6 +11,7 @@ import Image from 'next/image';
 import PointsTable from './points-table';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import ChampionView from './champion-view';
 
 interface RoundRobinViewProps {
   fixture: { rounds?: Round[], groups?: Group[] };
@@ -113,7 +114,7 @@ const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate, team
                             currentScore={score}
                             onScoreSave={(newScore) => onScoreUpdate(matchId, newScore)}
                         >
-                            <Button variant="outline" size="sm" disabled={score?.locked}>
+                            <Button variant="outline" size="sm" disabled={score?.locked || match.team1.name.toLowerCase() === 'bye' || match.team2.name.toLowerCase() === 'bye'}>
                                 {score?.score1 !== undefined ? 'Edit Score' : 'Enter Score'}
                             </Button>
                         </ScoreEntryDialog>
@@ -151,16 +152,16 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
   const [activeRound, setActiveRound] = useState(1);
   const [viewMode, setViewMode] = useState<'short' | 'full'>('short');
 
-  const { isRoundComplete, hasNextRound } = useMemo(() => {
-    if (!fixture.rounds && !fixture.groups) return { isRoundComplete: false, hasNextRound: false };
+  const { isRoundComplete, hasNextRound, maxRound } = useMemo(() => {
+    if (!fixture.rounds && !fixture.groups) return { isRoundComplete: false, hasNextRound: false, maxRound: 0 };
 
     let matchesInActiveRound: { match: Match, id: string }[] = [];
-    let maxRound = 0;
+    let currentMaxRound = 0;
 
     if (fixture.groups) {
         fixture.groups.forEach(group => {
             group.rounds.forEach(round => {
-                if (round.round > maxRound) maxRound = round.round;
+                if (round.round > currentMaxRound) currentMaxRound = round.round;
                 if (round.round === activeRound) {
                     round.matches.forEach(match => {
                         if (match.team1.name.toLowerCase() !== 'bye' && match.team2.name.toLowerCase() !== 'bye') {
@@ -172,7 +173,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
         });
     } else if (fixture.rounds) {
         fixture.rounds.forEach(round => {
-            if (round.round > maxRound) maxRound = round.round;
+            if (round.round > currentMaxRound) currentMaxRound = round.round;
             if (round.round === activeRound) {
                 round.matches.forEach(match => {
                     if (match.team1.name.toLowerCase() !== 'bye' && match.team2.name.toLowerCase() !== 'bye') {
@@ -184,7 +185,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
     }
     
     if (matchesInActiveRound.length === 0) {
-       return { isRoundComplete: true, hasNextRound: activeRound < maxRound };
+       return { isRoundComplete: true, hasNextRound: activeRound < currentMaxRound, maxRound: currentMaxRound };
     }
 
     const complete = matchesInActiveRound.every(m => {
@@ -192,7 +193,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
         return score?.score1 !== null && score?.score2 !== null && score?.score1 !== undefined && score?.score2 !== undefined;
     });
 
-    return { isRoundComplete: complete, hasNextRound: activeRound < maxRound };
+    return { isRoundComplete: complete, hasNextRound: activeRound < currentMaxRound, maxRound: currentMaxRound };
 
   }, [activeRound, fixture, scores]);
 
@@ -224,74 +225,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
     setActiveRound(prev => Math.max(1, prev - 1));
   };
   
-  const NavigationFooter = () => (
-    <div className="mt-8 flex flex-col items-center justify-center gap-2">
-      <div className="flex items-center gap-4">
-        <Button size="lg" variant="outline" onClick={handleGoBack} disabled={activeRound === 1}>
-            <ArrowLeft className="mr-2 h-4 w-4" /> Previous Round
-        </Button>
-        {hasNextRound && (
-            <Button size="lg" onClick={handleProceed} disabled={!isRoundComplete}>
-                Next Round <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-        )}
-      </div>
-      {hasNextRound && !isRoundComplete && (
-        <p className="text-sm text-muted-foreground mt-2">
-          Enter all match results for the current round to proceed.
-        </p>
-      )}
-      {isRoundComplete && !hasNextRound && (
-        <div className="mt-4 text-center">
-            {isHybrid && onProceedToKnockout ? (
-                <Button size="lg" onClick={onProceedToKnockout} disabled={!isRoundComplete}>
-                    Proceed to Knockout Stage <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-            ) : (
-                <p className="text-lg font-semibold text-primary">
-                    All rounds are complete!
-                </p>
-            )}
-        </div>
-      )}
-    </div>
-  );
-  
-  const TableViewToggle = () => (
-    <div className="flex items-center space-x-2 mb-4 justify-end">
-        <Switch
-            id="view-mode-switch-rr"
-            checked={viewMode === 'full'}
-            onCheckedChange={(checked) => setViewMode(checked ? 'full' : 'short')}
-        />
-        <Label htmlFor="view-mode-switch-rr">Show Full Table</Label>
-    </div>
-  );
-
-  if (fixture.groups && fixture.groups.length > 0) {
-    return (
-      <>
-       <TableViewToggle />
-       <Tabs defaultValue={fixture.groups[0].groupName} className="w-full">
-        <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${fixture.groups.length}, minmax(0, 1fr))` }}>
-          {fixture.groups.map(group => (
-            <TabsTrigger key={group.groupName} value={group.groupName}>{group.groupName}</TabsTrigger>
-          ))}
-        </TabsList>
-        {fixture.groups.map(group => (
-          <TabsContent key={group.groupName} value={group.groupName} className="mt-6">
-            <GroupedRoundRobinView group={group} activeRound={activeRound} scores={scores} onScoreUpdate={onScoreUpdate} teams={teams} viewMode={viewMode}/>
-          </TabsContent>
-        ))}
-      </Tabs>
-      <NavigationFooter />
-      </>
-    )
-  }
-  
   const allRounds = fixture.rounds || [];
-  const displayedRounds = allRounds.filter(r => r.round === activeRound);
-
   const pointsTable = useMemo(() => {
     const table: Record<string, PointsTableEntry> = teams.reduce((acc, team) => {
       acc[team.name] = { teamName: team.name, played: 0, won: 0, lost: 0, drawn: 0, points: 0, logo: team.logo, goalsFor: 0, goalsAgainst: 0, goalDifference: 0 };
@@ -304,6 +238,9 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
         if (matchScores?.score1 !== null && matchScores?.score2 !== null && matchScores?.score1 !== undefined && matchScores?.score2 !== undefined) {
           const team1Name = match.team1.name;
           const team2Name = match.team2.name;
+
+          if (team1Name.toLowerCase() === 'bye' || team2Name.toLowerCase() === 'bye') return;
+
           const score1 = matchScores.score1;
           const score2 = matchScores.score2;
 
@@ -339,6 +276,89 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
 
     return Object.values(table).sort((a, b) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor);
   }, [scores, teams, allRounds]);
+
+  const finalWinner = useMemo(() => {
+    // Only for all-play-all round robin that is not part of a hybrid tournament
+    const allRoundsPlayed = activeRound > maxRound;
+    if (allRoundsPlayed && !isHybrid && fixture.rounds && !fixture.groups && pointsTable.length > 0) {
+        const winnerEntry = pointsTable[0];
+        return { name: winnerEntry.teamName, logo: winnerEntry.logo };
+    }
+    return null;
+  }, [activeRound, maxRound, isHybrid, pointsTable, fixture.rounds, fixture.groups]);
+
+  const NavigationFooter = () => (
+    <div className="mt-8 flex flex-col items-center justify-center gap-2">
+      <div className="flex items-center gap-4">
+        <Button size="lg" variant="outline" onClick={handleGoBack} disabled={activeRound === 1}>
+            <ArrowLeft className="mr-2 h-4 w-4" /> Previous Round
+        </Button>
+        {hasNextRound && (
+            <Button size="lg" onClick={handleProceed} disabled={!isRoundComplete}>
+                Next Round <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+        )}
+      </div>
+      {hasNextRound && !isRoundComplete && (
+        <p className="text-sm text-muted-foreground mt-2">
+          Enter all match results for the current round to proceed.
+        </p>
+      )}
+      {isRoundComplete && !hasNextRound && (
+        <div className="mt-4 text-center">
+            {isHybrid && onProceedToKnockout ? (
+                <Button size="lg" onClick={onProceedToKnockout} disabled={!isRoundComplete}>
+                    Proceed to Knockout Stage <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+            ) : (
+                 !finalWinner && (
+                    <p className="text-lg font-semibold text-primary">
+                        All rounds are complete!
+                    </p>
+                )
+            )}
+        </div>
+      )}
+    </div>
+  );
+  
+  const TableViewToggle = () => (
+    <div className="flex items-center space-x-2 mb-4 justify-end">
+        <Switch
+            id="view-mode-switch-rr"
+            checked={viewMode === 'full'}
+            onCheckedChange={(checked) => setViewMode(checked ? 'full' : 'short')}
+        />
+        <Label htmlFor="view-mode-switch-rr">Show Full Table</Label>
+    </div>
+  );
+
+  if (finalWinner) {
+      return <ChampionView winner={finalWinner} />;
+  }
+
+  if (fixture.groups && fixture.groups.length > 0) {
+    return (
+      <>
+       <TableViewToggle />
+       <Tabs defaultValue={fixture.groups[0].groupName} className="w-full">
+        <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${fixture.groups.length}, minmax(0, 1fr))` }}>
+          {fixture.groups.map(group => (
+            <TabsTrigger key={group.groupName} value={group.groupName}>{group.groupName}</TabsTrigger>
+          ))}
+        </TabsList>
+        {fixture.groups.map(group => (
+          <TabsContent key={group.groupName} value={group.groupName} className="mt-6">
+            <GroupedRoundRobinView group={group} activeRound={activeRound} scores={scores} onScoreUpdate={onScoreUpdate} teams={teams} viewMode={viewMode}/>
+          </TabsContent>
+        ))}
+      </Tabs>
+      <NavigationFooter />
+      </>
+    )
+  }
+  
+  const displayedRounds = allRounds.filter(r => r.round === activeRound);
 
   return (
     <>
@@ -379,7 +399,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
                             currentScore={score}
                             onScoreSave={(newScore) => onScoreUpdate(matchId, newScore)}
                         >
-                            <Button variant="outline" size="sm" disabled={score?.locked}>
+                            <Button variant="outline" size="sm" disabled={score?.locked || match.team1.name.toLowerCase() === 'bye' || match.team2.name.toLowerCase() === 'bye'}>
                                 {score?.score1 !== undefined ? 'Edit Score' : 'Enter Score'}
                             </Button>
                         </ScoreEntryDialog>

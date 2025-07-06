@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import ScoreEntryDialog from './score-entry-dialog';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import ChampionView from './champion-view';
 
 interface SingleEliminationBracketProps {
   fixture: { rounds: Round[] };
@@ -154,7 +155,10 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, score
 
   const finalWinner = useMemo(() => {
     if (isRoundComplete && !hasNextRound) {
-      const finalMatch = processedFixture.rounds[processedFixture.rounds.length - 1].matches[0];
+      const finalRound = processedFixture.rounds[processedFixture.rounds.length - 1];
+      if (!finalRound || finalRound.matches.length !== 1) return null;
+      
+      const finalMatch = finalRound.matches[0];
       const finalMatchId = `r${finalMatch.round}m${finalMatch.match}`;
       const finalScores = scores[finalMatchId];
       if (finalScores && finalScores.score1 !== null && finalScores.score2 !== null) {
@@ -165,26 +169,7 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, score
   }, [isRoundComplete, hasNextRound, scores, processedFixture.rounds]);
 
   if (finalWinner) {
-    return (
-      <div className="w-full flex flex-col items-center justify-center text-center mt-8 p-8 rounded-lg animate-in fade-in-50 duration-500">
-        <Trophy className="w-24 h-24 text-accent drop-shadow-lg" />
-        <h2 className="text-5xl font-extrabold text-primary mt-4 tracking-tight">CHAMPION</h2>
-        <p className="mt-2 text-lg text-muted-foreground">Congratulations to the tournament winner!</p>
-        <Card className="mt-8 w-80 bg-card border-accent border-2 shadow-2xl">
-          <CardContent className="p-6 flex flex-col items-center justify-center gap-4">
-            {finalWinner.logo ? 
-              <Image src={finalWinner.logo} alt={`${finalWinner.name} logo`} width={96} height={96} className="rounded-full ring-4 ring-accent bg-background p-1" /> : 
-              <div className="w-24 h-24 rounded-full ring-4 ring-accent bg-muted flex items-center justify-center">
-                <Shield className="w-12 h-12 text-muted-foreground" />
-              </div>
-            }
-            <span className="text-3xl font-bold text-card-foreground mt-2">
-              {finalWinner.name}
-            </span>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <ChampionView winner={finalWinner} />;
   }
 
   const getRoundName = (round: Round) => {
