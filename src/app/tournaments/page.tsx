@@ -95,11 +95,8 @@ export default function TournamentsPage() {
                     </div>
                 </CardContent>
                 <CardFooter>
-                    <Button asChild className="w-full" variant="outline" disabled>
-                        {/* This functionality is not yet implemented.
-                            It would require loading a saved tournament into the /create page state.
-                        */}
-                        <Link href={`#`}>View Dashboard</Link>
+                    <Button asChild className="w-full" variant="outline">
+                        <Link href={`/create?id=${t.id}`}>View Dashboard</Link>
                     </Button>
                 </CardFooter>
               </Card>
