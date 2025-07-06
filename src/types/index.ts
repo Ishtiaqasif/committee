@@ -1,4 +1,4 @@
-export type TournamentType = 'round-robin' | 'single elimination';
+export type TournamentType = 'round-robin' | 'single elimination' | 'hybrid';
 
 export type Tournament = {
   tournamentName: string;
@@ -25,7 +25,9 @@ export interface Round {
 }
 
 export interface Fixture {
-  rounds: Round[];
+  rounds?: Round[];
+  groupStage?: { rounds: Round[] };
+  knockoutStage?: { rounds: Round[] };
 }
 
 export interface PointsTableEntry {

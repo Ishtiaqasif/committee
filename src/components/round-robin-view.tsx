@@ -1,14 +1,14 @@
 "use client"
 
 import { useMemo } from 'react';
-import type { Fixture, Team, PointsTableEntry, Match } from '@/types';
+import type { Team, PointsTableEntry, Match, Round } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dices } from 'lucide-react';
 
 interface RoundRobinViewProps {
-  fixture: Fixture;
+  fixture: { rounds: Round[] };
   teams: Team[];
   scores: Record<string, { score1: number | null, score2: number | null }>;
   onScoreChange: (matchIdentifier: string, team1Score: number | null, team2Score: number | null) => void;

@@ -19,7 +19,7 @@ interface TournamentCreatorProps {
 const formSchema = z.object({
   tournamentName: z.string().min(3, "Tournament name must be at least 3 characters long."),
   numberOfTeams: z.coerce.number().min(2, "Must have at least 2 teams.").max(32, "Cannot have more than 32 teams."),
-  tournamentType: z.enum(["round-robin", "single elimination"]),
+  tournamentType: z.enum(["round-robin", "single elimination", "hybrid"]),
 });
 
 export default function TournamentCreator({ onTournamentCreated }: TournamentCreatorProps) {
@@ -89,6 +89,7 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                         <SelectContent>
                           <SelectItem value="round-robin">Round-robin</SelectItem>
                           <SelectItem value="single elimination">Single Elimination</SelectItem>
+                          <SelectItem value="hybrid">Hybrid (Round-robin + Knockout)</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />

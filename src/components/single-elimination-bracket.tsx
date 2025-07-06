@@ -1,12 +1,12 @@
 "use client"
 
-import type { Fixture, Match } from '@/types';
+import type { Match, Round } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useMemo } from 'react';
 
 interface SingleEliminationBracketProps {
-  fixture: Fixture;
+  fixture: { rounds: Round[] };
   scores: Record<string, { score1: number | null, score2: number | null }>;
   onScoreChange: (matchIdentifier: string, team1Score: number | null, team2Score: number | null) => void;
 }

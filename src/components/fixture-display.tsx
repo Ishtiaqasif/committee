@@ -18,7 +18,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 interface FixtureDisplayProps {
   tournament: Tournament;
@@ -49,15 +51,34 @@ export default function FixtureDisplay({ tournament, teams, fixture, setFixture,
             return acc;
         }, {} as Record<string, string>)
 
-        const mappedFixture: Fixture = {
-            rounds: parsedFixture.rounds.map((round: any) => ({
-                ...round,
-                matches: round.matches.map((match: any) => ({
-                    ...match,
-                    team1: { name: teamMap[match.team1] || match.team1, score: null },
-                    team2: { name: teamMap[match.team2] || match.team2, score: null },
-                }))
-            }))
+        const mapMatches = (matches: any[]) => matches.map((match: any) => ({
+            ...match,
+            team1: { name: teamMap[match.team1] || match.team1, score: null },
+            team2: { name: teamMap[match.team2] || match.team2, score: null },
+        }));
+        
+        const mapRounds = (rounds: any[]) => rounds.map((round: any) => ({
+            ...round,
+            matches: mapMatches(round.matches)
+        }));
+
+        let mappedFixture: Fixture;
+
+        if (tournament.tournamentType === 'hybrid') {
+            if (!parsedFixture.groupStage || !parsedFixture.knockoutStage) {
+                throw new Error("Hybrid fixture is missing groupStage or knockoutStage");
+            }
+            mappedFixture = {
+                groupStage: { rounds: mapRounds(parsedFixture.groupStage.rounds) },
+                knockoutStage: { rounds: mapRounds(parsedFixture.knockoutStage.rounds) }
+            };
+        } else {
+            if (!parsedFixture.rounds) {
+                throw new Error("Fixture is missing rounds");
+            }
+            mappedFixture = {
+                rounds: mapRounds(parsedFixture.rounds)
+            };
         }
 
         setFixture(mappedFixture);
@@ -97,12 +118,42 @@ export default function FixtureDisplay({ tournament, teams, fixture, setFixture,
     );
   }
 
+  const renderFixture = () => {
+    if (tournament.tournamentType === 'hybrid' && fixture.groupStage && fixture.knockoutStage) {
+      return (
+        <Tabs defaultValue="group-stage" className="mt-6">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="group-stage">Group Stage</TabsTrigger>
+            <TabsTrigger value="knockout-stage">Knockout Stage</TabsTrigger>
+          </TabsList>
+          <TabsContent value="group-stage" className="mt-6">
+            <RoundRobinView fixture={fixture.groupStage} teams={teams} scores={scores} onScoreChange={handleScoreChange} />
+          </TabsContent>
+          <TabsContent value="knockout-stage" className="mt-6">
+            <SingleEliminationBracket fixture={fixture.knockoutStage} onScoreChange={handleScoreChange} scores={scores} />
+          </TabsContent>
+        </Tabs>
+      );
+    }
+    
+    if (tournament.tournamentType === 'round-robin' && fixture.rounds) {
+      return <RoundRobinView fixture={{rounds: fixture.rounds}} teams={teams} scores={scores} onScoreChange={handleScoreChange} />;
+    }
+
+    if (tournament.tournamentType === 'single elimination' && fixture.rounds) {
+      return <SingleEliminationBracket fixture={{rounds: fixture.rounds}} onScoreChange={handleScoreChange} scores={scores}/>;
+    }
+
+    return <p>Could not display fixture.</p>;
+  }
+
+
   return (
     <div>
         <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
             <div>
                 <h2 className="text-3xl font-bold text-primary">{tournament.tournamentName}</h2>
-                <p className="text-muted-foreground capitalize">{tournament.tournamentType} | {tournament.numberOfTeams} Teams</p>
+                <p className="text-muted-foreground capitalize">{tournament.tournamentType.replace('-', ' ')} | {tournament.numberOfTeams} Teams</p>
             </div>
              <AlertDialog>
                 <AlertDialogTrigger asChild>
@@ -124,12 +175,7 @@ export default function FixtureDisplay({ tournament, teams, fixture, setFixture,
                 </AlertDialogContent>
             </AlertDialog>
         </div>
-
-      {tournament.tournamentType === 'round-robin' ? (
-        <RoundRobinView fixture={fixture} teams={teams} scores={scores} onScoreChange={handleScoreChange} />
-      ) : (
-        <SingleEliminationBracket fixture={fixture} onScoreChange={handleScoreChange} scores={scores}/>
-      )}
+        {renderFixture()}
     </div>
   );
 }
