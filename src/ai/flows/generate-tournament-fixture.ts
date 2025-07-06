@@ -1,5 +1,3 @@
-// This file is machine-generated - edit with caution!
-
 'use server';
 
 /**
@@ -19,7 +17,8 @@ const GenerateTournamentFixtureInputSchema = z.object({
   tournamentType: TournamentType.describe('The type of tournament (round-robin, single elimination, hybrid).'),
   numberOfTeams: z.number().int().min(2).describe('The number of teams participating in the tournament.'),
   tournamentName: z.string().describe('The name of the tournament.'),
-  playHomeAndAway: z.boolean().describe('Whether to generate home and away matches for round-robin stages.'),
+  roundRobinHomeAndAway: z.boolean().describe('Whether to generate home and away matches for round-robin stages.'),
+  knockoutHomeAndAway: z.boolean().describe('Whether to generate home and away matches (two-legged ties) for knockout stages.'),
   teamsAdvancing: z.number().int().optional().describe('Number of teams advancing to the knockout stage in a hybrid tournament.'),
   fixtureGeneration: z.enum(['random', 'predefined']).describe("Whether to generate fixtures with random pairings or a predefined 'seeded' path."),
 });
@@ -49,7 +48,9 @@ const generateTournamentFixturePrompt = ai.definePrompt({
 The tournament name is {{tournamentName}}.
 
 Fixture Generation Method: {{fixtureGeneration}}. If 'random', shuffle team pairings. If 'predefined', use a standard berger table or seeding.
-{{#if playHomeAndAway}}The round-robin portion of the tournament should include home and away matches.{{/if}}
+
+- For round-robin stages (including the group stage of a hybrid tournament), {{#if roundRobinHomeAndAway}}generate home and away matches.{{else}}do not generate home and away matches.{{/if}}
+- For single elimination stages (including the knockout stage of a hybrid tournament), {{#if knockoutHomeAndAway}}generate two-legged ties (home and away). The winner should be determined by aggregate score. If scores are level, use away goals, then penalties if needed. Your JSON output for two-legged knockout matches should represent each leg as a separate match within the round. For example, a quarter-final between Team A and Team B would have two match objects.{{else}}generate single-leg matches.{{/if}}
 
 - For 'round-robin' and 'single elimination' types, the JSON should have a \`rounds\` array at the top level.
 - For 'hybrid' type, the JSON must have a \`groupStage\` and a \`knockoutStage\` key at the top level.

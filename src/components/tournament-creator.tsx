@@ -26,7 +26,8 @@ const formSchema = z.object({
   tournamentType: z.enum(["round-robin", "single elimination", "hybrid"], {
     required_error: "You need to select a tournament type.",
   }),
-  playHomeAndAway: z.boolean().default(false),
+  roundRobinHomeAndAway: z.boolean().default(false),
+  knockoutHomeAndAway: z.boolean().default(false),
   teamsAdvancing: z.coerce.number().optional(),
   fixtureGeneration: z.enum(['random', 'predefined']).default('predefined'),
 }).refine(data => {
@@ -45,7 +46,8 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
     defaultValues: {
       tournamentName: "",
       numberOfTeams: 8,
-      playHomeAndAway: false,
+      roundRobinHomeAndAway: false,
+      knockoutHomeAndAway: false,
       fixtureGeneration: 'predefined',
     },
   });
@@ -157,13 +159,36 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                             {(tournamentType === 'round-robin' || tournamentType === 'hybrid') && (
                             <FormField
                                 control={form.control}
-                                name="playHomeAndAway"
+                                name="roundRobinHomeAndAway"
                                 render={({ field }) => (
                                 <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                                     <div className="space-y-0.5">
-                                    <FormLabel>Home & Away</FormLabel>
+                                    <FormLabel>{tournamentType === 'hybrid' ? 'Group Stage Home & Away' : 'Home & Away'}</FormLabel>
                                     <FormDescription>
                                         Play each opponent twice.
+                                    </FormDescription>
+                                    </div>
+                                    <FormControl>
+                                    <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                    />
+                                    </FormControl>
+                                </FormItem>
+                                )}
+                            />
+                            )}
+
+                            {(tournamentType === 'single elimination' || tournamentType === 'hybrid') && (
+                            <FormField
+                                control={form.control}
+                                name="knockoutHomeAndAway"
+                                render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                    <div className="space-y-0.5">
+                                    <FormLabel>{tournamentType === 'hybrid' ? 'Knockout Stage Home & Away' : 'Home & Away'}</FormLabel>
+                                    <FormDescription>
+                                        Play two-legged (home & away) ties.
                                     </FormDescription>
                                     </div>
                                     <FormControl>
