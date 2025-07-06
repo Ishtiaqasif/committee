@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Clipboard, Check, Users, Shield, Link as LinkIcon, ArrowRight, Loader } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import Image from 'next/image';
 
 interface TeamInvitationProps {
     tournament: Tournament;
@@ -90,7 +91,11 @@ export default function TeamInvitation({ tournament, onTeamsFinalized }: TeamInv
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-1">
                                 {teams.map(team => (
                                     <div key={team.id} className="flex items-center gap-3 p-2 bg-secondary/50 rounded-md">
-                                        <Shield className="h-5 w-5 text-primary/80" />
+                                        {team.logo ? (
+                                            <Image src={team.logo} alt={`${team.name} logo`} width={24} height={24} className="rounded-full" />
+                                        ) : (
+                                            <Shield className="h-5 w-5 text-primary/80" />
+                                        )}
                                         <span className="font-medium">{team.name}</span>
                                     </div>
                                 ))}
