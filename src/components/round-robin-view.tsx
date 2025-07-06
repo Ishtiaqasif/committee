@@ -285,7 +285,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
     if (allRoundsPlayed && !isHybrid && fixture.rounds && !fixture.groups && pointsTable.length > 0) {
         const winnerEntry = pointsTable[0];
         const winnerTeam = teams.find(t => t.name === winnerEntry.teamName);
-        return { name: winnerTeam?.name || '', logo: winnerTeam?.logo };
+        return winnerTeam;
     }
     return null;
   }, [activeRound, maxRound, isHybrid, pointsTable, fixture, teams]);

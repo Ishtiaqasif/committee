@@ -21,7 +21,7 @@ export type Tournament = TournamentCreationData & {
   createdAt: any; 
   fixture?: string;
   scores?: Record<string, Score>;
-  winner?: { name: string, logo?: string };
+  winner?: { name: string; logo?: string; ownerName?: string };
   activeRound?: number;
   hybridStage?: 'group' | 'qualification-summary' | 'knockout';
 };
@@ -33,10 +33,17 @@ export interface Team {
   logo?: string;
 }
 
+export interface MatchTeam {
+  name: string;
+  score: number | null;
+  logo?: string;
+  ownerName?: string;
+}
+
 export interface Match {
   match: number;
-  team1: { name:string; score: number | null; logo?: string; };
-  team2: { name: string; score: number | null; logo?: string; };
+  team1: MatchTeam;
+  team2: MatchTeam;
   winner?: string | null;
   venue?: string;
 }

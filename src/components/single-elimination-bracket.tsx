@@ -1,6 +1,6 @@
 "use client"
 
-import type { Match, Round, Score, Tournament } from '@/types';
+import type { Match, Round, Score, Tournament, MatchTeam } from '@/types';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { useMemo, useState, useEffect } from 'react';
 import { MapPin, Lock, ArrowRight, Shield, ArrowLeft, Trophy } from 'lucide-react';
@@ -125,7 +125,7 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTou
             currentRound.matches.forEach((match: Match) => {
                 const matchId = `r${currentRound.round}m${match.match}`;
                 const matchScores = scores[matchId];
-                let winner: { name: string, logo?: string } | null = null;
+                let winner: MatchTeam | null = null;
                 
                 if (match.team1.name.toLowerCase() === 'bye') winner = match.team2;
                 if (match.team2.name.toLowerCase() === 'bye') winner = match.team1;

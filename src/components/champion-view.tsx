@@ -2,10 +2,10 @@
 
 import { Card, CardContent } from '@/components/ui/card';
 import Image from 'next/image';
-import { Shield, Trophy } from 'lucide-react';
+import { Shield, Trophy, User } from 'lucide-react';
 
 interface ChampionViewProps {
-  winner: { name: string, logo?: string } | null;
+  winner: { name: string, logo?: string, ownerName?: string } | null;
 }
 
 export default function ChampionView({ winner }: ChampionViewProps) {
@@ -24,9 +24,17 @@ export default function ChampionView({ winner }: ChampionViewProps) {
               <Shield className="w-12 h-12 text-muted-foreground" />
             </div>
           }
-          <span className="text-4xl font-bold text-card-foreground mt-2">
-            {winner.name}
-          </span>
+          <div className="flex flex-col items-center text-center">
+            <span className="text-4xl font-bold text-card-foreground mt-2">
+              {winner.name}
+            </span>
+            {winner.ownerName && (
+              <span className="text-sm text-muted-foreground flex items-center gap-1.5 mt-2">
+                  <User className="h-4 w-4" />
+                  {winner.ownerName}
+              </span>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>

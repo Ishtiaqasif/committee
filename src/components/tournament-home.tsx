@@ -96,14 +96,14 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
         }, {} as Record<string, Team>)
 
         const mapMatches = (matches: any[]) => matches.map((match: any, matchIndex: number) => {
-            const team1Info = teamMap[match.team1] || { name: match.team1, logo: undefined };
-            const team2Info = teamMap[match.team2] || { name: match.team2, logo: undefined };
+            const team1Info = teamMap[match.team1] || { name: match.team1, logo: undefined, ownerName: 'TBD' };
+            const team2Info = teamMap[match.team2] || { name: match.team2, logo: undefined, ownerName: 'TBD' };
 
             return {
                 ...match,
                 match: match.match ?? (matchIndex + 1),
-                team1: { name: team1Info.name, score: null, logo: team1Info.logo },
-                team2: { name: team2Info.name, score: null, logo: team2Info.logo },
+                team1: { name: team1Info.name, score: null, logo: team1Info.logo, ownerName: team1Info.ownerName },
+                team2: { name: team2Info.name, score: null, logo: team2Info.logo, ownerName: team2Info.ownerName },
                 venue: match.venue,
             }
         });
@@ -246,7 +246,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
         if (isPlaceholder1) {
           const team1 = getTeamFromPlaceholder(match.team1.name);
           if (team1) {
-            match.team1 = { name: team1.name, logo: team1.logo, score: null };
+            match.team1 = { name: team1.name, logo: team1.logo, score: null, ownerName: team1.ownerName };
           } else {
             allTeamsFound = false;
             console.error(`Could not find qualifying team for placeholder: ${match.team1.name}`);
@@ -257,7 +257,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
         if (isPlaceholder2) {
           const team2 = getTeamFromPlaceholder(match.team2.name);
           if (team2) {
-            match.team2 = { name: team2.name, logo: team2.logo, score: null };
+            match.team2 = { name: team2.name, logo: team2.logo, score: null, ownerName: team2.ownerName };
           } else {
             allTeamsFound = false;
             console.error(`Could not find qualifying team for placeholder: ${match.team2.name}`);

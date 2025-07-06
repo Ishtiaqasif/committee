@@ -1,6 +1,6 @@
 "use client"
 
-import type { Match, Round, Score, Tournament } from '@/types';
+import type { Match, Round, Score, MatchTeam } from '@/types';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { useMemo } from 'react';
 import { MapPin, Shield, Trophy } from 'lucide-react';
@@ -72,7 +72,7 @@ export default function KnockoutBracketView({ fixture, scores }: KnockoutBracket
             currentRound.matches.forEach((match: Match) => {
                 const matchId = `r${currentRound.round}m${match.match}`;
                 const matchScores = scores[matchId];
-                let winner: { name: string, logo?: string } | null = null;
+                let winner: MatchTeam | null = null;
                 
                 if (match.team1.name.toLowerCase() === 'bye') winner = match.team2;
                 if (match.team2.name.toLowerCase() === 'bye') winner = match.team1;
