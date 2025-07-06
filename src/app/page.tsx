@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import type { Tournament, Team, Fixture } from "@/types";
+import type { Tournament, Team } from "@/types";
 import TournamentCreator from "@/components/tournament-creator";
 import TeamRegistration from "@/components/team-registration";
-import FixtureDisplay from "@/components/fixture-display";
+import TournamentHome from "@/components/tournament-home";
 import { Card, CardContent } from "@/components/ui/card";
 import { Flame } from "lucide-react";
 
@@ -14,7 +14,6 @@ export default function Home() {
   const [appState, setAppState] = useState<AppState>("configuring");
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
-  const [fixture, setFixture] = useState<Fixture | null>(null);
 
   const handleTournamentCreated = (data: Tournament) => {
     setTournament(data);
@@ -29,7 +28,6 @@ export default function Home() {
   const handleReset = () => {
     setTournament(null);
     setTeams([]);
-    setFixture(null);
     setAppState("configuring");
   };
 
@@ -48,11 +46,9 @@ export default function Home() {
       case "fixture":
         if (!tournament || !teams.length) return null;
         return (
-          <FixtureDisplay
+          <TournamentHome
             tournament={tournament}
             teams={teams}
-            fixture={fixture}
-            setFixture={setFixture}
             onReset={handleReset}
           />
         );
@@ -62,24 +58,30 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-background p-4 sm:p-6 md:p-8 flex flex-col items-center">
-      <div className="w-full max-w-6xl">
-        <header className="mb-8 text-center">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-primary font-headline flex items-center justify-center gap-3">
-            <Flame className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 text-accent" />
-            Gridiron Genesis
-          </h1>
-          <p className="mt-2 text-lg text-muted-foreground">
-            Your Ultimate Tournament Companion
-          </p>
-        </header>
+    <main className="min-h-screen bg-background">
+      {appState === 'fixture' ? (
+        renderContent()
+      ) : (
+         <div className="p-4 sm:p-6 md:p-8 flex flex-col items-center">
+            <div className="w-full max-w-6xl">
+                <header className="mb-8 text-center">
+                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-primary font-headline flex items-center justify-center gap-3">
+                        <Flame className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 text-accent" />
+                        Gridiron Genesis
+                    </h1>
+                    <p className="mt-2 text-lg text-muted-foreground">
+                        Your Ultimate Tournament Companion
+                    </p>
+                </header>
 
-        <Card className="w-full shadow-lg">
-          <CardContent className="p-4 sm:p-6 md:p-8">
-            {renderContent()}
-          </CardContent>
-        </Card>
-      </div>
+                <Card className="w-full shadow-lg">
+                    <CardContent className="p-4 sm:p-6 md:p-8">
+                        {renderContent()}
+                    </CardContent>
+                </Card>
+            </div>
+        </div>
+      )}
     </main>
   );
 }
