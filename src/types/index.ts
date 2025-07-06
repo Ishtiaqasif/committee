@@ -4,6 +4,8 @@ export type Tournament = {
   tournamentName: string;
   tournamentType: TournamentType;
   numberOfTeams: number;
+  isEsports: boolean;
+  venues?: string;
   roundRobinGrouping?: 'all-play-all' | 'grouped';
   teamsPerGroup?: number;
   teamsAdvancing?: number;
@@ -22,6 +24,7 @@ export interface Match {
   team1: { name: string; score: number | null };
   team2: { name: string; score: number | null };
   winner?: string | null;
+  venue?: string;
 }
 
 export interface Round {

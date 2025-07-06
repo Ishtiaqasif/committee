@@ -5,7 +5,7 @@ import type { Team, PointsTableEntry, Match, Round, Group } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dices } from 'lucide-react';
+import { Dices, MapPin } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 
@@ -73,28 +73,36 @@ const GroupedRoundRobinView = ({ group, scores, onScoreChange }: { group: Group,
                 {round.matches.map((match) => {
                   const matchId = `r${round.round}m${match.match}`;
                   return (
-                  <div key={matchId} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
-                     <span className="w-1/3 text-right font-medium">{match.team1.name}</span>
-                      <div className="flex items-center gap-2 mx-4">
-                          <Input
-                            type="number"
-                            className="w-16 text-center"
-                            placeholder="-"
-                            min="0"
-                            value={scores[matchId]?.score1 ?? ''}
-                            onChange={(e) => onScoreChange(matchId, e.target.value === '' ? null : Number(e.target.value), scores[matchId]?.score2 ?? null)}
-                           />
-                          <span>vs</span>
-                          <Input
-                            type="number"
-                            className="w-16 text-center"
-                            placeholder="-"
-                             min="0"
-                            value={scores[matchId]?.score2 ?? ''}
-                            onChange={(e) => onScoreChange(matchId, scores[matchId]?.score1 ?? null, e.target.value === '' ? null : Number(e.target.value))}
-                          />
-                      </div>
-                      <span className="w-1/3 text-left font-medium">{match.team2.name}</span>
+                  <div key={matchId} className="p-3 rounded-lg bg-secondary/50">
+                    <div className="flex items-center justify-between">
+                        <span className="w-1/3 text-right font-medium">{match.team1.name}</span>
+                        <div className="flex items-center gap-2 mx-4">
+                            <Input
+                                type="number"
+                                className="w-16 text-center"
+                                placeholder="-"
+                                min="0"
+                                value={scores[matchId]?.score1 ?? ''}
+                                onChange={(e) => onScoreChange(matchId, e.target.value === '' ? null : Number(e.target.value), scores[matchId]?.score2 ?? null)}
+                            />
+                            <span>vs</span>
+                            <Input
+                                type="number"
+                                className="w-16 text-center"
+                                placeholder="-"
+                                min="0"
+                                value={scores[matchId]?.score2 ?? ''}
+                                onChange={(e) => onScoreChange(matchId, scores[matchId]?.score1 ?? null, e.target.value === '' ? null : Number(e.target.value))}
+                            />
+                        </div>
+                        <span className="w-1/3 text-left font-medium">{match.team2.name}</span>
+                    </div>
+                     {match.venue && (
+                        <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground mt-2">
+                            <MapPin className="h-3 w-3" />
+                            <span>{match.venue}</span>
+                        </div>
+                    )}
                   </div>
                 )})}
               </div>
@@ -218,28 +226,36 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreChange }
                 {round.matches.map((match) => {
                   const matchId = `r${round.round}m${match.match}`;
                   return (
-                  <div key={matchId} className="flex items-center justify-between p-3 rounded-lg bg-secondary/50">
-                     <span className="w-1/3 text-right font-medium">{match.team1.name}</span>
-                      <div className="flex items-center gap-2 mx-4">
-                          <Input
-                            type="number"
-                            className="w-16 text-center"
-                            placeholder="-"
-                            min="0"
-                            value={scores[matchId]?.score1 ?? ''}
-                            onChange={(e) => onScoreChange(matchId, e.target.value === '' ? null : Number(e.target.value), scores[matchId]?.score2 ?? null)}
-                           />
-                          <span>vs</span>
-                          <Input
-                            type="number"
-                            className="w-16 text-center"
-                            placeholder="-"
-                             min="0"
-                            value={scores[matchId]?.score2 ?? ''}
-                            onChange={(e) => onScoreChange(matchId, scores[matchId]?.score1 ?? null, e.target.value === '' ? null : Number(e.target.value))}
-                          />
-                      </div>
-                      <span className="w-1/3 text-left font-medium">{match.team2.name}</span>
+                  <div key={matchId} className="p-3 rounded-lg bg-secondary/50">
+                    <div className="flex items-center justify-between">
+                        <span className="w-1/3 text-right font-medium">{match.team1.name}</span>
+                        <div className="flex items-center gap-2 mx-4">
+                            <Input
+                                type="number"
+                                className="w-16 text-center"
+                                placeholder="-"
+                                min="0"
+                                value={scores[matchId]?.score1 ?? ''}
+                                onChange={(e) => onScoreChange(matchId, e.target.value === '' ? null : Number(e.target.value), scores[matchId]?.score2 ?? null)}
+                            />
+                            <span>vs</span>
+                            <Input
+                                type="number"
+                                className="w-16 text-center"
+                                placeholder="-"
+                                min="0"
+                                value={scores[matchId]?.score2 ?? ''}
+                                onChange={(e) => onScoreChange(matchId, scores[matchId]?.score1 ?? null, e.target.value === '' ? null : Number(e.target.value))}
+                            />
+                        </div>
+                        <span className="w-1/3 text-left font-medium">{match.team2.name}</span>
+                    </div>
+                     {match.venue && (
+                        <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground mt-2">
+                            <MapPin className="h-3 w-3" />
+                            <span>{match.venue}</span>
+                        </div>
+                    )}
                   </div>
                 )})}
               </div>

@@ -10,11 +10,10 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { Trophy, Settings } from "lucide-react";
+import { Trophy, Settings, MapPin, Gamepad2 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-
+import { Textarea } from "@/components/ui/textarea";
 
 interface TournamentCreatorProps {
   onTournamentCreated: (data: Tournament) => void;
@@ -26,6 +25,8 @@ const formSchema = z.object({
   tournamentType: z.enum(["round-robin", "single elimination", "hybrid"], {
     required_error: "You need to select a tournament type.",
   }),
+  isEsports: z.boolean().default(false),
+  venues: z.string().optional(),
   roundRobinGrouping: z.enum(['all-play-all', 'grouped']).default('all-play-all'),
   teamsPerGroup: z.coerce.number().optional(),
   roundRobinHomeAndAway: z.boolean().default(false),
@@ -35,7 +36,6 @@ const formSchema = z.object({
 }).refine(data => {
     if (data.tournamentType !== 'hybrid') return true;
     if (data.teamsAdvancing === undefined || data.teamsAdvancing < 2) return false;
-    // is power of two and less than total teams
     return data.teamsAdvancing < data.numberOfTeams && (data.teamsAdvancing & (data.teamsAdvancing - 1)) === 0;
 }, {
     message: "Must be a power of two and less than total teams.",
@@ -56,6 +56,8 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
     defaultValues: {
       tournamentName: "",
       numberOfTeams: 8,
+      isEsports: false,
+      venues: "",
       roundRobinHomeAndAway: false,
       knockoutHomeAndAway: false,
       fixtureGeneration: 'predefined',
@@ -66,10 +68,10 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
   const numberOfTeams = form.watch("numberOfTeams");
   const tournamentType = form.watch("tournamentType");
   const roundRobinGrouping = form.watch("roundRobinGrouping");
+  const isEsports = form.watch("isEsports");
 
    useEffect(() => {
     if (tournamentType === 'hybrid') {
-      // Set a sensible default for teams advancing
       const defaultAdvancing = Math.pow(2, Math.floor(Math.log2(numberOfTeams / 2)));
       form.setValue('teamsAdvancing', defaultAdvancing >= 2 ? defaultAdvancing : 2, { shouldValidate: true });
     } else {
@@ -83,6 +85,12 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
         form.setValue('teamsPerGroup', undefined, { shouldValidate: true });
     }
   }, [roundRobinGrouping, form]);
+
+  useEffect(() => {
+    if (isEsports) {
+        form.setValue('venues', '', { shouldValidate: true });
+    }
+  }, [isEsports, form]);
 
 
   const isPowerOfTwo = (n: number) => {
@@ -114,7 +122,7 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
         </CardHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <FormField
                 control={form.control}
                 name="tournamentName"
@@ -167,14 +175,50 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                   )}
                 />
               </div>
-                <Accordion type="single" collapsible className="w-full pt-4">
-                    <AccordionItem value="advanced-options">
-                        <AccordionTrigger className="text-base">
-                            <div className="flex items-center gap-2">
-                                <Settings className="h-5 w-5" /> Advanced Options
-                            </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="space-y-8 pt-6">
+
+               <div className="space-y-8 pt-4 border-t mt-6">
+                     <div className="flex items-center gap-2 text-lg font-semibold">
+                        <Settings className="h-5 w-5" /> Advanced Options
+                    </div>
+                    <div className="space-y-6">
+                            <FormField
+                                control={form.control}
+                                name="isEsports"
+                                render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                    <div className="space-y-0.5">
+                                        <FormLabel className="flex items-center gap-2"><Gamepad2 className="h-4 w-4"/> Esports Tournament</FormLabel>
+                                        <FormDescription>
+                                            If enabled, venues will be disabled.
+                                        </FormDescription>
+                                    </div>
+                                    <FormControl>
+                                    <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                    />
+                                    </FormControl>
+                                </FormItem>
+                                )}
+                            />
+
+                            <FormField
+                                control={form.control}
+                                name="venues"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel className="flex items-center gap-2"><MapPin className="h-4 w-4"/> Venues</FormLabel>
+                                    <FormControl>
+                                        <Textarea placeholder="e.g., Main Stadium, Arena 1, Court 2" {...field} disabled={isEsports} />
+                                    </FormControl>
+                                    <FormDescription>
+                                        Enter a comma-separated list of venues. Disabled for esports.
+                                    </FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+
                             {(tournamentType === 'round-robin' || tournamentType === 'hybrid') && (
                                 <div className="space-y-6">
                                     <FormField
@@ -301,7 +345,7 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                                 control={form.control}
                                 name="fixtureGeneration"
                                 render={({ field }) => (
-                                <FormItem className="space-y-3">
+                                <FormItem className="space-y-3 rounded-lg border p-3 shadow-sm">
                                     <FormLabel>Fixture Generation</FormLabel>
                                     <FormControl>
                                     <RadioGroup
@@ -331,9 +375,8 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                                 </FormItem>
                                 )}
                             />
-                        </AccordionContent>
-                    </AccordionItem>
-                </Accordion>
+                    </div>
+                </div>
             </CardContent>
             <CardFooter className="flex justify-center">
               <Button type="submit" size="lg">Create Tournament</Button>

@@ -17,6 +17,8 @@ const GenerateTournamentFixtureInputSchema = z.object({
   tournamentType: TournamentType.describe('The type of tournament (round-robin, single elimination, hybrid).'),
   numberOfTeams: z.number().int().min(3).describe('The number of teams participating in the tournament.'),
   tournamentName: z.string().describe('The name of the tournament.'),
+  isEsports: z.boolean().describe('Whether this is an esports tournament (played online).'),
+  venues: z.string().optional().describe('A comma-separated list of venues for matches.'),
   roundRobinGrouping: z.enum(['all-play-all', 'grouped']).optional().describe("For round-robin stages, whether all teams play each other or are split into groups."),
   teamsPerGroup: z.number().int().optional().describe("If using grouped round-robin, the number of teams per group."),
   roundRobinHomeAndAway: z.boolean().describe('Whether to generate home and away matches for round-robin stages.'),
@@ -48,6 +50,14 @@ const generateTournamentFixturePrompt = ai.definePrompt({
   prompt: `You are a tournament organizer. Generate a tournament fixture in JSON format for a
 {{tournamentType}} tournament with {{numberOfTeams}} teams.
 The tournament name is {{tournamentName}}.
+
+This is an {{#if isEsports}}esports (online) tournament.{{else}}in-person tournament.{{/if}}
+
+{{#if venues}}
+The available venues are: {{venues}}. Assign one of these venues to each match by adding a "venue" field to each match object. Cycle through the venues if there are more matches than venues. Do not assign venues for 'bye' matches.
+{{else}}
+Each match object in the JSON output must include a "venue" field. If it's an esports tournament, set the venue to "Online". If it's an in-person tournament without specified venues, set it to "TBD".
+{{/if}}
 
 Fixture Generation Method: {{fixtureGeneration}}. If 'random', shuffle team pairings. If 'predefined', use a standard berger table or seeding.
 

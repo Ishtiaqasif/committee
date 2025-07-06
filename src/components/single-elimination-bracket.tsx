@@ -4,6 +4,7 @@ import type { Match, Round } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useMemo } from 'react';
+import { MapPin } from 'lucide-react';
 
 interface SingleEliminationBracketProps {
   fixture: { rounds: Round[] };
@@ -57,6 +58,12 @@ const MatchComponent = ({ match, round, onScoreChange, currentScores }: { match:
           />
         </div>
       </CardContent>
+      {match.venue && (
+        <div className="flex items-center justify-center gap-1.5 p-1.5 text-xs text-muted-foreground border-t">
+            <MapPin className="h-3 w-3" />
+            <span>{match.venue}</span>
+        </div>
+      )}
     </Card>
   )
 }

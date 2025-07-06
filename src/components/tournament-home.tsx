@@ -43,6 +43,8 @@ export default function TournamentHome({ tournament, teams, onReset }: Tournamen
           tournamentType: tournament.tournamentType,
           numberOfTeams: tournament.numberOfTeams,
           tournamentName: tournament.tournamentName,
+          isEsports: tournament.isEsports,
+          venues: tournament.venues,
           roundRobinGrouping: tournament.roundRobinGrouping,
           teamsPerGroup: tournament.teamsPerGroup,
           roundRobinHomeAndAway: tournament.roundRobinHomeAndAway,
@@ -63,6 +65,7 @@ export default function TournamentHome({ tournament, teams, onReset }: Tournamen
             match: match.match ?? (matchIndex + 1),
             team1: { name: teamMap[match.team1] || match.team1, score: null },
             team2: { name: teamMap[match.team2] || match.team2, score: null },
+            venue: match.venue,
         }));
         
         const mapRounds = (rounds: any[]) => rounds.map((round: any, roundIndex: number) => ({
