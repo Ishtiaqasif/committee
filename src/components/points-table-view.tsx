@@ -76,7 +76,7 @@ export const calculatePointsTable = (teams: Team[], rounds: TournamentRound[], s
 
 
 export default function PointsTableView({ fixture, teams, scores, tournamentType }: PointsTableViewProps) {
-  const [viewMode, setViewMode] = useState<'short' | 'full'>('short');
+  const [viewMode, setViewMode] = useState<'short' | 'full'>('full');
   
   const tables = useMemo(() => {
     let fixtureForTable: { rounds?: TournamentRound[]; groups?: Group[] } | undefined = fixture;
@@ -109,7 +109,7 @@ export default function PointsTableView({ fixture, teams, scores, tournamentType
         <div>
             <h2 className="text-3xl font-bold text-primary">Points Table</h2>
             <p className="text-muted-foreground mt-4">
-                Points tables are only available for round-robin and hybrid tournaments.
+                Points tables are now available for round-robin and hybrid tournaments.
             </p>
         </div>
     );
@@ -128,10 +128,10 @@ export default function PointsTableView({ fixture, teams, scores, tournamentType
                     checked={viewMode === 'full'}
                     onCheckedChange={(checked) => setViewMode(checked ? 'full' : 'short')}
                 />
-                <Label htmlFor="view-mode-switch">Show Full Table</Label>
+                <Label htmlFor="view-mode-switch">Full Table</Label>
             </div>
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="grid grid-cols-1 gap-8">
             {tables.map(t => (
                 <PointsTable key={t.title} title={t.title} table={t.table} viewMode={viewMode}/>
             ))}
