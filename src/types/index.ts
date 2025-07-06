@@ -57,6 +57,7 @@ export interface PointsTableEntry {
   goalDifference: number;
   points: number;
   logo?: string;
+  qualified?: boolean;
 }
 
 export interface Score {

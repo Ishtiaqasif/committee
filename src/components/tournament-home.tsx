@@ -23,6 +23,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import QualificationSummaryView from "./qualification-summary-view";
 
 interface TournamentHomeProps {
   tournament: Tournament;
@@ -36,7 +37,7 @@ export default function TournamentHome({ tournament, teams, onReset }: Tournamen
   const { toast } = useToast();
   const [scores, setScores] = useState<Record<string, Score>>({});
   const [activeView, setActiveView] = useState('fixtures');
-  const [hybridStage, setHybridStage] = useState<'group' | 'knockout'>('group');
+  const [hybridStage, setHybridStage] = useState<'group' | 'qualification-summary' | 'knockout'>('group');
 
   const handleGenerateFixture = () => {
     startTransition(async () => {
@@ -139,6 +140,10 @@ export default function TournamentHome({ tournament, teams, onReset }: Tournamen
     }))
   }
 
+  const handleGroupStageComplete = () => {
+    setHybridStage('qualification-summary');
+  };
+
   const handleProceedToKnockout = () => {
     if (!fixture || !fixture.groupStage || !fixture.knockoutStage) return;
 
@@ -196,7 +201,10 @@ export default function TournamentHome({ tournament, teams, onReset }: Tournamen
     if (newKnockoutStage.rounds && newKnockoutStage.rounds.length > 0) {
       const firstRound = newKnockoutStage.rounds[0];
       firstRound.matches.forEach((match: Match) => {
-        if (match.team1.name.toLowerCase() !== 'bye' && !teams.some(t => t.name === match.team1.name)) {
+        // Only try to replace placeholders, not actual team names that might already be there
+        // or winner placeholders from previous knockout rounds
+        const isPlaceholder = /^(Winner|Runner-up|\d+(st|nd|rd|th) Place) Group/i.test(match.team1.name)
+        if (isPlaceholder) {
           const team1 = getTeamFromPlaceholder(match.team1.name);
           if (team1) {
             match.team1 = { name: team1.name, logo: team1.logo, score: null };
@@ -205,7 +213,9 @@ export default function TournamentHome({ tournament, teams, onReset }: Tournamen
             console.error(`Could not find qualifying team for placeholder: ${match.team1.name}`);
           }
         }
-        if (match.team2.name.toLowerCase() !== 'bye' && !teams.some(t => t.name === match.team2.name)) {
+        
+        const isPlaceholder2 = /^(Winner|Runner-up|\d+(st|nd|rd|th) Place) Group/i.test(match.team2.name)
+        if (isPlaceholder2) {
           const team2 = getTeamFromPlaceholder(match.team2.name);
           if (team2) {
             match.team2 = { name: team2.name, logo: team2.logo, score: null };
@@ -251,10 +261,20 @@ export default function TournamentHome({ tournament, teams, onReset }: Tournamen
               scores={scores} 
               onScoreUpdate={handleScoreUpdate}
               isHybrid={true}
-              onProceedToKnockout={handleProceedToKnockout}
+              onProceedToKnockout={handleGroupStageComplete}
             />
           </div>
         )
+      } else if (hybridStage === 'qualification-summary') {
+         return (
+          <QualificationSummaryView
+            groupStage={fixture.groupStage}
+            teams={teams}
+            scores={scores}
+            tournament={tournament}
+            onProceed={handleProceedToKnockout}
+          />
+        );
       } else { // 'knockout' stage
         return (
           <div className="mt-4">

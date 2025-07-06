@@ -13,7 +13,7 @@ interface PointsTableViewProps {
   tournamentType: string;
 }
 
-export const calculatePointsTable = (teams: Team[], rounds: TournamentRound[], scores: Record<string, Score>, groupName?: string): PointsTableEntry[] => {
+export const calculatePointsTable = (teams: Team[], rounds: TournamentRound[], scores: Record<string, Score>, groupName?: string, teamsToQualify?: number): PointsTableEntry[] => {
     const table: Record<string, PointsTableEntry> = teams.reduce((acc, team) => {
       acc[team.name] = { teamName: team.name, played: 0, won: 0, lost: 0, drawn: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0, logo: team.logo };
       return acc;
@@ -62,7 +62,16 @@ export const calculatePointsTable = (teams: Team[], rounds: TournamentRound[], s
       entry.goalDifference = entry.goalsFor - entry.goalsAgainst;
     });
 
-    return Object.values(table).sort((a, b) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor);
+    const sortedTable = Object.values(table).sort((a, b) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor);
+
+    if (teamsToQualify && teamsToQualify > 0) {
+        return sortedTable.map((entry, index) => ({
+            ...entry,
+            qualified: index < teamsToQualify
+        }));
+    }
+
+    return sortedTable;
 }
 
 
