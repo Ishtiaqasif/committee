@@ -8,6 +8,7 @@ import { useToast } from "@/hooks/use-toast";
 import RoundRobinView from "@/components/round-robin-view";
 import SingleEliminationBracket from "@/components/single-elimination-bracket";
 import TeamsList from "@/components/teams-list";
+import PointsTableView from "@/components/points-table-view";
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarFooter, SidebarInset, SidebarMenu, SidebarMenuItem, SidebarMenuButton } from "@/components/ui/sidebar";
 import { Loader, Trophy, RefreshCw, Gamepad2, ListOrdered, Users } from "lucide-react";
 import {
@@ -189,6 +190,8 @@ export default function TournamentHome({ tournament, teams, onReset }: Tournamen
         );
       case 'teams':
         return <TeamsList teams={teams} />;
+      case 'points-table':
+        return <PointsTableView fixture={fixture} teams={teams} scores={scores} tournamentType={tournament.tournamentType}/>;
       default:
         return null;
     }
@@ -213,6 +216,12 @@ export default function TournamentHome({ tournament, teams, onReset }: Tournamen
                         <SidebarMenuButton onClick={() => setActiveView('fixtures')} isActive={activeView === 'fixtures'}>
                             <Gamepad2/>
                             Fixtures & Scores
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                     <SidebarMenuItem>
+                        <SidebarMenuButton onClick={() => setActiveView('points-table')} isActive={activeView === 'points-table'}>
+                            <ListOrdered/>
+                            Points Table
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>

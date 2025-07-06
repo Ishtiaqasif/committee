@@ -28,7 +28,8 @@ const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate }: { 
 
     group.rounds.forEach(round => {
       round.matches.forEach(match => {
-        const matchScores = scores[`r${round.round}m${match.match}`];
+        const matchId = `g${group.groupName}r${round.round}m${match.match}`;
+        const matchScores = scores[matchId];
         if (matchScores?.score1 !== null && matchScores?.score2 !== null && matchScores?.score1 !== undefined && matchScores?.score2 !== undefined) {
           const team1Name = match.team1.name;
           const team2Name = match.team2.name;
@@ -74,7 +75,7 @@ const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate }: { 
             <CardContent>
               <div className="space-y-4">
                 {round.matches.map((match) => {
-                  const matchId = `r${round.round}m${match.match}`;
+                  const matchId = `g${group.groupName}r${round.round}m${match.match}`;
                   const score = scores[matchId];
                   return (
                   <div key={matchId} className="p-3 rounded-lg bg-secondary/50">
@@ -160,44 +161,72 @@ const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate }: { 
 export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate }: RoundRobinViewProps) {
   const [activeRound, setActiveRound] = useState(1);
 
-  const { isRoundComplete, hasNextRound, allFixtureRounds } = useMemo(() => {
-    const allRounds = fixture.groups ? fixture.groups.flatMap(g => g.rounds) : fixture.rounds || [];
-    if(allRounds.length === 0) return { isRoundComplete: false, hasNextRound: false, allFixtureRounds: [] };
+  const { isRoundComplete, hasNextRound } = useMemo(() => {
+    if (!fixture.rounds && !fixture.groups) return { isRoundComplete: false, hasNextRound: false };
 
-    const currentRoundMatches = allRounds
-        .filter(r => r.round === activeRound)
-        .flatMap(r => r.matches);
+    let matchesInActiveRound: { match: Match, id: string }[] = [];
+    let maxRound = 0;
 
-    if (currentRoundMatches.length === 0) {
-      const maxR = Math.max(0, ...allRounds.map(r => r.round));
-      return { isRoundComplete: true, hasNextRound: activeRound < maxR, allFixtureRounds: allRounds };
+    if (fixture.groups) {
+        fixture.groups.forEach(group => {
+            group.rounds.forEach(round => {
+                if (round.round > maxRound) maxRound = round.round;
+                if (round.round === activeRound) {
+                    round.matches.forEach(match => {
+                        if (match.team1.name.toLowerCase() !== 'bye' && match.team2.name.toLowerCase() !== 'bye') {
+                           matchesInActiveRound.push({ match, id: `g${group.groupName}r${round.round}m${match.match}` });
+                        }
+                    });
+                }
+            });
+        });
+    } else if (fixture.rounds) {
+        fixture.rounds.forEach(round => {
+            if (round.round > maxRound) maxRound = round.round;
+            if (round.round === activeRound) {
+                round.matches.forEach(match => {
+                    if (match.team1.name.toLowerCase() !== 'bye' && match.team2.name.toLowerCase() !== 'bye') {
+                        matchesInActiveRound.push({ match, id: `r${round.round}m${match.match}` });
+                    }
+                });
+            }
+        });
+    }
+    
+    if (matchesInActiveRound.length === 0) {
+       return { isRoundComplete: true, hasNextRound: activeRound < maxRound };
     }
 
-    const complete = currentRoundMatches.every(match => {
-        const roundObject = allRounds.find(r => r.matches.some(m => m.match === match.match && r.round === activeRound));
-        if(!roundObject) return false;
-        const matchId = `r${roundObject.round}m${match.match}`;
-        const score = scores[matchId];
+    const complete = matchesInActiveRound.every(m => {
+        const score = scores[m.id];
         return score?.score1 !== null && score?.score2 !== null && score?.score1 !== undefined && score?.score2 !== undefined;
     });
 
-    const maxRound = Math.max(...allRounds.map(r => r.round));
-    return { isRoundComplete: complete, hasNextRound: activeRound < maxRound, allFixtureRounds: allRounds };
+    return { isRoundComplete: complete, hasNextRound: activeRound < maxRound };
+
   }, [activeRound, fixture, scores]);
 
-  const handleProceed = () => {
-    const matchesToLock = allFixtureRounds
-        .filter(r => r.round === activeRound)
-        .flatMap(r => r.matches);
-    
-    matchesToLock.forEach(match => {
-        const roundObject = allFixtureRounds.find(r => r.matches.some(m => m.match === match.match && r.round === activeRound));
-        if (!roundObject) return;
-        const matchId = `r${roundObject.round}m${match.match}`;
-        const score = scores[matchId] || { score1: null, score2: null, locked: false };
-        onScoreUpdate(matchId, { ...score, locked: true });
-    });
 
+  const handleProceed = () => {
+    if (fixture.groups) {
+        fixture.groups.forEach(group => {
+            group.rounds.filter(r => r.round === activeRound).forEach(round => {
+                round.matches.forEach(match => {
+                    const matchId = `g${group.groupName}r${round.round}m${match.match}`;
+                    const score = scores[matchId] || { score1: null, score2: null, locked: false };
+                    onScoreUpdate(matchId, { ...score, locked: true });
+                });
+            });
+        });
+    } else if (fixture.rounds) {
+        fixture.rounds.filter(r => r.round === activeRound).forEach(round => {
+            round.matches.forEach(match => {
+                const matchId = `r${round.round}m${match.match}`;
+                const score = scores[matchId] || { score1: null, score2: null, locked: false };
+                onScoreUpdate(matchId, { ...score, locked: true });
+            });
+        });
+    }
     setActiveRound(prev => prev + 1);
   };
   
