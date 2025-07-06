@@ -8,7 +8,6 @@ import { Button } from '@/components/ui/button';
 import ScoreEntryDialog from './score-entry-dialog';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
-import ChampionView from './champion-view';
 
 interface SingleEliminationBracketProps {
   fixture: { rounds: Round[] };
@@ -169,10 +168,6 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTou
     }
     return null;
   }, [isRoundComplete, hasNextRound, scores, processedFixture.rounds]);
-
-  if (finalWinner && tournament.winner) {
-    return <ChampionView winner={finalWinner} />;
-  }
 
   const getRoundName = (round: Round) => {
     const numTies = knockoutHomeAndAway ? round.matches.length / 2 : round.matches.length;

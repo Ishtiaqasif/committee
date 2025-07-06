@@ -11,7 +11,6 @@ import Image from 'next/image';
 import PointsTable from './points-table';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import ChampionView from './champion-view';
 
 interface RoundRobinViewProps {
   fixture: { rounds?: Round[], groups?: Group[] };
@@ -343,10 +342,6 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
         <Label htmlFor="view-mode-switch-rr">Show Full Table</Label>
     </div>
   );
-
-  if (finalWinner && onTournamentUpdate.winner) {
-      return <ChampionView winner={finalWinner} />;
-  }
 
   if (fixture.groups && fixture.groups.length > 0) {
     return (

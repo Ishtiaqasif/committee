@@ -51,6 +51,8 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
         setScores(tournament.scores || {});
          if (!tournament.winner) {
             setActiveView('overview');
+        } else {
+            setActiveView('overview');
         }
       } catch (error) {
         console.error("Failed to parse fixture:", error);
@@ -347,10 +349,6 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
   }
 
   const renderContent = () => {
-    if (tournament.winner) {
-        return <ChampionView winner={tournament.winner} />;
-    }
-
     switch (activeView) {
       case 'overview':
         return <TournamentOverview 
@@ -408,8 +406,8 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
                         <SidebarMenuButton 
                             onClick={() => setActiveView('fixtures')} 
                             isActive={activeView === 'fixtures'}
-                            disabled={!fixture}
-                            tooltip={!fixture ? "Generate a fixture first" : "Fixtures & Scores"}
+                            disabled={!fixture || !!tournament.winner}
+                            tooltip={!fixture ? "Generate a fixture first" : (!!tournament.winner ? 'Tournament is complete' : "Fixtures & Scores")}
                         >
                             <Gamepad2/>
                             Fixtures & Scores

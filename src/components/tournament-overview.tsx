@@ -8,6 +8,7 @@ import { Progress } from '@/components/ui/progress';
 import { Flame, Swords, CheckCircle, ListTodo, Trophy, Loader, Link as LinkIcon, Clipboard, Check } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import ChampionView from './champion-view';
 
 interface TournamentOverviewProps {
   tournament: Tournament;
@@ -90,16 +91,6 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
     const allMatches = getAllMatches(fixture);
     const totalMatches = allMatches.length;
 
-    if (tournament.winner) {
-        return {
-            totalMatches,
-            playedMatches: totalMatches,
-            status: 'Completed' as const,
-            currentRoundName: 'Finished',
-            progress: 100,
-        };
-    }
-
     if (totalMatches === 0) return {
         totalMatches: 0,
         playedMatches: 0,
@@ -133,7 +124,20 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
         currentRoundName,
         progress: totalMatches > 0 ? (playedMatches / totalMatches) * 100 : 0
     };
-  }, [fixture, scores, tournament.winner]);
+  }, [fixture, scores]);
+
+  if (tournament.winner) {
+    return (
+      <div>
+        <h2 className="text-3xl font-bold text-primary">Tournament Complete</h2>
+        <p className="text-muted-foreground">The champion has been crowned!</p>
+        <div className="mt-6 flex items-center justify-center">
+            <ChampionView winner={tournament.winner} />
+        </div>
+        {shareLinkCard}
+      </div>
+    );
+  }
   
   if (!fixture) {
       return (
