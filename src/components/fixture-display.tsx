@@ -54,14 +54,16 @@ export default function FixtureDisplay({ tournament, teams, fixture, setFixture,
             return acc;
         }, {} as Record<string, string>)
 
-        const mapMatches = (matches: any[]) => matches.map((match: any) => ({
+        const mapMatches = (matches: any[]) => matches.map((match: any, matchIndex: number) => ({
             ...match,
+            match: match.match ?? (matchIndex + 1),
             team1: { name: teamMap[match.team1] || match.team1, score: null },
             team2: { name: teamMap[match.team2] || match.team2, score: null },
         }));
         
-        const mapRounds = (rounds: any[]) => rounds.map((round: any) => ({
+        const mapRounds = (rounds: any[]) => rounds.map((round: any, roundIndex: number) => ({
             ...round,
+            round: round.round ?? (roundIndex + 1),
             matches: mapMatches(round.matches)
         }));
 

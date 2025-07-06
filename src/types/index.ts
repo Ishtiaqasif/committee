@@ -15,7 +15,6 @@ export interface Team {
 }
 
 export interface Match {
-  round: number;
   match: number;
   team1: { name: string; score: number | null };
   team2: { name: string; score: number | null };
