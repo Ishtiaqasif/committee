@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import type { Tournament } from "@/types";
+import type { TournamentCreationData } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -16,7 +16,7 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
 
 interface TournamentCreatorProps {
-  onTournamentCreated: (data: Tournament) => void;
+  onTournamentCreated: (data: TournamentCreationData) => void;
 }
 
 const formSchema = z.object({
@@ -105,7 +105,7 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
 
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    onTournamentCreated(values as Tournament);
+    onTournamentCreated(values);
   }
 
   return (

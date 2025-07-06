@@ -1,6 +1,6 @@
 export type TournamentType = 'round-robin' | 'single elimination' | 'hybrid';
 
-export type Tournament = {
+export type TournamentCreationData = {
   tournamentName: string;
   tournamentType: TournamentType;
   numberOfTeams: number;
@@ -14,8 +14,14 @@ export type Tournament = {
   knockoutHomeAndAway: boolean;
 };
 
+export type Tournament = TournamentCreationData & {
+  id: string;
+  creatorId: string;
+  createdAt: any; 
+};
+
 export interface Team {
-  id: number;
+  id: string;
   name: string;
   logo?: string;
 }

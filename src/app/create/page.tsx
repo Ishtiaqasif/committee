@@ -1,21 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import type { Tournament, Team } from "@/types";
+import type { Tournament, Team, TournamentCreationData } from "@/types";
 import TournamentCreator from "@/components/tournament-creator";
-import TeamRegistration from "@/components/team-registration";
+import TeamInvitation from "@/components/team-invitation";
 import TournamentHome from "@/components/tournament-home";
 import { ClipboardList, Loader } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
+import { createTournament } from "@/lib/firebase/firestore";
+import { useToast } from "@/hooks/use-toast";
 
-type AppState = "configuring" | "teams" | "fixture";
+type AppState = "configuring" | "inviting" | "fixture";
 
 export default function CreatePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const { toast } = useToast();
   
   const [appState, setAppState] = useState<AppState>("configuring");
   const [tournament, setTournament] = useState<Tournament | null>(null);
@@ -35,13 +38,24 @@ export default function CreatePage() {
     );
   }
 
-  const handleTournamentCreated = (data: Tournament) => {
-    setTournament(data);
-    setAppState("teams");
+  const handleTournamentCreated = async (data: TournamentCreationData) => {
+    if (!user) {
+      toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to create a tournament.' });
+      return;
+    }
+    try {
+      const tournamentId = await createTournament(data, user.uid);
+      setTournament({ ...data, id: tournamentId, creatorId: user.uid, createdAt: new Date() });
+      setAppState("inviting");
+      toast({ title: 'Tournament Created!', description: 'You can now invite teams to register.' });
+    } catch(error) {
+       console.error(error);
+       toast({ variant: 'destructive', title: 'Error', description: 'Failed to create tournament.' });
+    }
   };
 
-  const handleTeamsRegistered = (registeredTeams: Team[]) => {
-    setTeams(registeredTeams);
+  const handleTeamsFinalized = (finalizedTeams: Team[]) => {
+    setTeams(finalizedTeams);
     setAppState("fixture");
   };
 
@@ -55,12 +69,12 @@ export default function CreatePage() {
     switch (appState) {
       case "configuring":
         return <TournamentCreator onTournamentCreated={handleTournamentCreated} />;
-      case "teams":
+      case "inviting":
         if (!tournament) return null;
         return (
-          <TeamRegistration
-            numberOfTeams={tournament.numberOfTeams}
-            onTeamsRegistered={handleTeamsRegistered}
+          <TeamInvitation
+            tournament={tournament}
+            onTeamsFinalized={handleTeamsFinalized}
           />
         );
       case "fixture":
