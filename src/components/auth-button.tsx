@@ -14,7 +14,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, PlusCircle, User } from "lucide-react";
+import { LogOut, PlusCircle, User, LayoutGrid } from "lucide-react";
 
 export default function AuthButton() {
   const { user } = useAuth();
@@ -64,6 +64,12 @@ export default function AuthButton() {
           <Link href="/profile">
             <User className="mr-2 h-4 w-4" />
             <span>Profile</span>
+          </Link>
+        </DropdownMenuItem>
+        <DropdownMenuItem asChild>
+          <Link href="/tournaments">
+            <LayoutGrid className="mr-2 h-4 w-4" />
+            <span>My Tournaments</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
