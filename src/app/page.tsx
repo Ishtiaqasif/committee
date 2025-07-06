@@ -7,6 +7,7 @@ import TeamRegistration from "@/components/team-registration";
 import TournamentHome from "@/components/tournament-home";
 import { Card, CardContent } from "@/components/ui/card";
 import { ClipboardList } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 type AppState = "configuring" | "teams" | "fixture";
 
@@ -63,6 +64,9 @@ export default function Home() {
         renderContent()
       ) : (
          <div className="relative min-h-screen flex flex-col items-center justify-center p-4 overflow-hidden">
+            <div className="absolute top-4 right-4 z-20">
+                <ThemeToggle />
+            </div>
             <div className="absolute inset-0 bg-gradient-to-br from-background via-card to-background opacity-40"></div>
             <div className="relative z-10 w-full max-w-6xl">
                 <header className="mb-12 text-center">

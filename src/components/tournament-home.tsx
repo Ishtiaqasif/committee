@@ -24,6 +24,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import QualificationSummaryView from "./qualification-summary-view";
+import { ThemeToggle } from "./theme-toggle";
 
 interface TournamentHomeProps {
   tournament: Tournament;
@@ -203,8 +204,8 @@ export default function TournamentHome({ tournament, teams, onReset }: Tournamen
       firstRound.matches.forEach((match: Match) => {
         // Only try to replace placeholders, not actual team names that might already be there
         // or winner placeholders from previous knockout rounds
-        const isPlaceholder = /^(Winner|Runner-up|\d+(st|nd|rd|th) Place) Group/i.test(match.team1.name)
-        if (isPlaceholder) {
+        const isPlaceholder1 = /^(Winner|Runner-up|\d+(st|nd|rd|th) Place) Group/i.test(match.team1.name)
+        if (isPlaceholder1) {
           const team1 = getTeamFromPlaceholder(match.team1.name);
           if (team1) {
             match.team1 = { name: team1.name, logo: team1.logo, score: null };
@@ -339,12 +340,15 @@ export default function TournamentHome({ tournament, teams, onReset }: Tournamen
     <SidebarProvider>
         <Sidebar>
             <SidebarHeader>
-                <div className="flex items-center gap-2 p-2">
-                    <Trophy className="w-8 h-8 text-accent" />
-                    <div className="flex flex-col">
-                        <span className="text-lg font-semibold text-primary truncate">{tournament.tournamentName}</span>
-                        <span className="text-sm text-muted-foreground capitalize">{tournament.tournamentType.replace('-', ' ')}</span>
+                <div className="flex items-center justify-between p-2">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                        <Trophy className="w-8 h-8 text-accent flex-shrink-0" />
+                        <div className="flex flex-col overflow-hidden">
+                            <span className="text-lg font-semibold text-primary truncate">{tournament.tournamentName}</span>
+                            <span className="text-sm text-muted-foreground capitalize truncate">{tournament.tournamentType.replace('-', ' ')}</span>
+                        </div>
                     </div>
+                    <ThemeToggle />
                 </div>
             </SidebarHeader>
             <SidebarContent>
