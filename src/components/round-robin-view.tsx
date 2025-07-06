@@ -1,7 +1,7 @@
 "use client"
 
-import { useMemo, useState } from 'react';
-import type { Team, PointsTableEntry, Match, Round, Group, Score } from '@/types';
+import { useMemo, useState, useEffect } from 'react';
+import type { Team, PointsTableEntry, Match, Round, Group, Score, Tournament } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dices, MapPin, Lock, ArrowRight, Shield, ArrowLeft } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -18,6 +18,7 @@ interface RoundRobinViewProps {
   teams: Team[];
   scores: Record<string, Score>;
   onScoreUpdate: (matchIdentifier: string, newScore: Score) => void;
+  onTournamentUpdate: (data: Partial<Tournament>) => void;
   isHybrid?: boolean;
   onProceedToKnockout?: () => void;
 }
@@ -150,7 +151,7 @@ const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate, team
 }
 
 
-export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, isHybrid, onProceedToKnockout }: RoundRobinViewProps) {
+export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, onTournamentUpdate, isHybrid, onProceedToKnockout }: RoundRobinViewProps) {
   const [activeRound, setActiveRound] = useState(1);
   const [viewMode, setViewMode] = useState<'short' | 'full'>('short');
 
@@ -280,14 +281,20 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
   }, [scores, teams, allRounds]);
 
   const finalWinner = useMemo(() => {
-    // Only for all-play-all round robin that is not part of a hybrid tournament
     const allRoundsPlayed = activeRound > maxRound;
     if (allRoundsPlayed && !isHybrid && fixture.rounds && !fixture.groups && pointsTable.length > 0) {
         const winnerEntry = pointsTable[0];
-        return { name: winnerEntry.teamName, logo: winnerEntry.logo };
+        const winnerTeam = teams.find(t => t.name === winnerEntry.teamName);
+        return { name: winnerTeam?.name || '', logo: winnerTeam?.logo };
     }
     return null;
-  }, [activeRound, maxRound, isHybrid, pointsTable, fixture.rounds, fixture.groups]);
+  }, [activeRound, maxRound, isHybrid, pointsTable, fixture, teams]);
+  
+  useEffect(() => {
+      if (finalWinner?.name) {
+          onTournamentUpdate({ winner: finalWinner });
+      }
+  }, [finalWinner, onTournamentUpdate]);
 
   const NavigationFooter = () => (
     <div className="mt-8 flex flex-col items-center justify-center gap-2">

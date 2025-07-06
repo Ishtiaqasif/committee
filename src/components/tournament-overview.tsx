@@ -45,10 +45,21 @@ export default function TournamentOverview({ tournament, fixture, scores, teams 
   const stats = useMemo(() => {
     const allMatches = getAllMatches(fixture);
     const totalMatches = allMatches.length;
+
+    if (tournament.winner) {
+        return {
+            totalMatches,
+            playedMatches: totalMatches,
+            status: 'Completed' as const,
+            currentRoundName: 'Finished',
+            progress: 100,
+        };
+    }
+
     if (totalMatches === 0) return {
         totalMatches: 0,
         playedMatches: 0,
-        status: 'Upcoming',
+        status: 'Upcoming' as const,
         currentRoundName: 'N/A',
         progress: 0,
     };
@@ -78,7 +89,7 @@ export default function TournamentOverview({ tournament, fixture, scores, teams 
         currentRoundName,
         progress: totalMatches > 0 ? (playedMatches / totalMatches) * 100 : 0
     };
-  }, [fixture, scores]);
+  }, [fixture, scores, tournament.winner]);
 
   const StatusIcon = {
       'Upcoming': <ListTodo className="w-8 h-8 text-blue-500" />,

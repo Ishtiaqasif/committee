@@ -27,6 +27,7 @@ import QualificationSummaryView from "./qualification-summary-view";
 import { ThemeToggle } from "./theme-toggle";
 import TournamentSettings from "./tournament-settings";
 import TournamentOverview from "./tournament-overview";
+import ChampionView from "./champion-view";
 
 interface TournamentHomeProps {
   tournament: Tournament;
@@ -49,7 +50,9 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
         const parsedFixture = JSON.parse(tournament.fixture);
         setFixture(parsedFixture);
         setScores(tournament.scores || {});
-        setActiveView('overview');
+         if (!tournament.winner) {
+            setActiveView('overview');
+        }
       } catch (error) {
         console.error("Failed to parse fixture:", error);
         toast({
@@ -293,6 +296,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
               teams={teams} 
               scores={scores} 
               onScoreUpdate={handleScoreUpdate}
+              onTournamentUpdate={onTournamentUpdate}
               isHybrid={true}
               onProceedToKnockout={handleGroupStageComplete}
             />
@@ -315,6 +319,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
             <SingleEliminationBracket 
               fixture={fixture.knockoutStage} 
               onScoreUpdate={handleScoreUpdate} 
+              onTournamentUpdate={onTournamentUpdate}
               scores={scores} 
               knockoutHomeAndAway={tournament.knockoutHomeAndAway}
             />
@@ -324,17 +329,21 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     }
     
     if (tournament.tournamentType === 'round-robin' && (fixture.rounds || fixture.groups)) {
-      return <RoundRobinView fixture={{rounds: fixture.rounds, groups: fixture.groups}} teams={teams} scores={scores} onScoreUpdate={handleScoreUpdate} />;
+      return <RoundRobinView fixture={{rounds: fixture.rounds, groups: fixture.groups}} teams={teams} scores={scores} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} />;
     }
 
     if (tournament.tournamentType === 'single elimination' && fixture.rounds) {
-      return <SingleEliminationBracket fixture={{rounds: fixture.rounds}} onScoreUpdate={handleScoreUpdate} scores={scores} knockoutHomeAndAway={tournament.knockoutHomeAndAway}/>;
+      return <SingleEliminationBracket fixture={{rounds: fixture.rounds}} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} scores={scores} knockoutHomeAndAway={tournament.knockoutHomeAndAway}/>;
     }
 
     return <p>Could not display fixture.</p>;
   }
 
   const renderContent = () => {
+    if (tournament.winner) {
+        return <ChampionView winner={tournament.winner} />;
+    }
+
     if (!fixture) {
       return (
         <div className="flex flex-col items-center justify-center h-full text-center">

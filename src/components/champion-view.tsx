@@ -12,7 +12,7 @@ export default function ChampionView({ winner }: ChampionViewProps) {
   if (!winner) return null;
   
   return (
-    <div className="w-full flex flex-col items-center justify-center text-center mt-8 p-8 rounded-lg animate-in fade-in-50 duration-1000">
+    <div className="w-full flex flex-col items-center justify-center text-center p-8 rounded-lg animate-in fade-in-50 duration-1000">
       <Trophy className="w-28 h-28 text-accent drop-shadow-[0_0_15px_hsl(var(--accent))] animate-float" />
       <h2 className="text-7xl font-extrabold text-primary mt-4 tracking-wider uppercase">Champion</h2>
       <p className="mt-2 text-xl text-muted-foreground">Congratulations to the tournament winner!</p>

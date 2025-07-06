@@ -21,11 +21,13 @@ export type Tournament = TournamentCreationData & {
   createdAt: any; 
   fixture?: string;
   scores?: Record<string, Score>;
+  winner?: { name: string, logo?: string };
 };
 
 export interface Team {
   id: string;
   name: string;
+  ownerName: string;
   logo?: string;
 }
 

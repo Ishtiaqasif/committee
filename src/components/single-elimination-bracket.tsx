@@ -1,8 +1,8 @@
 "use client"
 
-import type { Match, Round, Score } from '@/types';
+import type { Match, Round, Score, Tournament } from '@/types';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { MapPin, Lock, ArrowRight, Shield, ArrowLeft, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ScoreEntryDialog from './score-entry-dialog';
@@ -14,6 +14,7 @@ interface SingleEliminationBracketProps {
   fixture: { rounds: Round[] };
   scores: Record<string, Score>;
   onScoreUpdate: (matchIdentifier: string, newScore: Score) => void;
+  onTournamentUpdate: (data: Partial<Tournament>) => void;
   knockoutHomeAndAway: boolean;
 }
 
@@ -77,7 +78,7 @@ const MatchComponent = ({ match, round, onScoreUpdate, currentScores, isActive }
   )
 }
 
-export default function SingleEliminationBracket({ fixture, onScoreUpdate, scores, knockoutHomeAndAway }: SingleEliminationBracketProps) {
+export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTournamentUpdate, scores, knockoutHomeAndAway }: SingleEliminationBracketProps) {
     const [activeRound, setActiveRound] = useState(1);
     
     const { isRoundComplete, hasNextRound } = useMemo(() => {
@@ -159,7 +160,7 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, score
       if (!finalRound || finalRound.matches.length !== 1) return null;
       
       const finalMatch = finalRound.matches[0];
-      const finalMatchId = `r${finalMatch.round}m${finalMatch.match}`;
+      const finalMatchId = `r${finalRound.round}m${finalMatch.match}`;
       const finalScores = scores[finalMatchId];
       if (finalScores && finalScores.score1 !== null && finalScores.score2 !== null) {
           return finalScores.score1 > finalScores.score2 ? finalMatch.team1 : finalMatch.team2;
@@ -167,6 +168,12 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, score
     }
     return null;
   }, [isRoundComplete, hasNextRound, scores, processedFixture.rounds]);
+
+  useEffect(() => {
+    if (finalWinner) {
+      onTournamentUpdate({ winner: finalWinner });
+    }
+  }, [finalWinner, onTournamentUpdate]);
 
   if (finalWinner) {
     return <ChampionView winner={finalWinner} />;
