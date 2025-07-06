@@ -1,22 +1,23 @@
 "use client"
 
-import type { Match, Round } from '@/types';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
+import type { Match, Round, Score } from '@/types';
+import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { useMemo } from 'react';
-import { MapPin } from 'lucide-react';
+import { MapPin, Lock } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import ScoreEntryDialog from './score-entry-dialog';
 
 interface SingleEliminationBracketProps {
   fixture: { rounds: Round[] };
-  scores: Record<string, { score1: number | null, score2: number | null }>;
-  onScoreChange: (matchIdentifier: string, team1Score: number | null, team2Score: number | null) => void;
+  scores: Record<string, Score>;
+  onScoreUpdate: (matchIdentifier: string, newScore: Score) => void;
 }
 
-const MatchComponent = ({ match, round, onScoreChange, currentScores }: { match: Match, round: number, onScoreChange: SingleEliminationBracketProps['onScoreChange'], currentScores: any }) => {
+const MatchComponent = ({ match, round, onScoreUpdate, currentScores }: { match: Match, round: number, onScoreUpdate: SingleEliminationBracketProps['onScoreUpdate'], currentScores: any }) => {
   const matchId = `r${round}m${match.match}`;
-  const scores = currentScores[matchId];
-  const isTeam1Winner = scores && scores.score1 !== null && scores.score2 !== null && scores.score1 > scores.score2;
-  const isTeam2Winner = scores && scores.score1 !== null && scores.score2 !== null && scores.score2 > scores.score1;
+  const score = currentScores[matchId];
+  const isTeam1Winner = score && score.score1 !== null && score.score2 !== null && score.score1 > score.score2;
+  const isTeam2Winner = score && score.score1 !== null && score.score2 !== null && score.score2 > score.score1;
 
   const getTeamClass = (isWinner: boolean, teamName: string) => {
     let baseClass = "flex items-center justify-between p-2 rounded-t-md";
@@ -34,41 +35,39 @@ const MatchComponent = ({ match, round, onScoreChange, currentScores }: { match:
       <CardContent className="p-0">
         <div className={getTeamClass(isTeam1Winner, match.team1.name)}>
           <span>{match.team1.name}</span>
-          <Input
-            type="number"
-            className="w-16 h-8 text-center"
-            placeholder="-"
-            min="0"
-            disabled={match.team1.name.toLowerCase() === 'bye' || match.team2.name.toLowerCase() === 'bye'}
-            value={scores?.score1 ?? ''}
-            onChange={(e) => onScoreChange(matchId, e.target.value === '' ? null : Number(e.target.value), scores?.score2 ?? null)}
-          />
+          <span className="font-bold text-lg">{score?.score1 ?? '-'}</span>
         </div>
-        <div className="border-t border-border my-0 h-0"></div>
+        <div className="border-t border-border my-0"></div>
         <div className={getTeamClass(isTeam2Winner, match.team2.name).replace('rounded-t-md', 'rounded-b-md')}>
           <span>{match.team2.name}</span>
-          <Input
-            type="number"
-            className="w-16 h-8 text-center"
-            placeholder="-"
-            min="0"
-            disabled={match.team1.name.toLowerCase() === 'bye' || match.team2.name.toLowerCase() === 'bye'}
-            value={scores?.score2 ?? ''}
-            onChange={(e) => onScoreChange(matchId, scores?.score1 ?? null, e.target.value === '' ? null : Number(e.target.value))}
-          />
+          <span className="font-bold text-lg">{score?.score2 ?? '-'}</span>
         </div>
       </CardContent>
-      {match.venue && (
-        <div className="flex items-center justify-center gap-1.5 p-1.5 text-xs text-muted-foreground border-t">
-            <MapPin className="h-3 w-3" />
-            <span>{match.venue}</span>
+       <CardFooter className="p-2 flex-col gap-2 items-stretch">
+        <div className="flex items-center justify-center gap-4 w-full">
+            <ScoreEntryDialog
+                match={match}
+                currentScore={score}
+                onScoreSave={(newScore) => onScoreUpdate(matchId, newScore)}
+            >
+                <Button className="flex-grow" variant="outline" size="sm" disabled={score?.locked || match.team1.name.toLowerCase() === 'bye' || match.team2.name.toLowerCase() === 'bye'}>
+                    {score?.score1 !== null ? 'Edit Score' : 'Enter Score'}
+                </Button>
+            </ScoreEntryDialog>
+            {score?.locked && <Lock className="h-4 w-4 text-muted-foreground" />}
         </div>
-      )}
+        {match.venue && (
+            <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground pt-2 border-t w-full">
+                <MapPin className="h-3 w-3" />
+                <span>{match.venue}</span>
+            </div>
+        )}
+      </CardFooter>
     </Card>
   )
 }
 
-export default function SingleEliminationBracket({ fixture, onScoreChange, scores }: SingleEliminationBracketProps) {
+export default function SingleEliminationBracket({ fixture, onScoreUpdate, scores }: SingleEliminationBracketProps) {
     const processedFixture = useMemo(() => {
         const newRounds = JSON.parse(JSON.stringify(fixture.rounds));
 
@@ -119,7 +118,7 @@ export default function SingleEliminationBracket({ fixture, onScoreChange, score
           <div className="flex flex-col gap-8 justify-around h-full">
             {round.matches.map((match) => (
               <div key={match.match} className="relative">
-                 <MatchComponent match={match} round={round.round} onScoreChange={onScoreChange} currentScores={scores}/>
+                 <MatchComponent match={match} round={round.round} onScoreUpdate={onScoreUpdate} currentScores={scores}/>
                  {roundIndex < processedFixture.rounds.length -1 && (
                      <div className="absolute top-1/2 -right-4 md:-right-8 w-4 md:w-8 h-px bg-border -translate-y-1/2"></div>
                  )}

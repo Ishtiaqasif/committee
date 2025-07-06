@@ -21,7 +21,7 @@ export interface Team {
 
 export interface Match {
   match: number;
-  team1: { name: string; score: number | null };
+  team1: { name:string; score: number | null };
   team2: { name: string; score: number | null };
   winner?: string | null;
   venue?: string;
@@ -52,4 +52,10 @@ export interface PointsTableEntry {
   lost: number;
   drawn: number;
   points: number;
+}
+
+export interface Score {
+  score1: number | null;
+  score2: number | null;
+  locked: boolean;
 }

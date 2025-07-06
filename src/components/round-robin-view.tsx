@@ -1,22 +1,23 @@
 "use client"
 
 import { useMemo } from 'react';
-import type { Team, PointsTableEntry, Match, Round, Group } from '@/types';
+import type { Team, PointsTableEntry, Match, Round, Group, Score } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dices, MapPin } from 'lucide-react';
+import { Dices, MapPin, Lock } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from '@/components/ui/button';
+import ScoreEntryDialog from './score-entry-dialog';
 
 
 interface RoundRobinViewProps {
   fixture: { rounds?: Round[], groups?: Group[] };
   teams: Team[];
-  scores: Record<string, { score1: number | null, score2: number | null }>;
-  onScoreChange: (matchIdentifier: string, team1Score: number | null, team2Score: number | null) => void;
+  scores: Record<string, Score>;
+  onScoreUpdate: (matchIdentifier: string, newScore: Score) => void;
 }
 
-const GroupedRoundRobinView = ({ group, scores, onScoreChange }: { group: Group, scores: RoundRobinViewProps['scores'], onScoreChange: RoundRobinViewProps['onScoreChange']}) => {
+const GroupedRoundRobinView = ({ group, scores, onScoreUpdate }: { group: Group, scores: RoundRobinViewProps['scores'], onScoreUpdate: RoundRobinViewProps['onScoreUpdate']}) => {
   const groupTeams = useMemo(() => group.teams.map(name => ({ name })), [group.teams]);
 
   const pointsTable = useMemo(() => {
@@ -72,30 +73,29 @@ const GroupedRoundRobinView = ({ group, scores, onScoreChange }: { group: Group,
               <div className="space-y-4">
                 {round.matches.map((match) => {
                   const matchId = `r${round.round}m${match.match}`;
+                  const score = scores[matchId];
                   return (
                   <div key={matchId} className="p-3 rounded-lg bg-secondary/50">
                     <div className="flex items-center justify-between">
                         <span className="w-1/3 text-right font-medium">{match.team1.name}</span>
-                        <div className="flex items-center gap-2 mx-4">
-                            <Input
-                                type="number"
-                                className="w-16 text-center"
-                                placeholder="-"
-                                min="0"
-                                value={scores[matchId]?.score1 ?? ''}
-                                onChange={(e) => onScoreChange(matchId, e.target.value === '' ? null : Number(e.target.value), scores[matchId]?.score2 ?? null)}
-                            />
+                        <div className="flex items-center gap-2 mx-4 font-semibold text-lg">
+                            <span>{score?.score1 ?? '-'}</span>
                             <span>vs</span>
-                            <Input
-                                type="number"
-                                className="w-16 text-center"
-                                placeholder="-"
-                                min="0"
-                                value={scores[matchId]?.score2 ?? ''}
-                                onChange={(e) => onScoreChange(matchId, scores[matchId]?.score1 ?? null, e.target.value === '' ? null : Number(e.target.value))}
-                            />
+                            <span>{score?.score2 ?? '-'}</span>
                         </div>
                         <span className="w-1/3 text-left font-medium">{match.team2.name}</span>
+                    </div>
+                    <div className="flex items-center justify-center gap-4 mt-2">
+                        <ScoreEntryDialog
+                            match={match}
+                            currentScore={score}
+                            onScoreSave={(newScore) => onScoreUpdate(matchId, newScore)}
+                        >
+                            <Button variant="outline" size="sm" disabled={score?.locked}>
+                                {score?.score1 !== null ? 'Edit Score' : 'Enter Score'}
+                            </Button>
+                        </ScoreEntryDialog>
+                        {score?.locked && <Lock className="h-4 w-4 text-muted-foreground" />}
                     </div>
                      {match.venue && (
                         <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground mt-2">
@@ -148,7 +148,7 @@ const GroupedRoundRobinView = ({ group, scores, onScoreChange }: { group: Group,
 }
 
 
-export default function RoundRobinView({ fixture, teams, scores, onScoreChange }: RoundRobinViewProps) {
+export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate }: RoundRobinViewProps) {
   if (fixture.groups && fixture.groups.length > 0) {
     return (
        <Tabs defaultValue={fixture.groups[0].groupName} className="w-full">
@@ -159,7 +159,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreChange }
         </TabsList>
         {fixture.groups.map(group => (
           <TabsContent key={group.groupName} value={group.groupName} className="mt-6">
-            <GroupedRoundRobinView group={group} scores={scores} onScoreChange={onScoreChange} />
+            <GroupedRoundRobinView group={group} scores={scores} onScoreUpdate={onScoreUpdate} />
           </TabsContent>
         ))}
       </Tabs>
@@ -225,30 +225,29 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreChange }
               <div className="space-y-4">
                 {round.matches.map((match) => {
                   const matchId = `r${round.round}m${match.match}`;
+                  const score = scores[matchId];
                   return (
                   <div key={matchId} className="p-3 rounded-lg bg-secondary/50">
                     <div className="flex items-center justify-between">
                         <span className="w-1/3 text-right font-medium">{match.team1.name}</span>
-                        <div className="flex items-center gap-2 mx-4">
-                            <Input
-                                type="number"
-                                className="w-16 text-center"
-                                placeholder="-"
-                                min="0"
-                                value={scores[matchId]?.score1 ?? ''}
-                                onChange={(e) => onScoreChange(matchId, e.target.value === '' ? null : Number(e.target.value), scores[matchId]?.score2 ?? null)}
-                            />
+                        <div className="flex items-center gap-2 mx-4 font-semibold text-lg">
+                            <span>{score?.score1 ?? '-'}</span>
                             <span>vs</span>
-                            <Input
-                                type="number"
-                                className="w-16 text-center"
-                                placeholder="-"
-                                min="0"
-                                value={scores[matchId]?.score2 ?? ''}
-                                onChange={(e) => onScoreChange(matchId, scores[matchId]?.score1 ?? null, e.target.value === '' ? null : Number(e.target.value))}
-                            />
+                            <span>{score?.score2 ?? '-'}</span>
                         </div>
                         <span className="w-1/3 text-left font-medium">{match.team2.name}</span>
+                    </div>
+                     <div className="flex items-center justify-center gap-4 mt-2">
+                        <ScoreEntryDialog
+                            match={match}
+                            currentScore={score}
+                            onScoreSave={(newScore) => onScoreUpdate(matchId, newScore)}
+                        >
+                            <Button variant="outline" size="sm" disabled={score?.locked}>
+                                {score?.score1 !== null ? 'Edit Score' : 'Enter Score'}
+                            </Button>
+                        </ScoreEntryDialog>
+                        {score?.locked && <Lock className="h-4 w-4 text-muted-foreground" />}
                     </div>
                      {match.venue && (
                         <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground mt-2">

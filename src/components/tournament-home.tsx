@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { generateTournamentFixture } from "@/ai/flows/generate-tournament-fixture";
-import type { Tournament, Team, Fixture } from "@/types";
+import type { Tournament, Team, Fixture, Score } from "@/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import RoundRobinView from "@/components/round-robin-view";
@@ -33,7 +33,7 @@ export default function TournamentHome({ tournament, teams, onReset }: Tournamen
   const [fixture, setFixture] = useState<Fixture | null>(null);
   const [isPending, startTransition] = useTransition();
   const { toast } = useToast();
-  const [scores, setScores] = useState<Record<string, { score1: number | null; score2: number | null }>>({});
+  const [scores, setScores] = useState<Record<string, Score>>({});
   const [activeView, setActiveView] = useState('fixtures');
 
   const handleGenerateFixture = () => {
@@ -125,10 +125,10 @@ export default function TournamentHome({ tournament, teams, onReset }: Tournamen
     });
   };
 
-  const handleScoreChange = (matchIdentifier: string, team1Score: number | null, team2Score: number | null) => {
+  const handleScoreUpdate = (matchIdentifier: string, newScore: Score) => {
     setScores(prev => ({
         ...prev,
-        [matchIdentifier]: { score1: team1Score, score2: team2Score }
+        [matchIdentifier]: newScore
     }))
   }
 
@@ -143,21 +143,21 @@ export default function TournamentHome({ tournament, teams, onReset }: Tournamen
             <TabsTrigger value="knockout-stage">Knockout Stage</TabsTrigger>
           </TabsList>
           <TabsContent value="group-stage" className="mt-6">
-            <RoundRobinView fixture={fixture.groupStage} teams={teams} scores={scores} onScoreChange={handleScoreChange} />
+            <RoundRobinView fixture={fixture.groupStage} teams={teams} scores={scores} onScoreUpdate={handleScoreUpdate} />
           </TabsContent>
           <TabsContent value="knockout-stage" className="mt-6">
-            <SingleEliminationBracket fixture={fixture.knockoutStage} onScoreChange={handleScoreChange} scores={scores} />
+            <SingleEliminationBracket fixture={fixture.knockoutStage} onScoreUpdate={handleScoreUpdate} scores={scores} />
           </TabsContent>
         </Tabs>
       );
     }
     
     if (tournament.tournamentType === 'round-robin' && (fixture.rounds || fixture.groups)) {
-      return <RoundRobinView fixture={{rounds: fixture.rounds, groups: fixture.groups}} teams={teams} scores={scores} onScoreChange={handleScoreChange} />;
+      return <RoundRobinView fixture={{rounds: fixture.rounds, groups: fixture.groups}} teams={teams} scores={scores} onScoreUpdate={handleScoreUpdate} />;
     }
 
     if (tournament.tournamentType === 'single elimination' && fixture.rounds) {
-      return <SingleEliminationBracket fixture={{rounds: fixture.rounds}} onScoreChange={handleScoreChange} scores={scores}/>;
+      return <SingleEliminationBracket fixture={{rounds: fixture.rounds}} onScoreUpdate={handleScoreUpdate} scores={scores}/>;
     }
 
     return <p>Could not display fixture.</p>;
