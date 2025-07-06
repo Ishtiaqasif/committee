@@ -11,7 +11,7 @@ import SingleEliminationBracket from "@/components/single-elimination-bracket";
 import TeamsList from "@/components/teams-list";
 import PointsTableView, { calculatePointsTable } from "@/components/points-table-view";
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset } from "@/components/ui/sidebar";
-import { Loader, Trophy, RefreshCw, Gamepad2, ListOrdered, Users, Settings, LayoutDashboard } from "lucide-react";
+import { Loader, Trophy, RefreshCw, Gamepad2, ListOrdered, Users, Settings, LayoutDashboard, ShieldCheck } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,6 +28,7 @@ import { ThemeToggle } from "./theme-toggle";
 import TournamentSettings from "./tournament-settings";
 import TournamentOverview from "./tournament-overview";
 import ChampionView from "./champion-view";
+import KnockoutBracketView from "./knockout-bracket-view";
 
 interface TournamentHomeProps {
   tournament: Tournament;
@@ -371,6 +372,31 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
         return <TeamsList teams={teams} />;
       case 'points-table':
         return <PointsTableView fixture={fixture!} teams={teams} scores={scores} tournamentType={tournament.tournamentType}/>;
+      case 'knockout':
+        const knockoutFixture = tournament.tournamentType === 'hybrid'
+            ? fixture?.knockoutStage
+            : fixture;
+
+        if (!knockoutFixture || !knockoutFixture.rounds) {
+            return (
+                <div>
+                    <h2 className="text-3xl font-bold text-primary">Knockout Bracket</h2>
+                    <p className="text-muted-foreground mt-4">
+                        The knockout bracket is not available for this tournament stage.
+                    </p>
+                </div>
+            );
+        }
+        return (
+            <div>
+                <h2 className="text-3xl font-bold text-primary">Knockout Bracket</h2>
+                <p className="text-muted-foreground mb-6">A view of the tournament knockout stage.</p>
+                <KnockoutBracketView
+                    fixture={knockoutFixture}
+                    scores={scores}
+                />
+            </div>
+        );
       case 'settings':
         return <TournamentSettings tournament={tournament} onUpdate={onTournamentUpdate} />;
       default:
@@ -422,6 +448,17 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
                         >
                             <ListOrdered/>
                             Points Table
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                     <SidebarMenuItem>
+                        <SidebarMenuButton
+                            onClick={() => setActiveView('knockout')}
+                            isActive={activeView === 'knockout'}
+                            disabled={!fixture || tournament.tournamentType === 'round-robin'}
+                            tooltip={!fixture ? "Generate a fixture first" : (tournament.tournamentType === 'round-robin' ? 'Not available for this format' : 'Knockout Bracket')}
+                        >
+                            <ShieldCheck/>
+                            Knockout Bracket
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>

@@ -5,10 +5,10 @@ import { useMemo, useState, useEffect } from 'react';
 import type { Tournament, Fixture, Score, Team, Round } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Flame, Swords, CheckCircle, ListTodo, Trophy, Loader, Link as LinkIcon, Clipboard, Check, ExternalLink } from 'lucide-react';
+import { Flame, Swords, CheckCircle, ListTodo, Trophy, Loader, Link as LinkIcon, Clipboard, Check } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Label } from '@/components/ui/label';
+import { Label } from './ui/label';
 import ChampionView from './champion-view';
 import Link from 'next/link';
 
@@ -66,8 +66,6 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
   };
-
-  const canViewBracket = (tournament.tournamentType === 'single elimination' || tournament.tournamentType === 'hybrid') && !!fixture;
   
   const shareLinkCard = (
     <Card className="mt-8 w-full">
@@ -77,7 +75,7 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
                 Share Tournament
             </CardTitle>
             <CardDescription>
-                Use these links to invite participants, share the bracket, or show the champion page.
+                Use this link to invite participants or share the champion page.
             </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -90,16 +88,6 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
                     </Button>
                 </div>
             </div>
-             {canViewBracket && (
-                <div>
-                     <Label className="text-xs text-muted-foreground">Public Bracket Link</Label>
-                     <Button asChild className="w-full justify-start" variant="outline">
-                        <Link href={`/knockout/${tournament.id}`} target="_blank" rel="noopener noreferrer">
-                           <ExternalLink className="mr-2"/> View Public Bracket
-                        </Link>
-                    </Button>
-                </div>
-            )}
         </CardContent>
     </Card>
   );
