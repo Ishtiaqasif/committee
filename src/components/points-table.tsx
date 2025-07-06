@@ -10,9 +10,10 @@ import { Shield } from 'lucide-react';
 interface PointsTableProps {
   title: string;
   table: PointsTableEntry[];
+  viewMode: 'full' | 'short';
 }
 
-export default function PointsTable({ title, table }: PointsTableProps) {
+export default function PointsTable({ title, table, viewMode }: PointsTableProps) {
   return (
     <Card>
       <CardHeader>
@@ -27,6 +28,13 @@ export default function PointsTable({ title, table }: PointsTableProps) {
               <TableHead className="text-center">W</TableHead>
               <TableHead className="text-center">D</TableHead>
               <TableHead className="text-center">L</TableHead>
+              {viewMode === 'full' && (
+                <>
+                  <TableHead className="text-center">GF</TableHead>
+                  <TableHead className="text-center">GA</TableHead>
+                  <TableHead className="text-center">GD</TableHead>
+                </>
+              )}
               <TableHead className="text-center">Pts</TableHead>
             </TableRow>
           </TableHeader>
@@ -43,6 +51,13 @@ export default function PointsTable({ title, table }: PointsTableProps) {
                 <TableCell className="text-center">{entry.won}</TableCell>
                 <TableCell className="text-center">{entry.drawn}</TableCell>
                 <TableCell className="text-center">{entry.lost}</TableCell>
+                 {viewMode === 'full' && (
+                    <>
+                        <TableCell className="text-center">{entry.goalsFor}</TableCell>
+                        <TableCell className="text-center">{entry.goalsAgainst}</TableCell>
+                        <TableCell className="text-center">{entry.goalDifference}</TableCell>
+                    </>
+                )}
                 <TableCell className="font-bold text-center">{entry.points}</TableCell>
               </TableRow>
             ))}

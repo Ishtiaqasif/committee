@@ -3,13 +3,14 @@
 import { useMemo, useState } from 'react';
 import type { Team, PointsTableEntry, Match, Round, Group, Score } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dices, MapPin, Lock, ArrowRight, Shield } from 'lucide-react';
+import { Dices, MapPin, Lock, ArrowRight, Shield, ArrowLeft } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
 import ScoreEntryDialog from './score-entry-dialog';
 import Image from 'next/image';
-
+import PointsTable from './points-table';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface RoundRobinViewProps {
   fixture: { rounds?: Round[], groups?: Group[] };
@@ -18,12 +19,12 @@ interface RoundRobinViewProps {
   onScoreUpdate: (matchIdentifier: string, newScore: Score) => void;
 }
 
-const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate, teams }: { group: Group, activeRound: number, scores: RoundRobinViewProps['scores'], onScoreUpdate: RoundRobinViewProps['onScoreUpdate'], teams: Team[] }) => {
+const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate, teams, viewMode }: { group: Group, activeRound: number, scores: RoundRobinViewProps['scores'], onScoreUpdate: RoundRobinViewProps['onScoreUpdate'], teams: Team[], viewMode: 'full' | 'short' }) => {
   const groupTeams = useMemo(() => group.teams.map(name => teams.find(t => t.name === name)!).filter(Boolean), [group.teams, teams]);
 
   const pointsTable = useMemo(() => {
     const table: Record<string, PointsTableEntry> = groupTeams.reduce((acc, team) => {
-      acc[team.name] = { teamName: team.name, played: 0, won: 0, lost: 0, drawn: 0, points: 0, logo: team.logo };
+      acc[team.name] = { teamName: team.name, played: 0, won: 0, lost: 0, drawn: 0, points: 0, logo: team.logo, goalsFor: 0, goalsAgainst: 0, goalDifference: 0 };
       return acc;
     }, {} as Record<string, PointsTableEntry>);
 
@@ -37,8 +38,16 @@ const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate, team
           const score1 = matchScores.score1;
           const score2 = matchScores.score2;
 
-          if(table[team1Name]) table[team1Name].played += 1;
-          if(table[team2Name]) table[team2Name].played += 1;
+          if(table[team1Name]) {
+            table[team1Name].played += 1;
+            table[team1Name].goalsFor += score1;
+            table[team1Name].goalsAgainst += score2;
+          }
+          if(table[team2Name]) {
+            table[team2Name].played += 1;
+            table[team2Name].goalsFor += score2;
+            table[team2Name].goalsAgainst += score1;
+          }
 
           if (score1 > score2) {
             if(table[team1Name]) table[team1Name].won += 1;
@@ -56,9 +65,10 @@ const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate, team
 
     Object.values(table).forEach(entry => {
       entry.points = entry.won * 3 + entry.drawn * 1;
+      entry.goalDifference = entry.goalsFor - entry.goalsAgainst;
     });
 
-    return Object.values(table).sort((a, b) => b.points - a.points || (b.won - a.won));
+    return Object.values(table).sort((a, b) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor);
   }, [scores, groupTeams, group]);
 
   const displayedRounds = group.rounds.filter(r => r.round === activeRound);
@@ -128,42 +138,7 @@ const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate, team
         )}
       </div>
       <div>
-        <Card>
-          <CardHeader>
-            <CardTitle>Points Table</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Team</TableHead>
-                  <TableHead>P</TableHead>
-                  <TableHead>W</TableHead>
-                  <TableHead>D</TableHead>
-                  <TableHead>L</TableHead>
-                  <TableHead>Pts</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pointsTable.map(entry => (
-                  <TableRow key={entry.teamName}>
-                    <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        {entry.logo ? <Image src={entry.logo} alt={`${entry.teamName} logo`} width={24} height={24} className="rounded-full" /> : <Shield className="h-5 w-5 text-muted-foreground" />}
-                        <span>{entry.teamName}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>{entry.played}</TableCell>
-                    <TableCell>{entry.won}</TableCell>
-                    <TableCell>{entry.drawn}</TableCell>
-                    <TableCell>{entry.lost}</TableCell>
-                    <TableCell className="font-bold">{entry.points}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        <PointsTable title="Points Table" table={pointsTable} viewMode={viewMode} />
       </div>
     </div>
   )
@@ -172,6 +147,7 @@ const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate, team
 
 export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate }: RoundRobinViewProps) {
   const [activeRound, setActiveRound] = useState(1);
+  const [viewMode, setViewMode] = useState<'short' | 'full'>('short');
 
   const { isRoundComplete, hasNextRound } = useMemo(() => {
     if (!fixture.rounds && !fixture.groups) return { isRoundComplete: false, hasNextRound: false };
@@ -241,35 +217,51 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate }
     }
     setActiveRound(prev => prev + 1);
   };
+
+  const handleGoBack = () => {
+    setActiveRound(prev => Math.max(1, prev - 1));
+  };
   
-  const ProceedFooter = () => {
-    if (hasNextRound) {
-      return (
-        <div className="mt-8 flex flex-col items-center justify-center gap-2">
-          <Button size="lg" onClick={handleProceed} disabled={!isRoundComplete}>
-            Proceed to Next Round <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-          {!isRoundComplete && (
-            <p className="text-sm text-muted-foreground">
-              Enter all match results for the current round to proceed.
-            </p>
-          )}
-        </div>
-      );
-    }
-    if (isRoundComplete && !hasNextRound) {
-      return (
+  const NavigationFooter = () => (
+    <div className="mt-8 flex flex-col items-center justify-center gap-2">
+      <div className="flex items-center gap-4">
+        <Button size="lg" variant="outline" onClick={handleGoBack} disabled={activeRound === 1}>
+            <ArrowLeft className="mr-2 h-4 w-4" /> Previous Round
+        </Button>
+        {hasNextRound && (
+            <Button size="lg" onClick={handleProceed} disabled={!isRoundComplete}>
+                Next Round <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+        )}
+      </div>
+      {hasNextRound && !isRoundComplete && (
+        <p className="text-sm text-muted-foreground mt-2">
+          Enter all match results for the current round to proceed.
+        </p>
+      )}
+      {isRoundComplete && !hasNextRound && (
         <div className="mt-8 text-center text-lg font-semibold text-primary">
           All rounds are complete!
         </div>
-      );
-    }
-    return null;
-  };
+      )}
+    </div>
+  );
   
+  const TableViewToggle = () => (
+    <div className="flex items-center space-x-2 mb-4 justify-end">
+        <Switch
+            id="view-mode-switch-rr"
+            checked={viewMode === 'full'}
+            onCheckedChange={(checked) => setViewMode(checked ? 'full' : 'short')}
+        />
+        <Label htmlFor="view-mode-switch-rr">Show Full Table</Label>
+    </div>
+  );
+
   if (fixture.groups && fixture.groups.length > 0) {
     return (
       <>
+       <TableViewToggle />
        <Tabs defaultValue={fixture.groups[0].groupName} className="w-full">
         <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${fixture.groups.length}, minmax(0, 1fr))` }}>
           {fixture.groups.map(group => (
@@ -278,11 +270,11 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate }
         </TabsList>
         {fixture.groups.map(group => (
           <TabsContent key={group.groupName} value={group.groupName} className="mt-6">
-            <GroupedRoundRobinView group={group} activeRound={activeRound} scores={scores} onScoreUpdate={onScoreUpdate} teams={teams} />
+            <GroupedRoundRobinView group={group} activeRound={activeRound} scores={scores} onScoreUpdate={onScoreUpdate} teams={teams} viewMode={viewMode}/>
           </TabsContent>
         ))}
       </Tabs>
-      <ProceedFooter />
+      <NavigationFooter />
       </>
     )
   }
@@ -292,7 +284,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate }
 
   const pointsTable = useMemo(() => {
     const table: Record<string, PointsTableEntry> = teams.reduce((acc, team) => {
-      acc[team.name] = { teamName: team.name, played: 0, won: 0, lost: 0, drawn: 0, points: 0, logo: team.logo };
+      acc[team.name] = { teamName: team.name, played: 0, won: 0, lost: 0, drawn: 0, points: 0, logo: team.logo, goalsFor: 0, goalsAgainst: 0, goalDifference: 0 };
       return acc;
     }, {} as Record<string, PointsTableEntry>);
 
@@ -305,8 +297,16 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate }
           const score1 = matchScores.score1;
           const score2 = matchScores.score2;
 
-          if(table[team1Name]) table[team1Name].played += 1;
-          if(table[team2Name]) table[team2Name].played += 1;
+          if(table[team1Name]) {
+            table[team1Name].played += 1;
+            table[team1Name].goalsFor += score1;
+            table[team1Name].goalsAgainst += score2;
+          }
+          if(table[team2Name]) {
+            table[team2Name].played += 1;
+            table[team2Name].goalsFor += score2;
+            table[team2Name].goalsAgainst += score1;
+          }
 
           if (score1 > score2) {
             if(table[team1Name]) table[team1Name].won += 1;
@@ -324,9 +324,10 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate }
 
     Object.values(table).forEach(entry => {
       entry.points = entry.won * 3 + entry.drawn * 1;
+      entry.goalDifference = entry.goalsFor - entry.goalsAgainst;
     });
 
-    return Object.values(table).sort((a, b) => b.points - a.points || (b.won - a.won));
+    return Object.values(table).sort((a, b) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor);
   }, [scores, teams, allRounds]);
 
   return (
@@ -395,45 +396,11 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate }
         )}
       </div>
       <div>
-        <Card>
-          <CardHeader>
-            <CardTitle>Points Table</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Team</TableHead>
-                  <TableHead>P</TableHead>
-                  <TableHead>W</TableHead>
-                  <TableHead>D</TableHead>
-                  <TableHead>L</TableHead>
-                  <TableHead>Pts</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {pointsTable.map(entry => (
-                  <TableRow key={entry.teamName}>
-                    <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          {entry.logo ? <Image src={entry.logo} alt={`${entry.teamName} logo`} width={24} height={24} className="rounded-full" /> : <Shield className="h-5 w-5 text-muted-foreground" />}
-                          <span>{entry.teamName}</span>
-                        </div>
-                    </TableCell>
-                    <TableCell>{entry.played}</TableCell>
-                    <TableCell>{entry.won}</TableCell>
-                    <TableCell>{entry.drawn}</TableCell>
-                    <TableCell>{entry.lost}</TableCell>
-                    <TableCell className="font-bold">{entry.points}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </CardContent>
-        </Card>
+        <TableViewToggle />
+        <PointsTable title="Points Table" table={pointsTable} viewMode={viewMode} />
       </div>
     </div>
-    <ProceedFooter />
+    <NavigationFooter />
     </>
   )
 }

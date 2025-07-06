@@ -52,6 +52,9 @@ export interface PointsTableEntry {
   won: number;
   lost: number;
   drawn: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDifference: number;
   points: number;
   logo?: string;
 }

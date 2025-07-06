@@ -3,7 +3,7 @@
 import type { Match, Round, Score } from '@/types';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { useMemo, useState } from 'react';
-import { MapPin, Lock, ArrowRight, Shield } from 'lucide-react';
+import { MapPin, Lock, ArrowRight, Shield, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ScoreEntryDialog from './score-entry-dialog';
 import { cn } from '@/lib/utils';
@@ -109,6 +109,10 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, score
         setActiveRound(prev => prev + 1);
     };
 
+    const handleGoBack = () => {
+        setActiveRound(prev => Math.max(1, prev - 1));
+    };
+
     const processedFixture = useMemo(() => {
         const newRounds = JSON.parse(JSON.stringify(fixture.rounds));
 
@@ -210,18 +214,23 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, score
           </div>
         )}
       </div>
-      {hasNextRound && (
-        <div className="mt-8 flex flex-col items-center justify-center gap-2">
-          <Button size="lg" onClick={handleProceed} disabled={!isRoundComplete}>
-            Proceed to Next Round <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
-          {!isRoundComplete && (
-            <p className="text-sm text-muted-foreground">
+      <div className="mt-8 flex flex-col items-center justify-center gap-2">
+          <div className="flex items-center gap-4">
+              <Button size="lg" variant="outline" onClick={handleGoBack} disabled={activeRound === 1}>
+                  <ArrowLeft className="mr-2 h-4 w-4" /> Previous Round
+              </Button>
+              {hasNextRound && (
+                  <Button size="lg" onClick={handleProceed} disabled={!isRoundComplete}>
+                      Next Round <ArrowRight className="ml-2 h-4 w-4" />
+                  </Button>
+              )}
+          </div>
+          {hasNextRound && !isRoundComplete && (
+              <p className="text-sm text-muted-foreground mt-2">
               Enter all match results for the current round to proceed.
-            </p>
+              </p>
           )}
-        </div>
-      )}
+      </div>
        {isRoundComplete && !hasNextRound && !finalWinner && (
         <div className="mt-8 text-center text-lg font-semibold text-primary">
           Enter final match score to determine the winner!

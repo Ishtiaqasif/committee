@@ -1,8 +1,10 @@
 "use client"
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import type { Team, PointsTableEntry, Fixture, Score, Group, Round as TournamentRound } from '@/types';
 import PointsTable from './points-table';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 
 interface PointsTableViewProps {
   fixture: Fixture;
@@ -13,7 +15,7 @@ interface PointsTableViewProps {
 
 const calculatePointsTable = (teams: Team[], rounds: TournamentRound[], scores: Record<string, Score>, groupName?: string): PointsTableEntry[] => {
     const table: Record<string, PointsTableEntry> = teams.reduce((acc, team) => {
-      acc[team.name] = { teamName: team.name, played: 0, won: 0, lost: 0, drawn: 0, points: 0, logo: team.logo };
+      acc[team.name] = { teamName: team.name, played: 0, won: 0, lost: 0, drawn: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0, logo: team.logo };
       return acc;
     }, {} as Record<string, PointsTableEntry>);
 
@@ -36,6 +38,11 @@ const calculatePointsTable = (teams: Team[], rounds: TournamentRound[], scores: 
           table[team1Name].played += 1;
           table[team2Name].played += 1;
 
+          table[team1Name].goalsFor += score1;
+          table[team1Name].goalsAgainst += score2;
+          table[team2Name].goalsFor += score2;
+          table[team2Name].goalsAgainst += score1;
+
           if (score1 > score2) {
             table[team1Name].won += 1;
             table[team2Name].lost += 1;
@@ -52,13 +59,15 @@ const calculatePointsTable = (teams: Team[], rounds: TournamentRound[], scores: 
 
     Object.values(table).forEach(entry => {
       entry.points = entry.won * 3 + entry.drawn * 1;
+      entry.goalDifference = entry.goalsFor - entry.goalsAgainst;
     });
 
-    return Object.values(table).sort((a, b) => b.points - a.points || (b.won - a.won));
+    return Object.values(table).sort((a, b) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor);
 }
 
 
 export default function PointsTableView({ fixture, teams, scores, tournamentType }: PointsTableViewProps) {
+  const [viewMode, setViewMode] = useState<'short' | 'full'>('short');
   
   const tables = useMemo(() => {
     let fixtureForTable: { rounds?: TournamentRound[]; groups?: Group[] } | undefined = fixture;
@@ -99,11 +108,23 @@ export default function PointsTableView({ fixture, teams, scores, tournamentType
 
   return (
     <div>
-        <h2 className="text-3xl font-bold text-primary">Points Table</h2>
-        <p className="text-muted-foreground">Live standings for the tournament.</p>
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="flex justify-between items-center mb-6">
+            <div>
+                <h2 className="text-3xl font-bold text-primary">Points Table</h2>
+                <p className="text-muted-foreground">Live standings for the tournament.</p>
+            </div>
+            <div className="flex items-center space-x-2">
+                <Switch
+                    id="view-mode-switch"
+                    checked={viewMode === 'full'}
+                    onCheckedChange={(checked) => setViewMode(checked ? 'full' : 'short')}
+                />
+                <Label htmlFor="view-mode-switch">Show Full Table</Label>
+            </div>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {tables.map(t => (
-                <PointsTable key={t.title} title={t.title} table={t.table} />
+                <PointsTable key={t.title} title={t.title} table={t.table} viewMode={viewMode}/>
             ))}
         </div>
     </div>
