@@ -3,6 +3,9 @@
 import type { PointsTableEntry } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import Image from 'next/image';
+import { Shield } from 'lucide-react';
+
 
 interface PointsTableProps {
   title: string;
@@ -30,7 +33,12 @@ export default function PointsTable({ title, table }: PointsTableProps) {
           <TableBody>
             {table.map(entry => (
               <TableRow key={entry.teamName}>
-                <TableCell className="font-medium">{entry.teamName}</TableCell>
+                <TableCell className="font-medium">
+                  <div className="flex items-center gap-2">
+                    {entry.logo ? <Image src={entry.logo} alt={`${entry.teamName} logo`} width={24} height={24} className="rounded-full" /> : <Shield className="h-5 w-5 text-muted-foreground" />}
+                    <span>{entry.teamName}</span>
+                  </div>
+                </TableCell>
                 <TableCell className="text-center">{entry.played}</TableCell>
                 <TableCell className="text-center">{entry.won}</TableCell>
                 <TableCell className="text-center">{entry.drawn}</TableCell>

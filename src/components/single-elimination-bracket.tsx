@@ -3,10 +3,11 @@
 import type { Match, Round, Score } from '@/types';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { useMemo, useState } from 'react';
-import { MapPin, Lock, ArrowRight } from 'lucide-react';
+import { MapPin, Lock, ArrowRight, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ScoreEntryDialog from './score-entry-dialog';
 import { cn } from '@/lib/utils';
+import Image from 'next/image';
 
 interface SingleEliminationBracketProps {
   fixture: { rounds: Round[] };
@@ -36,12 +37,18 @@ const MatchComponent = ({ match, round, onScoreUpdate, currentScores, isActive }
     <Card className={cn("w-64 bg-card shadow-md transition-all", isActive && !score?.locked && "border-primary ring-2 ring-primary")}>
       <CardContent className="p-0">
         <div className={getTeamClass(isTeam1Winner, match.team1.name)}>
-          <span>{match.team1.name}</span>
+          <div className="flex items-center gap-2">
+            {match.team1.logo ? <Image src={match.team1.logo} alt={`${match.team1.name} logo`} width={20} height={20} className="rounded-full" /> : <Shield className="h-5 w-5" />}
+            <span>{match.team1.name}</span>
+          </div>
           <span className="font-bold text-lg">{score?.score1 ?? '-'}</span>
         </div>
         <div className="border-t border-border my-0"></div>
         <div className={getTeamClass(isTeam2Winner, match.team2.name).replace('rounded-t-md', 'rounded-b-md')}>
-          <span>{match.team2.name}</span>
+          <div className="flex items-center gap-2">
+            {match.team2.logo ? <Image src={match.team2.logo} alt={`${match.team2.name} logo`} width={20} height={20} className="rounded-full" /> : <Shield className="h-5 w-5" />}
+            <span>{match.team2.name}</span>
+          </div>
           <span className="font-bold text-lg">{score?.score2 ?? '-'}</span>
         </div>
       </CardContent>
@@ -112,16 +119,16 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, score
             currentRound.matches.forEach((match: Match) => {
                 const matchId = `r${currentRound.round}m${match.match}`;
                 const matchScores = scores[matchId];
-                let winner: string | null = null;
+                let winner: { name: string, logo?: string } | null = null;
                 
-                if (match.team1.name.toLowerCase() === 'bye') winner = match.team2.name;
-                if (match.team2.name.toLowerCase() === 'bye') winner = match.team1.name;
+                if (match.team1.name.toLowerCase() === 'bye') winner = match.team2;
+                if (match.team2.name.toLowerCase() === 'bye') winner = match.team1;
 
                 if (matchScores && matchScores.score1 !== null && matchScores.score2 !== null) {
                     if (matchScores.score1 > matchScores.score2) {
-                        winner = match.team1.name;
+                        winner = match.team1;
                     } else if (matchScores.score2 > matchScores.score1) {
-                        winner = match.team2.name;
+                        winner = match.team2;
                     }
                 }
                 
@@ -130,9 +137,9 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, score
                     const nextMatch = nextRound.matches[nextMatchIndex];
                     if(nextMatch) {
                         if ((match.match - 1) % 2 === 0) {
-                            nextMatch.team1.name = winner;
+                            nextMatch.team1 = winner;
                         } else {
-                            nextMatch.team2.name = winner;
+                            nextMatch.team2 = winner;
                         }
                     }
                 }
@@ -147,7 +154,7 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, score
       const finalMatchId = `r${finalMatch.round}m${finalMatch.match}`;
       const finalScores = scores[finalMatchId];
       if (finalScores && finalScores.score1 !== null && finalScores.score2 !== null) {
-          return finalScores.score1 > finalScores.score2 ? finalMatch.team1.name : finalMatch.team2.name;
+          return finalScores.score1 > finalScores.score2 ? finalMatch.team1 : finalMatch.team2;
       }
     }
     return null;
@@ -193,9 +200,10 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, score
           <div className="flex flex-col items-center justify-center flex-shrink-0 ml-8 md:ml-16">
               <h3 className="text-2xl font-bold mb-6 text-accent tracking-wide">Winner</h3>
               <Card className="w-64 bg-accent shadow-lg text-accent-foreground">
-                  <CardContent className="p-6 text-center">
+                  <CardContent className="p-6 text-center flex items-center justify-center gap-3">
+                      {finalWinner.logo && <Image src={finalWinner.logo} alt={`${finalWinner.name} logo`} width={32} height={32} className="rounded-full bg-white p-1" />}
                       <span className="text-2xl font-black">
-                          {finalWinner}
+                          {finalWinner.name}
                       </span>
                   </CardContent>
               </Card>

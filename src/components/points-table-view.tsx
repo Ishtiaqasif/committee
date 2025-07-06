@@ -11,9 +11,9 @@ interface PointsTableViewProps {
   tournamentType: string;
 }
 
-const calculatePointsTable = (teams: {name: string}[], rounds: TournamentRound[], scores: Record<string, Score>, groupName?: string): PointsTableEntry[] => {
+const calculatePointsTable = (teams: Team[], rounds: TournamentRound[], scores: Record<string, Score>, groupName?: string): PointsTableEntry[] => {
     const table: Record<string, PointsTableEntry> = teams.reduce((acc, team) => {
-      acc[team.name] = { teamName: team.name, played: 0, won: 0, lost: 0, drawn: 0, points: 0 };
+      acc[team.name] = { teamName: team.name, played: 0, won: 0, lost: 0, drawn: 0, points: 0, logo: team.logo };
       return acc;
     }, {} as Record<string, PointsTableEntry>);
 
@@ -68,7 +68,7 @@ export default function PointsTableView({ fixture, teams, scores, tournamentType
 
     if (fixtureForTable?.groups) {
       return fixtureForTable.groups.map(group => {
-        const groupTeams = group.teams.map(name => ({ name }));
+        const groupTeams = group.teams.map(name => teams.find(t => t.name === name)!).filter(Boolean) as Team[];
         return {
           title: group.groupName,
           table: calculatePointsTable(groupTeams, group.rounds, scores, group.groupName)

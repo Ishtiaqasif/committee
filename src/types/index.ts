@@ -17,12 +17,13 @@ export type Tournament = {
 export interface Team {
   id: number;
   name: string;
+  logo?: string;
 }
 
 export interface Match {
   match: number;
-  team1: { name:string; score: number | null };
-  team2: { name: string; score: number | null };
+  team1: { name:string; score: number | null; logo?: string; };
+  team2: { name: string; score: number | null; logo?: string; };
   winner?: string | null;
   venue?: string;
 }
@@ -52,6 +53,7 @@ export interface PointsTableEntry {
   lost: number;
   drawn: number;
   points: number;
+  logo?: string;
 }
 
 export interface Score {

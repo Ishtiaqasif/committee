@@ -3,6 +3,7 @@
 import type { Team } from '@/types';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Users, Shield } from 'lucide-react';
+import Image from 'next/image';
 
 export default function TeamsList({ teams }: { teams: Team[] }) {
     return (
@@ -13,7 +14,11 @@ export default function TeamsList({ teams }: { teams: Team[] }) {
                 {teams.map(team => (
                     <Card key={team.id} className="bg-secondary/50">
                         <CardContent className="p-4 flex items-center gap-3">
-                            <Shield className="h-6 w-6 text-primary/80"/>
+                           {team.logo ? (
+                                <Image src={team.logo} alt={`${team.name} logo`} width={32} height={32} className="rounded-full" />
+                            ) : (
+                                <Shield className="h-6 w-6 text-primary/80"/>
+                            )}
                             <span className="font-medium text-lg">{team.name}</span>
                         </CardContent>
                     </Card>

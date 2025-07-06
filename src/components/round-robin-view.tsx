@@ -4,10 +4,11 @@ import { useMemo, useState } from 'react';
 import type { Team, PointsTableEntry, Match, Round, Group, Score } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dices, MapPin, Lock, ArrowRight } from 'lucide-react';
+import { Dices, MapPin, Lock, ArrowRight, Shield } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
 import ScoreEntryDialog from './score-entry-dialog';
+import Image from 'next/image';
 
 
 interface RoundRobinViewProps {
@@ -17,12 +18,12 @@ interface RoundRobinViewProps {
   onScoreUpdate: (matchIdentifier: string, newScore: Score) => void;
 }
 
-const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate }: { group: Group, activeRound: number, scores: RoundRobinViewProps['scores'], onScoreUpdate: RoundRobinViewProps['onScoreUpdate']}) => {
-  const groupTeams = useMemo(() => group.teams.map(name => ({ name })), [group.teams]);
+const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate, teams }: { group: Group, activeRound: number, scores: RoundRobinViewProps['scores'], onScoreUpdate: RoundRobinViewProps['onScoreUpdate'], teams: Team[] }) => {
+  const groupTeams = useMemo(() => group.teams.map(name => teams.find(t => t.name === name)!).filter(Boolean), [group.teams, teams]);
 
   const pointsTable = useMemo(() => {
     const table: Record<string, PointsTableEntry> = groupTeams.reduce((acc, team) => {
-      acc[team.name] = { teamName: team.name, played: 0, won: 0, lost: 0, drawn: 0, points: 0 };
+      acc[team.name] = { teamName: team.name, played: 0, won: 0, lost: 0, drawn: 0, points: 0, logo: team.logo };
       return acc;
     }, {} as Record<string, PointsTableEntry>);
 
@@ -80,13 +81,19 @@ const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate }: { 
                   return (
                   <div key={matchId} className="p-3 rounded-lg bg-secondary/50">
                     <div className="flex items-center justify-between">
-                        <span className="w-1/3 text-right font-medium">{match.team1.name}</span>
+                        <div className="flex w-1/3 items-center justify-end gap-2">
+                          <span className="font-medium text-right">{match.team1.name}</span>
+                          {match.team1.logo ? <Image src={match.team1.logo} alt={`${match.team1.name} logo`} width={24} height={24} className="rounded-full"/> : <Shield className="h-6 w-6 text-primary/30"/>}
+                        </div>
                         <div className="flex items-center gap-2 mx-4 font-semibold text-lg">
                             <span>{score?.score1 ?? '-'}</span>
                             <span>vs</span>
                             <span>{score?.score2 ?? '-'}</span>
                         </div>
-                        <span className="w-1/3 text-left font-medium">{match.team2.name}</span>
+                        <div className="flex w-1/3 items-center justify-start gap-2">
+                           {match.team2.logo ? <Image src={match.team2.logo} alt={`${match.team2.name} logo`} width={24} height={24} className="rounded-full"/> : <Shield className="h-6 w-6 text-primary/30"/>}
+                          <span className="font-medium text-left">{match.team2.name}</span>
+                        </div>
                     </div>
                     <div className="flex items-center justify-center gap-4 mt-2">
                         <ScoreEntryDialog
@@ -140,7 +147,12 @@ const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate }: { 
               <TableBody>
                 {pointsTable.map(entry => (
                   <TableRow key={entry.teamName}>
-                    <TableCell className="font-medium">{entry.teamName}</TableCell>
+                    <TableCell className="font-medium">
+                      <div className="flex items-center gap-2">
+                        {entry.logo ? <Image src={entry.logo} alt={`${entry.teamName} logo`} width={24} height={24} className="rounded-full" /> : <Shield className="h-5 w-5 text-muted-foreground" />}
+                        <span>{entry.teamName}</span>
+                      </div>
+                    </TableCell>
                     <TableCell>{entry.played}</TableCell>
                     <TableCell>{entry.won}</TableCell>
                     <TableCell>{entry.drawn}</TableCell>
@@ -266,7 +278,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate }
         </TabsList>
         {fixture.groups.map(group => (
           <TabsContent key={group.groupName} value={group.groupName} className="mt-6">
-            <GroupedRoundRobinView group={group} activeRound={activeRound} scores={scores} onScoreUpdate={onScoreUpdate} />
+            <GroupedRoundRobinView group={group} activeRound={activeRound} scores={scores} onScoreUpdate={onScoreUpdate} teams={teams} />
           </TabsContent>
         ))}
       </Tabs>
@@ -280,7 +292,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate }
 
   const pointsTable = useMemo(() => {
     const table: Record<string, PointsTableEntry> = teams.reduce((acc, team) => {
-      acc[team.name] = { teamName: team.name, played: 0, won: 0, lost: 0, drawn: 0, points: 0 };
+      acc[team.name] = { teamName: team.name, played: 0, won: 0, lost: 0, drawn: 0, points: 0, logo: team.logo };
       return acc;
     }, {} as Record<string, PointsTableEntry>);
 
@@ -336,13 +348,19 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate }
                   return (
                   <div key={matchId} className="p-3 rounded-lg bg-secondary/50">
                     <div className="flex items-center justify-between">
-                        <span className="w-1/3 text-right font-medium">{match.team1.name}</span>
+                         <div className="flex w-1/3 items-center justify-end gap-2">
+                          <span className="font-medium text-right">{match.team1.name}</span>
+                          {match.team1.logo ? <Image src={match.team1.logo} alt={`${match.team1.name} logo`} width={24} height={24} className="rounded-full"/> : <Shield className="h-6 w-6 text-primary/30"/>}
+                        </div>
                         <div className="flex items-center gap-2 mx-4 font-semibold text-lg">
                             <span>{score?.score1 ?? '-'}</span>
                             <span>vs</span>
                             <span>{score?.score2 ?? '-'}</span>
                         </div>
-                        <span className="w-1/3 text-left font-medium">{match.team2.name}</span>
+                        <div className="flex w-1/3 items-center justify-start gap-2">
+                           {match.team2.logo ? <Image src={match.team2.logo} alt={`${match.team2.name} logo`} width={24} height={24} className="rounded-full"/> : <Shield className="h-6 w-6 text-primary/30"/>}
+                          <span className="font-medium text-left">{match.team2.name}</span>
+                        </div>
                     </div>
                      <div className="flex items-center justify-center gap-4 mt-2">
                         <ScoreEntryDialog
@@ -396,7 +414,12 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate }
               <TableBody>
                 {pointsTable.map(entry => (
                   <TableRow key={entry.teamName}>
-                    <TableCell className="font-medium">{entry.teamName}</TableCell>
+                    <TableCell className="font-medium">
+                        <div className="flex items-center gap-2">
+                          {entry.logo ? <Image src={entry.logo} alt={`${entry.teamName} logo`} width={24} height={24} className="rounded-full" /> : <Shield className="h-5 w-5 text-muted-foreground" />}
+                          <span>{entry.teamName}</span>
+                        </div>
+                    </TableCell>
                     <TableCell>{entry.played}</TableCell>
                     <TableCell>{entry.won}</TableCell>
                     <TableCell>{entry.drawn}</TableCell>

@@ -57,17 +57,22 @@ export default function TournamentHome({ tournament, teams, onReset }: Tournamen
         const parsedFixture = JSON.parse(result.fixture);
         
         const teamMap = teams.reduce((acc, team, index) => {
-            acc[`Team ${index + 1}`] = team.name;
+            acc[`Team ${index + 1}`] = team;
             return acc;
-        }, {} as Record<string, string>)
+        }, {} as Record<string, Team>)
 
-        const mapMatches = (matches: any[]) => matches.map((match: any, matchIndex: number) => ({
-            ...match,
-            match: match.match ?? (matchIndex + 1),
-            team1: { name: teamMap[match.team1] || match.team1, score: null },
-            team2: { name: teamMap[match.team2] || match.team2, score: null },
-            venue: match.venue,
-        }));
+        const mapMatches = (matches: any[]) => matches.map((match: any, matchIndex: number) => {
+            const team1Info = teamMap[match.team1] || { name: match.team1, logo: undefined };
+            const team2Info = teamMap[match.team2] || { name: match.team2, logo: undefined };
+
+            return {
+                ...match,
+                match: match.match ?? (matchIndex + 1),
+                team1: { name: team1Info.name, score: null, logo: team1Info.logo },
+                team2: { name: team2Info.name, score: null, logo: team2Info.logo },
+                venue: match.venue,
+            }
+        });
         
         const mapRounds = (rounds: any[]) => rounds.map((round: any, roundIndex: number) => ({
             ...round,
@@ -78,7 +83,7 @@ export default function TournamentHome({ tournament, teams, onReset }: Tournamen
         const mapGroups = (groups: any[]) => groups.map((group: any, groupIndex: number) => ({
             ...group,
             groupName: group.groupName ?? `Group ${String.fromCharCode(65 + groupIndex)}`,
-            teams: group.teams.map((teamName: string) => teamMap[teamName] || teamName),
+            teams: group.teams.map((teamName: string) => (teamMap[teamName] || {name: teamName}).name),
             rounds: mapRounds(group.rounds)
         }));
 
