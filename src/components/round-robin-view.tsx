@@ -88,7 +88,9 @@ const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate, team
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {round.matches.map((match) => {
+                {round.matches
+                  .filter(match => match.team1.name.toLowerCase() !== 'bye' && match.team2.name.toLowerCase() !== 'bye')
+                  .map((match) => {
                   const matchId = `g${group.groupName}r${round.round}m${match.match}`;
                   const score = scores[matchId];
                   return (
@@ -373,7 +375,9 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {round.matches.map((match) => {
+                {round.matches
+                  .filter(match => match.team1.name.toLowerCase() !== 'bye' && match.team2.name.toLowerCase() !== 'bye')
+                  .map((match) => {
                   const matchId = `r${round.round}m${match.match}`;
                   const score = scores[matchId];
                   return (
