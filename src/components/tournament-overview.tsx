@@ -5,16 +5,21 @@ import { useMemo } from 'react';
 import type { Tournament, Fixture, Score, Team, Round } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Flame, Swords, CheckCircle, ListTodo } from 'lucide-react';
+import { Flame, Swords, CheckCircle, ListTodo, Trophy, Loader } from 'lucide-react';
+import { Button } from './ui/button';
 
 interface TournamentOverviewProps {
   tournament: Tournament;
-  fixture: Fixture;
+  fixture: Fixture | null;
   scores: Record<string, Score>;
   teams: Team[];
+  onGenerateFixture: () => void;
+  isGeneratingFixture: boolean;
 }
 
-const getAllMatches = (fixture: Fixture): { id: string, roundName: string }[] => {
+const getAllMatches = (fixture: Fixture | null): { id: string, roundName: string }[] => {
+    if (!fixture) return [];
+
     const allMatches: { id: string, roundName: string }[] = [];
     
     const processRounds = (rounds: Round[], groupName?: string) => {
@@ -41,7 +46,8 @@ const getAllMatches = (fixture: Fixture): { id: string, roundName: string }[] =>
     return allMatches;
 };
 
-export default function TournamentOverview({ tournament, fixture, scores, teams }: TournamentOverviewProps) {
+export default function TournamentOverview({ tournament, fixture, scores, teams, onGenerateFixture, isGeneratingFixture }: TournamentOverviewProps) {
+  
   const stats = useMemo(() => {
     const allMatches = getAllMatches(fixture);
     const totalMatches = allMatches.length;
@@ -90,6 +96,25 @@ export default function TournamentOverview({ tournament, fixture, scores, teams 
         progress: totalMatches > 0 ? (playedMatches / totalMatches) * 100 : 0
     };
   }, [fixture, scores, tournament.winner]);
+  
+  if (!fixture) {
+      return (
+        <div className="flex flex-col items-center justify-center text-center">
+            <h2 className="text-3xl font-bold text-primary">Tournament Overview</h2>
+            <div className="mt-6 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border py-24 text-center w-full">
+                <Trophy className="mx-auto h-12 w-12 text-accent" />
+                <h3 className="mt-4 text-2xl font-semibold">All Teams Registered!</h3>
+                <p className="mt-2 text-muted-foreground">
+                    You're all set. Ready to generate the tournament fixture.
+                </p>
+                <Button onClick={onGenerateFixture} disabled={isGeneratingFixture} size="lg" className="mt-6">
+                    {isGeneratingFixture && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                    {isGeneratingFixture ? "Generating..." : "Generate Fixture"}
+                </Button>
+            </div>
+        </div>
+      );
+  }
 
   const StatusIcon = {
       'Upcoming': <ListTodo className="w-8 h-8 text-blue-500" />,

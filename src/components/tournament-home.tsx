@@ -64,6 +64,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     } else {
       setFixture(null);
       setScores({});
+      setActiveView('overview');
     }
   }, [tournament, toast]);
 
@@ -344,23 +345,16 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
         return <ChampionView winner={tournament.winner} />;
     }
 
-    if (!fixture) {
-      return (
-        <div className="flex flex-col items-center justify-center h-full text-center">
-            <Trophy className="mx-auto h-12 w-12 text-accent" />
-            <h2 className="mt-4 text-2xl font-semibold">Teams Registered!</h2>
-            <p className="mt-2 text-muted-foreground">Ready to generate the tournament fixture.</p>
-            <Button onClick={handleGenerateFixture} disabled={isPending} size="lg" className="mt-6">
-            {isPending && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-            {isPending ? "Generating..." : "Generate Fixture"}
-            </Button>
-        </div>
-      );
-    }
-
     switch (activeView) {
       case 'overview':
-        return <TournamentOverview tournament={tournament} fixture={fixture} scores={scores} teams={teams} />;
+        return <TournamentOverview 
+            tournament={tournament} 
+            fixture={fixture} 
+            scores={scores} 
+            teams={teams}
+            onGenerateFixture={handleGenerateFixture}
+            isGeneratingFixture={isPending}
+         />;
       case 'fixtures':
         return (
             <div>
@@ -372,7 +366,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
       case 'teams':
         return <TeamsList teams={teams} />;
       case 'points-table':
-        return <PointsTableView fixture={fixture} teams={teams} scores={scores} tournamentType={tournament.tournamentType}/>;
+        return <PointsTableView fixture={fixture!} teams={teams} scores={scores} tournamentType={tournament.tournamentType}/>;
       case 'settings':
         return <TournamentSettings tournament={tournament} onUpdate={onTournamentUpdate} />;
       default:
@@ -405,13 +399,23 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                     <SidebarMenuItem>
-                        <SidebarMenuButton onClick={() => setActiveView('fixtures')} isActive={activeView === 'fixtures'}>
+                        <SidebarMenuButton 
+                            onClick={() => setActiveView('fixtures')} 
+                            isActive={activeView === 'fixtures'}
+                            disabled={!fixture}
+                            tooltip={!fixture ? "Generate a fixture first" : "Fixtures & Scores"}
+                        >
                             <Gamepad2/>
                             Fixtures & Scores
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                      <SidebarMenuItem>
-                        <SidebarMenuButton onClick={() => setActiveView('points-table')} isActive={activeView === 'points-table'}>
+                        <SidebarMenuButton 
+                            onClick={() => setActiveView('points-table')} 
+                            isActive={activeView === 'points-table'}
+                            disabled={!fixture}
+                            tooltip={!fixture ? "Generate a fixture first" : "Points Table"}
+                        >
                             <ListOrdered/>
                             Points Table
                         </SidebarMenuButton>
