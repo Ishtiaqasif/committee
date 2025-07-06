@@ -26,6 +26,8 @@ const formSchema = z.object({
   tournamentType: z.enum(["round-robin", "single elimination", "hybrid"], {
     required_error: "You need to select a tournament type.",
   }),
+  roundRobinGrouping: z.enum(['all-play-all', 'grouped']).default('all-play-all'),
+  teamsPerGroup: z.coerce.number().optional(),
   roundRobinHomeAndAway: z.boolean().default(false),
   knockoutHomeAndAway: z.boolean().default(false),
   teamsAdvancing: z.coerce.number().optional(),
@@ -38,6 +40,14 @@ const formSchema = z.object({
 }, {
     message: "Must be a power of two and less than total teams.",
     path: ["teamsAdvancing"],
+}).refine(data => {
+    if (data.tournamentType !== 'round-robin' && data.tournamentType !== 'hybrid') return true;
+    if (data.roundRobinGrouping !== 'grouped') return true;
+    if (!data.teamsPerGroup || data.teamsPerGroup <= 1) return false;
+    return data.numberOfTeams % data.teamsPerGroup === 0;
+}, {
+    message: "Must be a divisor of total teams and > 1.",
+    path: ["teamsPerGroup"],
 });
 
 export default function TournamentCreator({ onTournamentCreated }: TournamentCreatorProps) {
@@ -49,11 +59,13 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
       roundRobinHomeAndAway: false,
       knockoutHomeAndAway: false,
       fixtureGeneration: 'predefined',
+      roundRobinGrouping: 'all-play-all',
     },
   });
 
   const numberOfTeams = form.watch("numberOfTeams");
   const tournamentType = form.watch("tournamentType");
+  const roundRobinGrouping = form.watch("roundRobinGrouping");
 
    useEffect(() => {
     if (tournamentType === 'hybrid') {
@@ -64,6 +76,13 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
       form.setValue('teamsAdvancing', undefined);
     }
   }, [tournamentType, numberOfTeams, form]);
+
+
+  useEffect(() => {
+    if (roundRobinGrouping !== 'grouped') {
+        form.setValue('teamsPerGroup', undefined, { shouldValidate: true });
+    }
+  }, [roundRobinGrouping, form]);
 
 
   const isPowerOfTwo = (n: number) => {
@@ -156,6 +175,63 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                             </div>
                         </AccordionTrigger>
                         <AccordionContent className="space-y-8 pt-6">
+                            {(tournamentType === 'round-robin' || tournamentType === 'hybrid') && (
+                                <div className="space-y-6">
+                                    <FormField
+                                        control={form.control}
+                                        name="roundRobinGrouping"
+                                        render={({ field }) => (
+                                            <FormItem className="space-y-3 rounded-lg border p-3 shadow-sm">
+                                            <FormLabel>Round-Robin Format</FormLabel>
+                                            <FormControl>
+                                                <RadioGroup
+                                                onValueChange={field.onChange}
+                                                defaultValue={field.value}
+                                                className="space-y-2"
+                                                >
+                                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                                    <FormControl>
+                                                    <RadioGroupItem value="all-play-all" />
+                                                    </FormControl>
+                                                    <FormLabel className="font-normal">
+                                                    All-Play-All
+                                                    </FormLabel>
+                                                </FormItem>
+                                                <FormItem className="flex items-center space-x-3 space-y-0">
+                                                    <FormControl>
+                                                    <RadioGroupItem value="grouped" />
+                                                    </FormControl>
+                                                    <FormLabel className="font-normal">
+                                                    Grouped
+                                                    </FormLabel>
+                                                </FormItem>
+                                                </RadioGroup>
+                                            </FormControl>
+                                            <FormMessage />
+                                            </FormItem>
+                                        )}
+                                    />
+                                    {roundRobinGrouping === 'grouped' && (
+                                        <FormField
+                                            control={form.control}
+                                            name="teamsPerGroup"
+                                            render={({ field }) => (
+                                            <FormItem>
+                                                <FormLabel>Teams Per Group</FormLabel>
+                                                <FormControl>
+                                                <Input type="number" placeholder="e.g., 4" {...field} value={field.value ?? ''} />
+                                                </FormControl>
+                                                <FormDescription>
+                                                Must be a divisor of the total number of teams.
+                                                </FormDescription>
+                                                <FormMessage />
+                                            </FormItem>
+                                            )}
+                                        />
+                                    )}
+                                </div>
+                            )}
+
                             {(tournamentType === 'round-robin' || tournamentType === 'hybrid') && (
                             <FormField
                                 control={form.control}

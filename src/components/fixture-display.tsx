@@ -42,6 +42,8 @@ export default function FixtureDisplay({ tournament, teams, fixture, setFixture,
           tournamentType: tournament.tournamentType,
           numberOfTeams: tournament.numberOfTeams,
           tournamentName: tournament.tournamentName,
+          roundRobinGrouping: tournament.roundRobinGrouping,
+          teamsPerGroup: tournament.teamsPerGroup,
           roundRobinHomeAndAway: tournament.roundRobinHomeAndAway,
           knockoutHomeAndAway: tournament.knockoutHomeAndAway,
           teamsAdvancing: tournament.teamsAdvancing,
@@ -68,15 +70,31 @@ export default function FixtureDisplay({ tournament, teams, fixture, setFixture,
             matches: mapMatches(round.matches)
         }));
 
+        const mapGroups = (groups: any[]) => groups.map((group: any, groupIndex: number) => ({
+            ...group,
+            groupName: group.groupName ?? `Group ${String.fromCharCode(65 + groupIndex)}`,
+            teams: group.teams.map((teamName: string) => teamMap[teamName] || teamName),
+            rounds: mapRounds(group.rounds)
+        }));
+
         let mappedFixture: Fixture;
 
         if (tournament.tournamentType === 'hybrid') {
             if (!parsedFixture.groupStage || !parsedFixture.knockoutStage) {
                 throw new Error("Hybrid fixture is missing groupStage or knockoutStage");
             }
+            
+            const groupStage = parsedFixture.groupStage.groups 
+                ? { groups: mapGroups(parsedFixture.groupStage.groups) } 
+                : { rounds: mapRounds(parsedFixture.groupStage.rounds) };
+
             mappedFixture = {
-                groupStage: { rounds: mapRounds(parsedFixture.groupStage.rounds) },
+                groupStage: groupStage,
                 knockoutStage: { rounds: mapRounds(parsedFixture.knockoutStage.rounds) }
+            };
+        } else if (tournament.tournamentType === 'round-robin' && parsedFixture.groups) {
+             mappedFixture = {
+                groups: mapGroups(parsedFixture.groups)
             };
         } else {
             if (!parsedFixture.rounds) {
@@ -142,8 +160,8 @@ export default function FixtureDisplay({ tournament, teams, fixture, setFixture,
       );
     }
     
-    if (tournament.tournamentType === 'round-robin' && fixture.rounds) {
-      return <RoundRobinView fixture={{rounds: fixture.rounds}} teams={teams} scores={scores} onScoreChange={handleScoreChange} />;
+    if (tournament.tournamentType === 'round-robin' && (fixture.rounds || fixture.groups)) {
+      return <RoundRobinView fixture={{rounds: fixture.rounds, groups: fixture.groups}} teams={teams} scores={scores} onScoreChange={handleScoreChange} />;
     }
 
     if (tournament.tournamentType === 'single elimination' && fixture.rounds) {

@@ -17,6 +17,8 @@ const GenerateTournamentFixtureInputSchema = z.object({
   tournamentType: TournamentType.describe('The type of tournament (round-robin, single elimination, hybrid).'),
   numberOfTeams: z.number().int().min(2).describe('The number of teams participating in the tournament.'),
   tournamentName: z.string().describe('The name of the tournament.'),
+  roundRobinGrouping: z.enum(['all-play-all', 'grouped']).optional().describe("For round-robin stages, whether all teams play each other or are split into groups."),
+  teamsPerGroup: z.number().int().optional().describe("If using grouped round-robin, the number of teams per group."),
   roundRobinHomeAndAway: z.boolean().describe('Whether to generate home and away matches for round-robin stages.'),
   knockoutHomeAndAway: z.boolean().describe('Whether to generate home and away matches (two-legged ties) for knockout stages.'),
   teamsAdvancing: z.number().int().optional().describe('Number of teams advancing to the knockout stage in a hybrid tournament.'),
@@ -52,11 +54,17 @@ Fixture Generation Method: {{fixtureGeneration}}. If 'random', shuffle team pair
 - For round-robin stages (including the group stage of a hybrid tournament), {{#if roundRobinHomeAndAway}}generate home and away matches.{{else}}do not generate home and away matches.{{/if}}
 - For single elimination stages (including the knockout stage of a hybrid tournament), {{#if knockoutHomeAndAway}}generate two-legged ties (home and away). The winner should be determined by aggregate score. If scores are level, use away goals, then penalties if needed. Your JSON output for two-legged knockout matches should represent each leg as a separate match within the round. For example, a quarter-final between Team A and Team B would have two match objects.{{else}}generate single-leg matches.{{/if}}
 
-- For 'round-robin' and 'single elimination' types, the JSON should have a \`rounds\` array at the top level.
+- For 'single elimination' type, the JSON should have a \`rounds\` array at the top level.
+
+- For 'round-robin' type:
+  - If 'roundRobinGrouping' is 'all-play-all', the JSON should have a \`rounds\` array at the top level.
+  - If 'roundRobinGrouping' is 'grouped', split the {{numberOfTeams}} teams into groups of {{teamsPerGroup}}. The top-level key should be \`groups\`, an array of group objects. Each group object must have: a \`groupName\` (e.g., "Group A"), a \`teams\` array with team names (e.g., ["Team 1", "Team 4"]), and a \`rounds\` array for that group's fixture.
+
 - For 'hybrid' type, the JSON must have a \`groupStage\` and a \`knockoutStage\` key at the top level.
-  - \`groupStage\` should be a round-robin tournament fixture object, with a \`rounds\` array.
-  - \`knockoutStage\` should be a single elimination tournament fixture object, with a \`rounds\` array.
-  - The teams in the \`knockoutStage\` matches should be placeholders representing the teams advancing from the group stage (e.g., "Winner Group A", "Runner-up Group B").
+  - \`knockoutStage\` should be a single elimination tournament fixture object, with a \`rounds\` array. The teams in the \`knockoutStage\` matches should be placeholders representing the teams advancing from the group stage (e.g., "Winner Group A", "Runner-up Group B").
+  - The \`groupStage\` format depends on the grouping:
+    - If 'roundRobinGrouping' is 'all-play-all', it should have a \`rounds\` array.
+    - If 'roundRobinGrouping' is 'grouped', it must have a \`groups\` array, following the same structure described for grouped round-robin tournaments.
   {{#if teamsAdvancing}}The knockout stage must be configured for exactly {{teamsAdvancing}} teams.{{else}}You must determine a reasonable number of teams to advance based on the total number of teams (e.g., for 8 total teams, the top 4 advance to a semi-final knockout).{{/if}}
 
 Make sure the entire output is a single, parsable JSON object.

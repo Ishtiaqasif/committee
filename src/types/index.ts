@@ -4,6 +4,8 @@ export type Tournament = {
   tournamentName: string;
   tournamentType: TournamentType;
   numberOfTeams: number;
+  roundRobinGrouping?: 'all-play-all' | 'grouped';
+  teamsPerGroup?: number;
   teamsAdvancing?: number;
   fixtureGeneration: 'random' | 'predefined';
   roundRobinHomeAndAway: boolean;
@@ -27,9 +29,16 @@ export interface Round {
   matches: Match[];
 }
 
+export interface Group {
+  groupName: string;
+  teams: string[];
+  rounds: Round[];
+}
+
 export interface Fixture {
   rounds?: Round[];
-  groupStage?: { rounds: Round[] };
+  groups?: Group[];
+  groupStage?: { rounds?: Round[]; groups?: Group[] };
   knockoutStage?: { rounds: Round[] };
 }
 
