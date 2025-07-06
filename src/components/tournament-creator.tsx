@@ -22,7 +22,7 @@ interface TournamentCreatorProps {
 
 const formSchema = z.object({
   tournamentName: z.string().min(3, "Tournament name must be at least 3 characters long."),
-  numberOfTeams: z.coerce.number().min(2, "Must have at least 2 teams.").max(32, "Cannot have more than 32 teams."),
+  numberOfTeams: z.coerce.number().min(3, "Must have at least 3 teams.").max(32, "Cannot have more than 32 teams."),
   tournamentType: z.enum(["round-robin", "single elimination", "hybrid"], {
     required_error: "You need to select a tournament type.",
   }),
@@ -136,7 +136,7 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                     <FormItem>
                       <FormLabel>Number of Teams</FormLabel>
                       <FormControl>
-                        <Input type="number" min="2" max="32" {...field} />
+                        <Input type="number" min="3" max="32" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

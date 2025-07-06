@@ -15,7 +15,7 @@ const TournamentType = z.enum(['round-robin', 'single elimination', 'hybrid']);
 
 const GenerateTournamentFixtureInputSchema = z.object({
   tournamentType: TournamentType.describe('The type of tournament (round-robin, single elimination, hybrid).'),
-  numberOfTeams: z.number().int().min(2).describe('The number of teams participating in the tournament.'),
+  numberOfTeams: z.number().int().min(3).describe('The number of teams participating in the tournament.'),
   tournamentName: z.string().describe('The name of the tournament.'),
   roundRobinGrouping: z.enum(['all-play-all', 'grouped']).optional().describe("For round-robin stages, whether all teams play each other or are split into groups."),
   teamsPerGroup: z.number().int().optional().describe("If using grouped round-robin, the number of teams per group."),
