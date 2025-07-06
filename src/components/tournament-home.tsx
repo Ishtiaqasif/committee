@@ -193,8 +193,9 @@ export default function TournamentHome({ tournament, teams, onReset }: Tournamen
     const newKnockoutStage = JSON.parse(JSON.stringify(fixture.knockoutStage));
     let allTeamsFound = true;
 
-    newKnockoutStage.rounds.forEach((round: Round) => {
-      round.matches.forEach((match: Match) => {
+    if (newKnockoutStage.rounds && newKnockoutStage.rounds.length > 0) {
+      const firstRound = newKnockoutStage.rounds[0];
+      firstRound.matches.forEach((match: Match) => {
         if (match.team1.name.toLowerCase() !== 'bye' && !teams.some(t => t.name === match.team1.name)) {
           const team1 = getTeamFromPlaceholder(match.team1.name);
           if (team1) {
@@ -214,7 +215,10 @@ export default function TournamentHome({ tournament, teams, onReset }: Tournamen
           }
         }
       });
-    });
+    } else {
+      allTeamsFound = false;
+      console.error('Knockout stage is missing rounds.');
+    }
 
     if (!allTeamsFound) {
       toast({

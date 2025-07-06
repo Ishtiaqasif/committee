@@ -71,7 +71,7 @@ Fixture Generation Method: {{fixtureGeneration}}. If 'random', shuffle team pair
   - If 'roundRobinGrouping' is 'grouped', split the {{numberOfTeams}} teams into groups of {{teamsPerGroup}}. The top-level key should be \`groups\`, an array of group objects. Each group object must have: a \`groupName\` (e.g., "Group A"), a \`teams\` array with team names (e.g., ["Team 1", "Team 4"]), and a \`rounds\` array for that group's fixture.
 
 - For 'hybrid' type, the JSON must have a \`groupStage\` and a \`knockoutStage\` key at the top level.
-  - \`knockoutStage\` should be a single elimination tournament fixture object, with a \`rounds\` array. The teams in the \`knockoutStage\` matches should be placeholders representing the teams advancing from the group stage (e.g., "Winner Group A", "Runner-up Group B").
+  - \`knockoutStage\` should be a single elimination tournament fixture object, with a \`rounds\` array. The teams in the **first round** of the \`knockoutStage\` matches MUST be placeholders representing the teams advancing from the group stage (e.g., "Winner Group A", "Runner-up Group B"). For subsequent knockout rounds, use placeholders that refer to winners of previous knockout matches (e.g., "Winner Match 1"). Do NOT use match-winner placeholders in the first round of the knockout stage.
   - The \`groupStage\` format depends on the grouping:
     - If 'roundRobinGrouping' is 'all-play-all', it should have a \`rounds\` array.
     - If 'roundRobinGrouping' is 'grouped', it must have a \`groups\` array, following the same structure described for grouped round-robin tournaments.
