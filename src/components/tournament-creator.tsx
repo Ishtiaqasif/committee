@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -19,7 +20,9 @@ interface TournamentCreatorProps {
 const formSchema = z.object({
   tournamentName: z.string().min(3, "Tournament name must be at least 3 characters long."),
   numberOfTeams: z.coerce.number().min(2, "Must have at least 2 teams.").max(32, "Cannot have more than 32 teams."),
-  tournamentType: z.enum(["round-robin", "single elimination", "hybrid"]),
+  tournamentType: z.enum(["round-robin", "single elimination", "hybrid"], {
+    required_error: "You need to select a tournament type.",
+  }),
 });
 
 export default function TournamentCreator({ onTournamentCreated }: TournamentCreatorProps) {
@@ -30,6 +33,22 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
       numberOfTeams: 8,
     },
   });
+
+  const numberOfTeams = form.watch("numberOfTeams");
+
+  const isPowerOfTwo = (n: number) => {
+    if (typeof n !== 'number' || n <= 1) return false;
+    return (n & (n - 1)) === 0;
+  };
+
+  const isSingleEliminationDisabled = !isPowerOfTwo(numberOfTeams);
+
+  useEffect(() => {
+    if (isSingleEliminationDisabled && form.getValues("tournamentType") === "single elimination") {
+      form.resetField("tournamentType");
+    }
+  }, [numberOfTeams, isSingleEliminationDisabled, form]);
+
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     onTournamentCreated(values as Tournament);
@@ -80,7 +99,7 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Tournament Type</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select a type" />
@@ -88,7 +107,9 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="round-robin">Round-robin</SelectItem>
-                          <SelectItem value="single elimination">Single Elimination</SelectItem>
+                          <SelectItem value="single elimination" disabled={isSingleEliminationDisabled}>
+                            Single Elimination
+                          </SelectItem>
                           <SelectItem value="hybrid">Hybrid (Round-robin + Knockout)</SelectItem>
                         </SelectContent>
                       </Select>
