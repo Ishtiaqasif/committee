@@ -3,7 +3,7 @@
 import type { Match, Round, Score } from '@/types';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { useMemo, useState } from 'react';
-import { MapPin, Lock, ArrowRight, Shield, ArrowLeft } from 'lucide-react';
+import { MapPin, Lock, ArrowRight, Shield, ArrowLeft, Trophy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ScoreEntryDialog from './score-entry-dialog';
 import { cn } from '@/lib/utils';
@@ -164,6 +164,29 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, score
     return null;
   }, [isRoundComplete, hasNextRound, scores, processedFixture.rounds]);
 
+  if (finalWinner) {
+    return (
+      <div className="w-full flex flex-col items-center justify-center text-center mt-8 p-8 rounded-lg animate-in fade-in-50 duration-500">
+        <Trophy className="w-24 h-24 text-accent drop-shadow-lg" />
+        <h2 className="text-5xl font-extrabold text-primary mt-4 tracking-tight">CHAMPION</h2>
+        <p className="mt-2 text-lg text-muted-foreground">Congratulations to the tournament winner!</p>
+        <Card className="mt-8 w-80 bg-card border-accent border-2 shadow-2xl">
+          <CardContent className="p-6 flex flex-col items-center justify-center gap-4">
+            {finalWinner.logo ? 
+              <Image src={finalWinner.logo} alt={`${finalWinner.name} logo`} width={96} height={96} className="rounded-full ring-4 ring-accent bg-background p-1" /> : 
+              <div className="w-24 h-24 rounded-full ring-4 ring-accent bg-muted flex items-center justify-center">
+                <Shield className="w-12 h-12 text-muted-foreground" />
+              </div>
+            }
+            <span className="text-3xl font-bold text-card-foreground mt-2">
+              {finalWinner.name}
+            </span>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   const getRoundName = (round: Round) => {
     const numTies = knockoutHomeAndAway ? round.matches.length / 2 : round.matches.length;
 
@@ -200,19 +223,6 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, score
               </div>
             </div>
           )})}
-        {finalWinner && (
-          <div className="flex flex-col items-center justify-center flex-shrink-0 ml-8 md:ml-16">
-              <h3 className="text-2xl font-bold mb-6 text-accent tracking-wide">Winner</h3>
-              <Card className="w-64 bg-accent shadow-lg text-accent-foreground">
-                  <CardContent className="p-6 text-center flex items-center justify-center gap-3">
-                      {finalWinner.logo && <Image src={finalWinner.logo} alt={`${finalWinner.name} logo`} width={32} height={32} className="rounded-full bg-white p-1" />}
-                      <span className="text-2xl font-black">
-                          {finalWinner.name}
-                      </span>
-                  </CardContent>
-              </Card>
-          </div>
-        )}
       </div>
       <div className="mt-8 flex flex-col items-center justify-center gap-2">
           <div className="flex items-center gap-4">
