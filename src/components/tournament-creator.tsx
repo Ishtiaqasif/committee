@@ -8,9 +8,12 @@ import type { Tournament } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { Trophy } from "lucide-react";
+import { Trophy, Settings } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 
 
 interface TournamentCreatorProps {
@@ -23,6 +26,17 @@ const formSchema = z.object({
   tournamentType: z.enum(["round-robin", "single elimination", "hybrid"], {
     required_error: "You need to select a tournament type.",
   }),
+  playHomeAndAway: z.boolean().default(false),
+  teamsAdvancing: z.coerce.number().optional(),
+  fixtureGeneration: z.enum(['random', 'predefined']).default('predefined'),
+}).refine(data => {
+    if (data.tournamentType !== 'hybrid') return true;
+    if (data.teamsAdvancing === undefined || data.teamsAdvancing < 2) return false;
+    // is power of two and less than total teams
+    return data.teamsAdvancing < data.numberOfTeams && (data.teamsAdvancing & (data.teamsAdvancing - 1)) === 0;
+}, {
+    message: "Must be a power of two and less than total teams.",
+    path: ["teamsAdvancing"],
 });
 
 export default function TournamentCreator({ onTournamentCreated }: TournamentCreatorProps) {
@@ -31,10 +45,24 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
     defaultValues: {
       tournamentName: "",
       numberOfTeams: 8,
+      playHomeAndAway: false,
+      fixtureGeneration: 'predefined',
     },
   });
 
   const numberOfTeams = form.watch("numberOfTeams");
+  const tournamentType = form.watch("tournamentType");
+
+   useEffect(() => {
+    if (tournamentType === 'hybrid') {
+      // Set a sensible default for teams advancing
+      const defaultAdvancing = Math.pow(2, Math.floor(Math.log2(numberOfTeams / 2)));
+      form.setValue('teamsAdvancing', defaultAdvancing >= 2 ? defaultAdvancing : 2, { shouldValidate: true });
+    } else {
+      form.setValue('teamsAdvancing', undefined);
+    }
+  }, [tournamentType, numberOfTeams, form]);
+
 
   const isPowerOfTwo = (n: number) => {
     if (typeof n !== 'number' || n <= 1) return false;
@@ -64,7 +92,7 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
           <CardDescription>Fill in the details below to get started.</CardDescription>
         </CardHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <CardContent className="space-y-4">
               <FormField
                 control={form.control}
@@ -110,7 +138,7 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                           <SelectItem value="single elimination" disabled={isSingleEliminationDisabled}>
                             Single Elimination
                           </SelectItem>
-                          <SelectItem value="hybrid">Hybrid (Round-robin + Knockout)</SelectItem>
+                          <SelectItem value="hybrid">Hybrid (Group + Knockout)</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -118,6 +146,93 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                   )}
                 />
               </div>
+                <Accordion type="single" collapsible className="w-full pt-4">
+                    <AccordionItem value="advanced-options">
+                        <AccordionTrigger className="text-base">
+                            <div className="flex items-center gap-2">
+                                <Settings className="h-5 w-5" /> Advanced Options
+                            </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="space-y-8 pt-6">
+                            {(tournamentType === 'round-robin' || tournamentType === 'hybrid') && (
+                            <FormField
+                                control={form.control}
+                                name="playHomeAndAway"
+                                render={({ field }) => (
+                                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                                    <div className="space-y-0.5">
+                                    <FormLabel>Home & Away</FormLabel>
+                                    <FormDescription>
+                                        Play each opponent twice.
+                                    </FormDescription>
+                                    </div>
+                                    <FormControl>
+                                    <Switch
+                                        checked={field.value}
+                                        onCheckedChange={field.onChange}
+                                    />
+                                    </FormControl>
+                                </FormItem>
+                                )}
+                            />
+                            )}
+
+                            {tournamentType === 'hybrid' && (
+                            <FormField
+                                control={form.control}
+                                name="teamsAdvancing"
+                                render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Teams Advancing to Knockout</FormLabel>
+                                    <FormControl>
+                                    <Input type="number" placeholder="e.g., 4" {...field} value={field.value ?? ''} />
+                                    </FormControl>
+                                    <FormDescription>
+                                    Must be a power of two (2, 4, 8...).
+                                    </FormDescription>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                            )}
+
+                            <FormField
+                                control={form.control}
+                                name="fixtureGeneration"
+                                render={({ field }) => (
+                                <FormItem className="space-y-3">
+                                    <FormLabel>Fixture Generation</FormLabel>
+                                    <FormControl>
+                                    <RadioGroup
+                                        onValueChange={field.onChange}
+                                        defaultValue={field.value}
+                                        className="space-y-2"
+                                    >
+                                        <FormItem className="flex items-center space-x-3 space-y-0">
+                                        <FormControl>
+                                            <RadioGroupItem value="predefined" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">
+                                            Predefined Path (Seeded)
+                                        </FormLabel>
+                                        </FormItem>
+                                        <FormItem className="flex items-center space-x-3 space-y-0">
+                                        <FormControl>
+                                            <RadioGroupItem value="random" />
+                                        </FormControl>
+                                        <FormLabel className="font-normal">
+                                            Randomized Pairings
+                                        </FormLabel>
+                                        </FormItem>
+                                    </RadioGroup>
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                                )}
+                            />
+                        </AccordionContent>
+                    </AccordionItem>
+                </Accordion>
             </CardContent>
             <CardFooter className="flex justify-center">
               <Button type="submit" size="lg">Create Tournament</Button>

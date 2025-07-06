@@ -42,6 +42,9 @@ export default function FixtureDisplay({ tournament, teams, fixture, setFixture,
           tournamentType: tournament.tournamentType,
           numberOfTeams: tournament.numberOfTeams,
           tournamentName: tournament.tournamentName,
+          playHomeAndAway: tournament.playHomeAndAway,
+          teamsAdvancing: tournament.teamsAdvancing,
+          fixtureGeneration: tournament.fixtureGeneration,
         });
 
         const parsedFixture = JSON.parse(result.fixture);

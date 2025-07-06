@@ -4,6 +4,9 @@ export type Tournament = {
   tournamentName: string;
   tournamentType: TournamentType;
   numberOfTeams: number;
+  playHomeAndAway: boolean;
+  teamsAdvancing?: number;
+  fixtureGeneration: 'random' | 'predefined';
 };
 
 export interface Team {
