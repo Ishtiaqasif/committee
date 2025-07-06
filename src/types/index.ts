@@ -37,6 +37,7 @@ export interface Match {
 
 export interface Round {
   round: number;
+  name?: string;
   matches: Match[];
 }
 

@@ -57,6 +57,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
           knockoutHomeAndAway: tournament.knockoutHomeAndAway,
           teamsAdvancing: tournament.teamsAdvancing,
           fixtureGeneration: tournament.fixtureGeneration,
+          language: tournament.language || 'en',
         });
 
         const parsedFixture = JSON.parse(result.fixture);
@@ -168,9 +169,9 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
 
     const getTeamFromPlaceholder = (placeholder: string): Team | undefined => {
       const patterns = [
-        /^(Winner) (Group .+)$/,
-        /^(Runner-up) (Group .+)$/,
-        /^(\d+)(?:st|nd|rd|th) Place (Group .+)$/
+        /^(Winner) (Group .+)$/i,
+        /^(Runner-up) (Group .+)$/i,
+        /^(\d+)(?:st|nd|rd|th) Place (Group .+)$/i
       ];
 
       for (const pattern of patterns) {
@@ -183,8 +184,8 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
           if (!table) continue;
 
           let index = -1;
-          if (rankStr === 'Winner') index = 0;
-          else if (rankStr === 'Runner-up') index = 1;
+          if (rankStr.toLowerCase() === 'winner') index = 0;
+          else if (rankStr.toLowerCase() === 'runner-up') index = 1;
           else {
             const rankNum = parseInt(rankStr, 10);
             if (!isNaN(rankNum)) index = rankNum - 1;

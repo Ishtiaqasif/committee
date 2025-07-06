@@ -25,6 +25,7 @@ const GenerateTournamentFixtureInputSchema = z.object({
   knockoutHomeAndAway: z.boolean().describe('Whether to generate home and away matches (two-legged ties) for knockout stages.'),
   teamsAdvancing: z.number().int().optional().describe('Number of teams advancing to the knockout stage in a hybrid tournament.'),
   fixtureGeneration: z.enum(['random', 'predefined']).describe("Whether to generate fixtures with random pairings or a predefined 'seeded' path."),
+  language: z.string().optional().describe('The language for the generated fixture placeholders (e.g., "en", "es"). Defaults to English if not provided.'),
 });
 export type GenerateTournamentFixtureInput = z.infer<typeof GenerateTournamentFixtureInputSchema>;
 
@@ -50,6 +51,12 @@ const generateTournamentFixturePrompt = ai.definePrompt({
   prompt: `You are a tournament organizer. Generate a tournament fixture in JSON format for a
 {{tournamentType}} tournament with {{numberOfTeams}} teams.
 The tournament name is {{tournamentName}}.
+
+{{#if language}}
+IMPORTANT: All text in the JSON output must be translated into the language with this code: {{language}}. This includes round names (e.g., "Final", "Semi-finals", "Round 1"), group names (e.g., "Group A"), and placeholders (e.g., "Winner Group A", "Runner-up Group B", "Bye", "TBD"). For example, if the language is 'es', "Winner Group A" should be "Ganador Grupo A" and "Round 1" should be "Ronda 1". If a translation is not possible, use English.
+{{/if}}
+
+Each round object in the \`rounds\` array must have a \`name\` field with a translated, descriptive name for the round (e.g., "Final", "Semi-finals", "Quarter-finals", "Round 1").
 
 This is an {{#if isEsports}}esports (online) tournament.{{else}}in-person tournament.{{/if}}
 

@@ -83,7 +83,7 @@ const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate, team
           <Card key={`round-${round.round}-${roundIndex}`}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Dices className="text-accent"/> Round {round.round}
+                <Dices className="text-accent"/> {round.name || `Round ${round.round}`}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -370,7 +370,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
           <Card key={`round-${round.round}-${roundIndex}`}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Dices className="text-accent"/> Round {round.round}
+                <Dices className="text-accent"/> {round.name || `Round ${round.round}`}
               </CardTitle>
             </CardHeader>
             <CardContent>

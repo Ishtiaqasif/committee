@@ -191,7 +191,7 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, score
           return (
             <div key={`round-${round.round}-${roundIndex}`} className="flex flex-col items-center flex-shrink-0">
               <h3 className="text-2xl font-bold mb-6 text-primary tracking-wide">
-                {getRoundName(round)}
+                {round.name || getRoundName(round)}
               </h3>
               <div className="flex flex-col gap-8 justify-around h-full">
                 {round.matches.map((match) => (
