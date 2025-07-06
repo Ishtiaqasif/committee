@@ -105,7 +105,7 @@ export default function SingleEliminationBracket({ fixture, onScoreChange, score
   return (
     <div className="flex gap-8 md:gap-16 overflow-x-auto pb-4 px-2">
       {processedFixture.rounds.map((round, roundIndex) => (
-        <div key={round.round} className="flex flex-col items-center flex-shrink-0">
+        <div key={`round-${round.round}-${roundIndex}`} className="flex flex-col items-center flex-shrink-0">
           <h3 className="text-2xl font-bold mb-6 text-primary tracking-wide">
             {roundIndex === processedFixture.rounds.length - 1 && round.matches.length === 1 ? 'Final' : `Round ${round.round}`}
           </h3>
