@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { generateTournamentFixture } from "@/ai/flows/generate-tournament-fixture";
 import type { Tournament, Team, Fixture, Score, PointsTableEntry, Round, Match, TournamentCreationData } from "@/types";
 import { Button } from "@/components/ui/button";
@@ -31,7 +31,7 @@ interface TournamentHomeProps {
   tournament: Tournament;
   teams: Team[];
   onReset: () => void;
-  onTournamentUpdate: (data: Partial<TournamentCreationData>) => void;
+  onTournamentUpdate: (data: Partial<Tournament>) => void;
 }
 
 export default function TournamentHome({ tournament, teams, onReset, onTournamentUpdate }: TournamentHomeProps) {
@@ -41,6 +41,28 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
   const [scores, setScores] = useState<Record<string, Score>>({});
   const [activeView, setActiveView] = useState('fixtures');
   const [hybridStage, setHybridStage] = useState<'group' | 'qualification-summary' | 'knockout'>('group');
+
+  useEffect(() => {
+    if (tournament.fixture) {
+      try {
+        const parsedFixture = JSON.parse(tournament.fixture);
+        setFixture(parsedFixture);
+        setScores(tournament.scores || {});
+        setActiveView('fixtures');
+      } catch (error) {
+        console.error("Failed to parse fixture:", error);
+        toast({
+          variant: 'destructive',
+          title: 'Error loading saved fixture',
+          description: 'The saved data might be corrupted. You may need to reset.',
+        });
+      }
+    } else {
+      setFixture(null);
+      setScores({});
+    }
+  }, [tournament, toast]);
+
 
   const handleGenerateFixture = () => {
     startTransition(async () => {
@@ -122,6 +144,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
         }
 
         setFixture(mappedFixture);
+        onTournamentUpdate({ fixture: JSON.stringify(mappedFixture), scores: {} });
         toast({
           title: "Fixture Generated!",
           description: "The tournament fixture is ready.",
@@ -138,10 +161,12 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
   };
 
   const handleScoreUpdate = (matchIdentifier: string, newScore: Score) => {
-    setScores(prev => ({
-        ...prev,
+    const newScores = {
+        ...scores,
         [matchIdentifier]: newScore
-    }))
+    };
+    setScores(newScores);
+    onTournamentUpdate({ scores: newScores });
   }
 
   const handleGroupStageComplete = () => {
@@ -243,7 +268,10 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
       return;
     }
     
-    setFixture(prev => ({ ...prev!, knockoutStage: newKnockoutStage }));
+    const newFixture = { ...fixture!, knockoutStage: newKnockoutStage };
+    setFixture(newFixture);
+    onTournamentUpdate({ fixture: JSON.stringify(newFixture) });
+
     setHybridStage('knockout');
     toast({
       title: "Knockout Stage Ready!",

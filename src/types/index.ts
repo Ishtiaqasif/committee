@@ -19,6 +19,8 @@ export type Tournament = TournamentCreationData & {
   id: string;
   creatorId: string;
   createdAt: any; 
+  fixture?: string;
+  scores?: Record<string, Score>;
 };
 
 export interface Team {

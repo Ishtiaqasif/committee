@@ -90,12 +90,16 @@ function CreatePageComponent() {
     }
   };
   
-  const handleTournamentUpdate = async (data: Partial<TournamentCreationData>) => {
+  const handleTournamentUpdate = async (data: Partial<Tournament>) => {
     if (!tournament) return;
     try {
       await updateTournament(tournament.id, data);
       setTournament(prev => prev ? { ...prev, ...data } : null);
-      toast({ title: 'Success', description: 'Tournament settings updated.' });
+      
+      const isOnlyScoreUpdate = Object.keys(data).length === 1 && 'scores' in data;
+      if (!isOnlyScoreUpdate) {
+        toast({ title: 'Success', description: 'Tournament settings updated.' });
+      }
     } catch (error) {
       console.error("Failed to update tournament:", error);
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to update tournament settings.' });

@@ -12,7 +12,7 @@ export async function createTournament(tournamentData: TournamentCreationData, u
         }
     });
 
-    const newTournament: Omit<Tournament, 'id'> = {
+    const newTournament: Omit<Tournament, 'id' | 'fixture' | 'scores'> = {
         ...dataToSave,
         creatorId: userId,
         createdAt: serverTimestamp(),
@@ -60,7 +60,7 @@ export async function getTournamentsForUser(userId: string): Promise<Tournament[
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Tournament));
 }
 
-export async function updateTournament(tournamentId: string, data: Partial<TournamentCreationData>): Promise<void> {
+export async function updateTournament(tournamentId: string, data: Partial<Tournament>): Promise<void> {
     const tournamentRef = doc(db, "tournaments", tournamentId);
     await updateDoc(tournamentRef, data);
 }
