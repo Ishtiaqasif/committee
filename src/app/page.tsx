@@ -62,23 +62,22 @@ export default function Home() {
       {appState === 'fixture' ? (
         renderContent()
       ) : (
-         <div className="p-4 sm:p-6 md:p-8 flex flex-col items-center">
-            <div className="w-full max-w-6xl">
-                <header className="mb-8 text-center">
-                    <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-primary font-headline flex items-center justify-center gap-3">
-                        <ClipboardList className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 text-accent" />
+         <div className="relative min-h-screen flex flex-col items-center justify-center p-4 overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-background via-card to-background opacity-40"></div>
+            <div className="relative z-10 w-full max-w-6xl">
+                <header className="mb-12 text-center">
+                    <h1 className="text-6xl sm:text-7xl md:text-8xl font-bold tracking-wider uppercase text-primary font-headline flex items-center justify-center gap-4">
+                        <ClipboardList className="w-12 h-12 sm:w-16 md:w-20 text-accent" />
                         Committee
                     </h1>
-                    <p className="mt-2 text-lg text-muted-foreground">
+                    <p className="mt-4 text-xl text-muted-foreground">
                         Your Ultimate Tournament Companion
                     </p>
                 </header>
 
-                <Card className="w-full shadow-lg">
-                    <CardContent className="p-4 sm:p-6 md:p-8">
-                        {renderContent()}
-                    </CardContent>
-                </Card>
+                <div className="w-full">
+                    {renderContent()}
+                </div>
             </div>
         </div>
       )}
