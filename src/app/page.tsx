@@ -9,7 +9,7 @@ import AuthButton from '@/components/auth-button';
 
 export default function LandingPage() {
   return (
-    <div className="flex flex-col min-h-screen bg-background overflow-x-hidden">
+    <div className="flex flex-col min-h-screen bg-background">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-14 items-center">
           <Link href="/" className="flex items-center gap-2 font-bold">
@@ -26,26 +26,28 @@ export default function LandingPage() {
       <main className="flex-1">
         {/* Hero Section */}
         <section className="w-full py-20 md:py-32">
-          <div className="container grid items-center gap-8 px-4 md:px-6 lg:grid-cols-2 lg:gap-16">
-            <div className="space-y-6 text-center lg:text-left">
-                <h1 className="text-4xl font-extrabold tracking-tight lg:text-6xl">
-                    The Ultimate Tournament Platform
-                </h1>
-                <p className="max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                    Create, manage, and share stunning tournament brackets with ease. Powered by AI for intelligent fixture generation.
-                </p>
-                <div className="flex flex-col gap-4 min-[400px]:flex-row justify-center lg:justify-start">
-                    <Button size="lg" asChild>
-                      <Link href="/create">Get Started for Free</Link>
-                    </Button>
+          <div className="container px-4 md:px-6">
+            <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-16">
+                <div className="space-y-6 text-center lg:text-left">
+                    <h1 className="text-4xl font-extrabold tracking-tight lg:text-6xl">
+                        The Ultimate Tournament Platform
+                    </h1>
+                    <p className="max-w-[600px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+                        Create, manage, and share stunning tournament brackets with ease. Powered by AI for intelligent fixture generation.
+                    </p>
+                    <div className="flex flex-col gap-4 min-[400px]:flex-row justify-center lg:justify-start">
+                        <Button size="lg" asChild>
+                          <Link href="/create">Get Started for Free</Link>
+                        </Button>
+                    </div>
                 </div>
-            </div>
-            <div data-ai-hint="tournament bracket esports">
-                <img
-                    src="https://placehold.co/1200x800.png"
-                    alt="Tournament bracket illustration"
-                    className="mx-auto aspect-[3/2] overflow-hidden rounded-xl object-cover object-center shadow-2xl"
-                />
+                <div data-ai-hint="tournament bracket esports">
+                    <img
+                        src="https://placehold.co/1200x800.png"
+                        alt="Tournament bracket illustration"
+                        className="mx-auto aspect-[3/2] overflow-hidden rounded-xl object-cover object-center shadow-2xl"
+                    />
+                </div>
             </div>
           </div>
         </section>
