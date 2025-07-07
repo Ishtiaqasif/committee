@@ -11,7 +11,7 @@ export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container flex h-14 items-center">
+        <div className="container mx-auto flex h-14 items-center px-4">
           <Link href="/" className="flex items-center gap-2 font-bold">
             <ClipboardList className="h-6 w-6 text-primary" />
             <span className="text-lg">Committee</span>
@@ -26,7 +26,7 @@ export default function LandingPage() {
       <main className="flex-1">
         {/* Hero Section */}
         <section className="w-full py-20 md:py-32">
-          <div className="container px-4 md:px-6">
+          <div className="container mx-auto px-4 md:px-6">
             <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-16">
                 <div className="space-y-6 text-center lg:text-left">
                     <h1 className="text-4xl font-extrabold tracking-tight lg:text-6xl">
@@ -54,7 +54,7 @@ export default function LandingPage() {
 
         {/* Features Section */}
         <section id="features" className="py-20 bg-muted/40">
-          <div className="container">
+          <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold">Powerful Features, Effortlessly Simple</h2>
               <p className="mt-2 text-muted-foreground">Everything you need to run a successful tournament.</p>
@@ -144,7 +144,7 @@ export default function LandingPage() {
       </main>
 
       <footer className="py-6 border-t">
-        <div className="container text-center text-muted-foreground">
+        <div className="container mx-auto px-4 text-center text-muted-foreground">
           <p>&copy; {new Date().getFullYear()} Committee. All rights reserved.</p>
         </div>
       </footer>
