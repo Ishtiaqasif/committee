@@ -380,7 +380,7 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                                       <RadioGroupItem value="random" />
                                   </FormControl>
                                   <FormLabel className="font-normal">
-                                      Randomized Pairings
+                                      Redraw every round.
                                   </FormLabel>
                                   </FormItem>
                               </RadioGroup>
