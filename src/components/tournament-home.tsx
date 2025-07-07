@@ -34,7 +34,7 @@ import { useAuth } from "@/context/auth-context";
 import UserManagement from "./user-management";
 import { SheetTitle } from "./ui/sheet";
 import TournamentRules from "./tournament-rules";
-import { calculatePointsTable } from "@/lib/calculate-points-table";
+import { calculatePointsTable } from '@/lib/calculate-points-table';
 
 interface TournamentHomeProps {
   tournament: Tournament;
@@ -476,7 +476,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
                       <h2 className="text-3xl font-bold text-primary">Fixtures & Scores</h2>
                       <p className="text-muted-foreground capitalize">View matches and enter scores. { !isPrivilegedUser && '(View only)'}</p>
                     </div>
-                    {isPrivilegedUser && !tournament.winner && fixture && (
+                    {isPrivilegedUser && !tournament.winner && fixture && process.env.NODE_ENV !== 'production' && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="outline">

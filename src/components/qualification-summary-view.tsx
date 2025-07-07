@@ -3,7 +3,7 @@
 
 import { useMemo } from 'react';
 import { Fixture, Team, Score, Tournament } from '@/types';
-import { calculatePointsTable } from './points-table-view';
+import { calculatePointsTable } from '@/lib/calculate-points-table';
 import PointsTable from './points-table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';

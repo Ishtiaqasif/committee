@@ -13,7 +13,7 @@ import PointsTable from './points-table';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
-import { calculatePointsTable } from './points-table-view';
+import { calculatePointsTable } from '@/lib/calculate-points-table';
 
 interface RoundRobinViewProps {
   fixture: { rounds?: Round[], groups?: Group[] };
