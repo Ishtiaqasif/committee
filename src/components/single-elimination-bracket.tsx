@@ -238,14 +238,16 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTou
           )})}
       </div>
        <div className="mt-8 flex flex-col items-center justify-center gap-4">
-            <div className="flex items-center gap-4">
-                <Button size="lg" variant="outline" onClick={handleGoBack} disabled={readOnly || activeRound === 1}>
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Previous Round
-                </Button>
-                <Button size="lg" variant="outline" onClick={() => onActiveRoundChange(activeRound + 1)} disabled={readOnly || !hasNextRound}>
-                    Next Round <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-            </div>
+            {!readOnly && (
+                <div className="flex items-center gap-4">
+                    <Button size="lg" variant="outline" onClick={handleGoBack} disabled={activeRound === 1}>
+                        <ArrowLeft className="mr-2 h-4 w-4" /> Previous Round
+                    </Button>
+                    <Button size="lg" variant="outline" onClick={() => onActiveRoundChange(activeRound + 1)} disabled={!hasNextRound}>
+                        Next Round <ArrowRight className="ml-2 h-4 w-4" />
+                    </Button>
+                </div>
+            )}
             
             {!readOnly && (
                 <>
