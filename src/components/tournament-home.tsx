@@ -11,7 +11,7 @@ import SingleEliminationBracket from "@/components/single-elimination-bracket";
 import TeamsList from "@/components/teams-list";
 import PointsTableView, { calculatePointsTable } from "@/components/points-table-view";
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { Loader, Trophy, RefreshCw, Gamepad2, ListOrdered, Users, Settings, LayoutDashboard, ShieldCheck, UserCog } from "lucide-react";
+import { Loader, Trophy, RefreshCw, Gamepad2, ListOrdered, Users, Settings, LayoutDashboard, ShieldCheck, UserCog, Bot } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -82,10 +82,10 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     // or a winner is declared).
     if (!tournament.id) return; // Guard against running on initial empty state
     
-    const shouldResetView = (tournament.winner || !tournament.fixture);
+    const isMajorStateChange = (tournament.winner || !tournament.fixture);
     
-    // Only reset the view if it's not already the default and a reset is needed.
-    if (shouldResetView && activeView !== 'overview') {
+    // Only reset the view if it's not already the default and a major change happened.
+    if (isMajorStateChange && activeView !== 'overview') {
         setActiveView('overview');
     }
   }, [tournament.id, tournament.fixture, tournament.winner, activeView]);
@@ -206,6 +206,81 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
   const handleGroupStageComplete = () => {
     onTournamentUpdate({ hybridStage: 'qualification-summary' });
   };
+
+  const handleSimulateRound = () => {
+    if (!fixture || !isPrivilegedUser) return;
+
+    const newScores: Record<string, Score> = { ...scores };
+    const activeRoundNumber = tournament.activeRound || 1;
+
+    const simulateScoresForMatches = (matches: Match[], getMatchId: (match: Match) => string) => {
+        matches.forEach(match => {
+            const matchId = getMatchId(match);
+            const isBye = match.team1.name.toLowerCase() === 'bye' || match.team2.name.toLowerCase() === 'bye';
+            
+            // Only simulate if score doesn't exist
+            if (!newScores[matchId] && !isBye) {
+                let score1 = Math.floor(Math.random() * 6); // 0-5
+                let score2 = Math.floor(Math.random() * 6); // 0-5
+                let score1_tiebreak: number | null = null;
+                let score2_tiebreak: number | null = null;
+
+                const isKnockout = tournament.tournamentType === 'single elimination' || (tournament.tournamentType === 'hybrid' && tournament.hybridStage === 'knockout');
+                
+                if (isKnockout && score1 === score2) {
+                    // Ensure tie-breaker is not a draw
+                    score1_tiebreak = Math.floor(Math.random() * 5); // 0-4
+                    do {
+                        score2_tiebreak = Math.floor(Math.random() * 5);
+                    } while (score1_tiebreak === score2_tiebreak);
+                }
+
+                newScores[matchId] = {
+                    score1,
+                    score2,
+                    score1_tiebreak,
+                    score2_tiebreak,
+                    locked: false,
+                };
+            }
+        });
+    }
+
+    const processStage = (stage: { rounds?: Round[], groups?: Group[] }, getMatchId: (match: Match, groupName?: string) => string) => {
+        if (stage.groups) {
+            stage.groups.forEach(group => {
+                const round = group.rounds.find(r => r.round === activeRoundNumber);
+                if (round) {
+                    simulateScoresForMatches(round.matches, (match) => getMatchId(match, group.groupName));
+                }
+            });
+        } else if (stage.rounds) {
+            const round = stage.rounds.find(r => r.round === activeRoundNumber);
+            if (round) {
+                simulateScoresForMatches(round.matches, (match) => getMatchId(match));
+            }
+        }
+    };
+    
+    if (tournament.tournamentType === 'hybrid') {
+        if (tournament.hybridStage === 'group' && fixture.groupStage) {
+            processStage(fixture.groupStage, (match, groupName) => `g${groupName}r${activeRoundNumber}m${match.match}`);
+        } else if (tournament.hybridStage === 'knockout' && fixture.knockoutStage) {
+            processStage(fixture.knockoutStage, (match) => `r${activeRoundNumber}m${match.match}`);
+        }
+    } else if (tournament.tournamentType === 'round-robin') {
+        processStage(fixture, (match, groupName) => groupName ? `g${groupName}r${activeRoundNumber}m${match.match}` : `r${activeRoundNumber}m${match.match}`);
+    } else if (tournament.tournamentType === 'single elimination') {
+        processStage(fixture, (match) => `r${activeRoundNumber}m${match.match}`);
+    }
+    
+    onTournamentUpdate({ scores: newScores });
+    toast({
+      title: "Round Simulated",
+      description: `Random scores have been generated for Round ${activeRoundNumber}.`,
+    });
+  };
+
 
   const handleProceedToKnockout = () => {
     if (!fixture || !fixture.groupStage || !fixture.knockoutStage) return;
@@ -388,8 +463,34 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
       case 'fixtures':
         return (
             <div>
-                 <h2 className="text-3xl font-bold text-primary">Fixtures & Scores</h2>
-                 <p className="text-muted-foreground capitalize">View matches and enter scores. { !isPrivilegedUser && '(View only)'}</p>
+                 <div className="flex justify-between items-center mb-6">
+                    <div>
+                      <h2 className="text-3xl font-bold text-primary">Fixtures & Scores</h2>
+                      <p className="text-muted-foreground capitalize">View matches and enter scores. { !isPrivilegedUser && '(View only)'}</p>
+                    </div>
+                    {isPrivilegedUser && !tournament.winner && fixture && (
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant="outline">
+                              <Bot className="mr-2 h-4 w-4" />
+                              Simulate Round
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>Simulate Current Round?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will generate random scores for all unplayed matches in the current round. This is for testing purposes and can be undone by manually editing scores.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={handleSimulateRound}>Continue</AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                 </div>
                  {renderFixtureView()}
             </div>
         );
@@ -436,7 +537,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     <SidebarProvider>
         <Sidebar variant="inset">
             <SidebarHeader>
-                <div className="flex items-center justify-between">
+                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 overflow-hidden">
                         <Trophy className="w-6 h-6 text-accent flex-shrink-0" />
                         <div className="flex flex-col overflow-hidden group-data-[collapsible=icon]:hidden">
@@ -547,7 +648,9 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
         <SidebarInset>
             <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between gap-4 border-b bg-background px-4 sm:px-6 md:hidden">
                 <div className="flex items-center gap-2">
-                    <SidebarTrigger />
+                    <SidebarTrigger>
+                        <SheetTitle className="sr-only">Sidebar Menu</SheetTitle>
+                    </SidebarTrigger>
                     <h1 className="text-lg font-semibold truncate">{tournament.tournamentName}</h1>
                 </div>
                 <div className="flex items-center gap-2">
@@ -562,3 +665,5 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     </SidebarProvider>
   );
 }
+
+    
