@@ -398,17 +398,17 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
 
   return (
     <SidebarProvider>
-        <Sidebar>
+        <Sidebar variant="inset">
             <SidebarHeader>
-                <div className="flex items-center justify-between p-2">
+                <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 overflow-hidden">
-                        <Trophy className="w-8 h-8 text-accent flex-shrink-0" />
-                        <div className="flex flex-col overflow-hidden">
-                            <span className="text-lg font-semibold text-primary truncate">{tournament.tournamentName}</span>
-                            <span className="text-sm text-muted-foreground capitalize truncate">{tournament.tournamentType.replace('-', ' ')}</span>
+                        <Trophy className="w-6 h-6 text-accent flex-shrink-0" />
+                        <div className="flex flex-col overflow-hidden group-data-[collapsible=icon]:hidden">
+                            <span className="text-base font-semibold text-primary truncate">{tournament.tournamentName}</span>
+                            <span className="text-xs text-muted-foreground capitalize truncate">{tournament.tournamentType.replace('-', ' ')}</span>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1 group-data-[collapsible=icon]:hidden">
                         <ThemeToggle />
                         <AuthButton />
                     </div>
