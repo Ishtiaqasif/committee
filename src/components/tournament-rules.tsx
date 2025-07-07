@@ -23,10 +23,15 @@ interface TournamentRulesProps {
 const formSchema = z.object({
   tiebreakerRule1: z.custom<TiebreakerRule>(),
   tiebreakerRule2: z.custom<TiebreakerRule>(),
-}).refine(data => data.tiebreakerRule1 !== data.tiebreakerRule2, {
-  message: "Primary and secondary rules must be different.",
-  path: ["tiebreakerRule2"],
+  tiebreakerRule3: z.custom<TiebreakerRule>(),
+}).refine(data => {
+    const rules = [data.tiebreakerRule1, data.tiebreakerRule2, data.tiebreakerRule3];
+    return new Set(rules).size === rules.length;
+}, {
+  message: "Tie-breaker rules must be unique.",
+  path: ["tiebreakerRule3"],
 });
+
 
 const InfoRow = ({ label, value }: { label: string, value: React.ReactNode }) => (
   <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-3 border-b last:border-b-0">
@@ -38,6 +43,7 @@ const InfoRow = ({ label, value }: { label: string, value: React.ReactNode }) =>
 const tiebreakerOptions: { label: string, value: TiebreakerRule }[] = [
     { label: 'Goal Difference', value: 'goalDifference' },
     { label: 'Goals For', value: 'goalsFor' },
+    { label: 'Head-to-head record', value: 'headToHead' },
 ];
 
 export default function TournamentRules({ tournament, onUpdate, isPrivilegedUser }: TournamentRulesProps) {
@@ -49,18 +55,20 @@ export default function TournamentRules({ tournament, onUpdate, isPrivilegedUser
     defaultValues: {
       tiebreakerRule1: tournament.tiebreakerRules?.[0] || 'goalDifference',
       tiebreakerRule2: tournament.tiebreakerRules?.[1] || 'goalsFor',
+      tiebreakerRule3: tournament.tiebreakerRules?.[2] || 'headToHead',
     },
   });
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     startTransition(async () => {
-      await onUpdate({ tiebreakerRules: [values.tiebreakerRule1, values.tiebreakerRule2] });
+      await onUpdate({ tiebreakerRules: [values.tiebreakerRule1, values.tiebreakerRule2, values.tiebreakerRule3] });
       toast({ title: 'Success', description: 'Tie-breaker rules have been updated.' });
     });
   };
   
   const rule1 = form.watch('tiebreakerRule1');
   const rule2 = form.watch('tiebreakerRule2');
+  const rule3 = form.watch('tiebreakerRule3');
 
   return (
     <div>
@@ -95,6 +103,7 @@ export default function TournamentRules({ tournament, onUpdate, isPrivilegedUser
                             <InfoRow label="Knockout Stage Legs" value={<Badge variant="outline">{tournament.knockoutHomeAndAway ? 'Two-Legged' : 'Single Leg'}</Badge>} />
                         </>
                     )}
+                    <InfoRow label="Away Goals Rule" value={<Badge variant={tournament.awayGoalsRule ? "default" : "secondary"}>{tournament.awayGoalsRule ? 'Enabled' : 'Disabled'}</Badge>} />
                 </dl>
             </CardContent>
         </Card>
@@ -122,7 +131,7 @@ export default function TournamentRules({ tournament, onUpdate, isPrivilegedUser
                                 </FormControl>
                                 <SelectContent>
                                     {tiebreakerOptions.map(opt => (
-                                        <SelectItem key={opt.value} value={opt.value} disabled={opt.value === rule2}>
+                                        <SelectItem key={opt.value} value={opt.value} disabled={opt.value === rule2 || opt.value === rule3}>
                                             {opt.label}
                                         </SelectItem>
                                     ))}
@@ -146,7 +155,31 @@ export default function TournamentRules({ tournament, onUpdate, isPrivilegedUser
                                 </FormControl>
                                 <SelectContent>
                                      {tiebreakerOptions.map(opt => (
-                                        <SelectItem key={opt.value} value={opt.value} disabled={opt.value === rule1}>
+                                        <SelectItem key={opt.value} value={opt.value} disabled={opt.value === rule1 || opt.value === rule3}>
+                                            {opt.label}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <FormMessage />
+                            </FormItem>
+                        )}
+                    />
+                    <FormField
+                        control={form.control}
+                        name="tiebreakerRule3"
+                        render={({ field }) => (
+                            <FormItem>
+                            <FormLabel>Tertiary Tie-Breaker</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                <FormControl>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Select a rule" />
+                                </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                     {tiebreakerOptions.map(opt => (
+                                        <SelectItem key={opt.value} value={opt.value} disabled={opt.value === rule1 || opt.value === rule2}>
                                             {opt.label}
                                         </SelectItem>
                                     ))}

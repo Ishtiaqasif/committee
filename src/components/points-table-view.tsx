@@ -2,12 +2,12 @@
 "use client"
 
 import { useMemo, useState } from 'react';
-import type { Team, PointsTableEntry, Fixture, Score, Group, Round as TournamentRound, Tournament, TiebreakerRule } from '@/types';
+import type { Team, PointsTableEntry, Fixture, Score, Group, Round as TournamentRound, Tournament, TiebreakerRule, Match } from '@/types';
 import PointsTable from './points-table';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 
-export const calculatePointsTable = (teams: Team[], rounds: TournamentRound[], scores: Record<string, Score>, groupName?: string, teamsToQualify?: number, tiebreakerRules: TiebreakerRule[] = ['goalDifference', 'goalsFor']): PointsTableEntry[] => {
+export const calculatePointsTable = (teams: Team[], rounds: TournamentRound[], scores: Record<string, Score>, awayGoalsRule: boolean, groupName?: string, teamsToQualify?: number, tiebreakerRules: TiebreakerRule[] = ['goalDifference', 'goalsFor', 'headToHead']): PointsTableEntry[] => {
     const table: Record<string, PointsTableEntry> = teams.reduce((acc, team) => {
       acc[team.name] = { teamName: team.name, played: 0, won: 0, lost: 0, drawn: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0, logo: team.logo };
       return acc;
@@ -69,6 +69,45 @@ export const calculatePointsTable = (teams: Team[], rounds: TournamentRound[], s
                 if (a.goalsFor !== b.goalsFor) {
                     return b.goalsFor - a.goalsFor;
                 }
+            } else if (rule === 'headToHead') {
+                const allMatchesWithRound: (Match & { roundNumber: number })[] = rounds.flatMap(r => r.matches.map(m => ({ ...m, roundNumber: r.round })));
+                const h2hMatches = allMatchesWithRound.filter(
+                    m => (m.team1.name === a.teamName && m.team2.name === b.teamName) || (m.team1.name === b.teamName && m.team2.name === a.teamName)
+                );
+
+                if (h2hMatches.length > 0) {
+                    let a_aggregate_score = 0;
+                    let b_aggregate_score = 0;
+                    let a_away_goals = 0;
+                    let b_away_goals = 0;
+
+                    h2hMatches.forEach(match => {
+                        const matchId = groupName
+                           ? `g${groupName}r${match.roundNumber}m${match.match}`
+                           : `r${match.roundNumber}m${match.match}`;
+                       const score = scores[matchId];
+
+                       if (score && score.score1 !== null && score.score2 !== null) {
+                           if (match.team1.name === a.teamName) { // a is home
+                               a_aggregate_score += score.score1;
+                               b_aggregate_score += score.score2;
+                               b_away_goals += score.score2;
+                           } else { // b is home
+                               b_aggregate_score += score.score1;
+                               a_aggregate_score += score.score2;
+                               a_away_goals += score.score2;
+                           }
+                       }
+                    });
+
+                    if (a_aggregate_score !== b_aggregate_score) {
+                        return b_aggregate_score - a_aggregate_score;
+                    }
+                    
+                    if (awayGoalsRule && a_away_goals !== b_away_goals) {
+                        return b_away_goals - a_away_goals;
+                    }
+                }
             }
         }
         return a.teamName.localeCompare(b.teamName);
@@ -85,12 +124,20 @@ export const calculatePointsTable = (teams: Team[], rounds: TournamentRound[], s
 }
 
 
+interface PointsTableViewProps {
+  fixture: Fixture;
+  teams: Team[];
+  scores: Record<string, Score>;
+  tournament: Tournament;
+  currentUserId?: string;
+}
+
 export default function PointsTableView({ fixture, teams, scores, tournament, currentUserId }: PointsTableViewProps) {
   const [viewMode, setViewMode] = useState<'short' | 'full'>('full');
   const userTeam = useMemo(() => teams.find(t => t.ownerId === currentUserId), [teams, currentUserId]);
   
   const tables = useMemo(() => {
-    const { tournamentType, teamsAdvancing, tiebreakerRules = ['goalDifference', 'goalsFor'] } = tournament;
+    const { tournamentType, teamsAdvancing, tiebreakerRules = ['goalDifference', 'goalsFor', 'headToHead'], awayGoalsRule = false } = tournament;
     let fixtureForTable: { rounds?: TournamentRound[]; groups?: Group[] } | undefined = fixture;
 
     if (tournamentType === 'hybrid' && fixture.groupStage) {
@@ -107,7 +154,7 @@ export default function PointsTableView({ fixture, teams, scores, tournament, cu
         const groupTeams = group.teams.map(name => teams.find(t => t.name === name)!).filter(Boolean) as Team[];
         return {
           title: group.groupName,
-          table: calculatePointsTable(groupTeams, group.rounds, scores, group.groupName, teamsToQualify, tiebreakerRules)
+          table: calculatePointsTable(groupTeams, group.rounds, scores, awayGoalsRule, group.groupName, teamsToQualify, tiebreakerRules)
         }
       });
     }
@@ -115,7 +162,7 @@ export default function PointsTableView({ fixture, teams, scores, tournament, cu
     if (fixtureForTable?.rounds && tournamentType === 'round-robin') {
       return [{
         title: "Overall Standings",
-        table: calculatePointsTable(teams, fixtureForTable.rounds, scores, undefined, undefined, tiebreakerRules)
+        table: calculatePointsTable(teams, fixtureForTable.rounds, scores, awayGoalsRule, undefined, undefined, tiebreakerRules)
       }]
     }
 

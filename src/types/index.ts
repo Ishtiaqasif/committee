@@ -10,7 +10,7 @@ export interface UserProfile {
   photoURL: string | null;
 }
 
-export type TiebreakerRule = 'goalDifference' | 'goalsFor';
+export type TiebreakerRule = 'goalDifference' | 'goalsFor' | 'headToHead';
 
 export type TournamentCreationData = {
   tournamentName: string;
@@ -24,6 +24,7 @@ export type TournamentCreationData = {
   fixtureGeneration: 'random' | 'predefined';
   roundRobinHomeAndAway: boolean;
   knockoutHomeAndAway: boolean;
+  awayGoalsRule?: boolean;
   tiebreakerRules?: TiebreakerRule[];
   language?: string;
 };

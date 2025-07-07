@@ -38,6 +38,7 @@ const formSchema = z.object({
   teamsPerGroup: z.coerce.number().optional(),
   roundRobinHomeAndAway: z.boolean().default(false),
   knockoutHomeAndAway: z.boolean().default(false),
+  awayGoalsRule: z.boolean().default(false),
   teamsAdvancing: z.coerce.number().optional(),
   fixtureGeneration: z.enum(['random', 'predefined']).default('predefined'),
 }).refine(data => {
@@ -73,6 +74,7 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
       venues: "",
       roundRobinHomeAndAway: false,
       knockoutHomeAndAway: false,
+      awayGoalsRule: false,
       fixtureGeneration: 'predefined',
       roundRobinGrouping: 'all-play-all',
     },
@@ -82,6 +84,9 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
   const tournamentType = form.watch("tournamentType");
   const roundRobinGrouping = form.watch("roundRobinGrouping");
   const isEsports = form.watch("isEsports");
+  const roundRobinHomeAndAway = form.watch("roundRobinHomeAndAway");
+  const knockoutHomeAndAway = form.watch("knockoutHomeAndAway");
+
 
    useEffect(() => {
     if (tournamentType === 'hybrid') {
@@ -336,6 +341,28 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                           )}
                       />
                       )}
+                      
+                      <FormField
+                          control={form.control}
+                          name="awayGoalsRule"
+                          render={({ field }) => (
+                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                              <div className="space-y-0.5">
+                              <FormLabel>Away Goals Rule</FormLabel>
+                              <FormDescription>
+                                  Apply away goals rule in two-legged ties.
+                              </FormDescription>
+                              </div>
+                              <FormControl>
+                              <Switch
+                                  checked={field.value}
+                                  onCheckedChange={field.onChange}
+                                  disabled={!roundRobinHomeAndAway && !knockoutHomeAndAway}
+                              />
+                              </FormControl>
+                          </FormItem>
+                          )}
+                      />
 
                       {tournamentType === 'hybrid' && (
                       <FormField

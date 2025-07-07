@@ -23,6 +23,7 @@ const GenerateTournamentFixtureInputSchema = z.object({
   teamsPerGroup: z.number().int().optional().describe("If using grouped round-robin, the number of teams per group."),
   roundRobinHomeAndAway: z.boolean().describe('Whether to generate home and away matches for round-robin stages.'),
   knockoutHomeAndAway: z.boolean().describe('Whether to generate home and away matches (two-legged ties) for knockout stages.'),
+  awayGoalsRule: z.boolean().describe('Whether away goals rule applies in two-legged ties.'),
   teamsAdvancing: z.number().int().optional().describe('Number of teams advancing to the knockout stage in a hybrid tournament.'),
   fixtureGeneration: z.enum(['random', 'predefined']).describe("Whether to generate fixtures with random pairings or a predefined 'seeded' path."),
   language: z.string().optional().describe('The language for the generated fixture placeholders (e.g., "en", "es"). Defaults to English if not provided.'),
@@ -69,7 +70,7 @@ Each match object in the JSON output must include a "venue" field. If it's an es
 Fixture Generation Method: {{fixtureGeneration}}. If 'random', shuffle team pairings. If 'predefined', use a standard berger table or seeding.
 
 - For round-robin stages (including the group stage of a hybrid tournament), {{#if roundRobinHomeAndAway}}generate home and away matches.{{else}}do not generate home and away matches.{{/if}} If there is an odd number of teams in a group or in an all-play-all tournament, one team must have a 'bye' in each round. For a 'bye' match, one of the team names should be the real team and the other should be the string "Bye".
-- For single elimination stages (including the knockout stage of a hybrid tournament), {{#if knockoutHomeAndAway}}generate two-legged ties (home and away). The winner should be determined by aggregate score. If scores are level, use away goals, then penalties if needed. Your JSON output for two-legged knockout matches should represent each leg as a separate match within the round. For example, a quarter-final between Team A and Team B would have two match objects.{{else}}generate single-leg matches.{{/if}}
+- For single elimination stages (including the knockout stage of a hybrid tournament), {{#if knockoutHomeAndAway}}generate two-legged ties (home and away). The winner should be determined by aggregate score. If scores are level, {{#if awayGoalsRule}}use the away goals rule, then penalties if needed{{else}}proceed directly to a tie-breaker (e.g. penalties) without considering away goals{{/if}}. Your JSON output for two-legged knockout matches should represent each leg as a separate match within the round. For example, a quarter-final between Team A and Team B would have two match objects.{{else}}generate single-leg matches.{{/if}}
 
 - For 'single elimination' type, the JSON should have a \`rounds\` array at the top level. If the number of teams is not a power of two, you must add 'bye' matches in the first round to make it work. A 'bye' match means one team automatically advances to the next round without playing. For a 'bye' match, one of the team names should be the string "Bye".
 
