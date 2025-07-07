@@ -21,6 +21,7 @@ interface SingleEliminationBracketProps {
   onActiveRoundChange: (round: number) => void;
   readOnly: boolean;
   currentUserId?: string;
+  tournament: Tournament;
 }
 
 const MatchComponent = ({ match, round, onScoreUpdate, currentScores, isActive, readOnly, currentUserId }: { match: Match, round: number, onScoreUpdate: SingleEliminationBracketProps['onScoreUpdate'], currentScores: any, isActive: boolean, readOnly: boolean, currentUserId?: string }) => {
@@ -98,7 +99,7 @@ const MatchComponent = ({ match, round, onScoreUpdate, currentScores, isActive, 
   )
 }
 
-export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTournamentUpdate, scores, knockoutHomeAndAway, awayGoalsRule, activeRound, onActiveRoundChange, readOnly, currentUserId }: SingleEliminationBracketProps) {
+export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTournamentUpdate, scores, knockoutHomeAndAway, awayGoalsRule, activeRound, onActiveRoundChange, readOnly, currentUserId, tournament }: SingleEliminationBracketProps) {
     
     const { isRoundComplete, hasNextRound, isRoundLocked } = useMemo(() => {
         const currentRound = fixture.rounds.find(r => r.round === activeRound);
@@ -374,7 +375,7 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTou
                 </Button>
             </div>
             
-            {!readOnly && (
+            {!readOnly && !tournament.winner && (
                 <div className="text-center space-y-2 border-t pt-4 mt-4 w-full max-w-md">
                     {isRoundComplete && hasNextRound && !isRoundLocked && (
                         <>

@@ -442,6 +442,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
               onActiveRoundChange={handleActiveRoundChange}
               readOnly={readOnly}
               currentUserId={user?.uid}
+              tournament={tournament}
             />
           </div>
         )
@@ -453,7 +454,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     }
 
     if (tournament.tournamentType === 'single elimination' && fixture.rounds) {
-      return <SingleEliminationBracket fixture={{rounds: fixture.rounds}} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} scores={scores} knockoutHomeAndAway={tournament.knockoutHomeAndAway} awayGoalsRule={tournament.awayGoalsRule ?? false} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} currentUserId={user?.uid} />;
+      return <SingleEliminationBracket fixture={{rounds: fixture.rounds}} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} scores={scores} knockoutHomeAndAway={tournament.knockoutHomeAndAway} awayGoalsRule={tournament.awayGoalsRule ?? false} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} currentUserId={user?.uid} tournament={tournament} />;
     }
 
     return <p>Could not display fixture.</p>;
@@ -574,8 +575,8 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
                         <SidebarMenuButton 
                             onClick={() => setActiveView('fixtures')} 
                             isActive={activeView === 'fixtures'}
-                            disabled={!fixture || !!tournament.winner}
-                            tooltip={!fixture ? "Generate a fixture first" : (!!tournament.winner ? 'Tournament is complete' : "Fixtures & Scores")}
+                            disabled={!fixture}
+                            tooltip={!fixture ? "Generate a fixture first" : "Fixtures & Scores"}
                         >
                             <Gamepad2/>
                             Fixtures & Scores

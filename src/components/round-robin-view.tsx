@@ -231,7 +231,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
         </Button>
       </div>
       
-      {!readOnly && (
+      {!readOnly && !tournament.winner && (
         <div className="text-center space-y-2 border-t pt-4 mt-4 w-full max-w-md">
             {hasNextRound && isRoundComplete && !isRoundLocked && (
                 <>
