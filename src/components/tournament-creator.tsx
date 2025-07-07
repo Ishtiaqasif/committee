@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect } from "react";
@@ -380,7 +381,7 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                                       <RadioGroupItem value="random" />
                                   </FormControl>
                                   <FormLabel className="font-normal">
-                                      Redraw every round.
+                                      Redraw Every Round
                                   </FormLabel>
                                   </FormItem>
                               </RadioGroup>
