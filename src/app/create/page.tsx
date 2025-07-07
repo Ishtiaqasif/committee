@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
@@ -44,7 +45,7 @@ function CreatePageComponent() {
         setPageLoading(true);
         try {
           const tournamentData = await getTournament(tournamentId);
-          if (tournamentData && (tournamentData.creatorId === user.uid || tournamentData.admins?.includes(user.uid))) {
+          if (tournamentData && (tournamentData.creatorId === user.uid || tournamentData.admins?.includes(user.uid) || tournamentData.participants?.includes(user.uid))) {
             const teamsData = await getTeamsForTournament(tournamentId);
             setTournament(tournamentData);
             setTeams(teamsData);
