@@ -3,13 +3,13 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { generateTournamentFixture } from "@/ai/flows/generate-tournament-fixture";
-import type { Tournament, Team, Fixture, Score, PointsTableEntry, Round, Match, TournamentCreationData, UserRole } from "@/types";
+import { Tournament, Team, Fixture, Score, PointsTableEntry, Round, Match, TournamentCreationData, UserRole } from "@/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import RoundRobinView from "@/components/round-robin-view";
 import SingleEliminationBracket from "@/components/single-elimination-bracket";
 import TeamsList from "@/components/teams-list";
-import PointsTableView, { calculatePointsTable } from "@/components/points-table-view";
+import PointsTableView from "./points-table-view";
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Loader, Trophy, RefreshCw, Gamepad2, ListOrdered, Users, Settings, LayoutDashboard, ShieldCheck, UserCog, Bot, BookOpen } from "lucide-react";
 import {
@@ -34,6 +34,7 @@ import { useAuth } from "@/context/auth-context";
 import UserManagement from "./user-management";
 import { SheetTitle } from "./ui/sheet";
 import TournamentRules from "./tournament-rules";
+import { calculatePointsTable } from "@/lib/calculate-points-table";
 
 interface TournamentHomeProps {
   tournament: Tournament;
@@ -80,7 +81,6 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
 
   useEffect(() => {
     // This effect handles setting the default view if the fixture is missing.
-    // It no longer resets the view when a winner is declared, to allow navigation.
     if (!tournament.id) return; // Guard against running on initial empty state
     
     if (!tournament.fixture && activeView !== 'overview') {
@@ -476,7 +476,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
                       <h2 className="text-3xl font-bold text-primary">Fixtures & Scores</h2>
                       <p className="text-muted-foreground capitalize">View matches and enter scores. { !isPrivilegedUser && '(View only)'}</p>
                     </div>
-                    {isPrivilegedUser && !tournament.winner && fixture && (
+                    {isPrivilegedUser && !tournament.winner && fixture && process.env.NODE_ENV !== 'production' && (
                       <AlertDialog>
                         <AlertDialogTrigger asChild>
                           <Button variant="outline">
