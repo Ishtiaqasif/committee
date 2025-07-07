@@ -32,6 +32,7 @@ import KnockoutBracketView from "./knockout-bracket-view";
 import AuthButton from "./auth-button";
 import { useAuth } from "@/context/auth-context";
 import UserManagement from "./user-management";
+import { SheetTitle } from "./ui/sheet";
 
 interface TournamentHomeProps {
   tournament: Tournament;
@@ -665,5 +666,3 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     </SidebarProvider>
   );
 }
-
-    
