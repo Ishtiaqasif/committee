@@ -30,12 +30,13 @@ export default function QualificationSummaryView({ groupStage, teams, scores, to
     const teamsAdvancing = tournament.teamsAdvancing ?? 0;
     const teamsPerGroup = Math.floor(teamsAdvancing / numGroups);
     const tiebreakerRules = tournament.tiebreakerRules || ['goalDifference', 'goalsFor'];
+    const awayGoalsRule = tournament.awayGoalsRule ?? false;
 
     const calculatedTables = groupStage.groups.map(group => {
       const groupTeams = group.teams.map(name => teams.find(t => t.name === name)!).filter(Boolean) as Team[];
       return {
         title: group.groupName,
-        table: calculatePointsTable(groupTeams, group.rounds, scores, group.groupName, teamsPerGroup, tiebreakerRules)
+        table: calculatePointsTable(groupTeams, group.rounds, scores, awayGoalsRule, group.groupName, teamsPerGroup, tiebreakerRules)
       }
     });
 

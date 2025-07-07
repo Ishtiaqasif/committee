@@ -30,12 +30,12 @@ interface RoundRobinViewProps {
   tournament: Tournament;
 }
 
-const GroupedRoundRobinView = ({ group, viewedRound, activeRound, scores, onScoreUpdate, teams, viewMode, readOnly, currentUserId, userTeam, tiebreakerRules }: { group: Group, viewedRound: number, activeRound: number, scores: RoundRobinViewProps['scores'], onScoreUpdate: RoundRobinViewProps['onScoreUpdate'], teams: Team[], viewMode: 'full' | 'short', readOnly: boolean, currentUserId?: string, userTeam?: Team | null, tiebreakerRules: TiebreakerRule[] }) => {
+const GroupedRoundRobinView = ({ group, viewedRound, activeRound, scores, onScoreUpdate, teams, viewMode, readOnly, currentUserId, userTeam, tiebreakerRules, awayGoalsRule }: { group: Group, viewedRound: number, activeRound: number, scores: RoundRobinViewProps['scores'], onScoreUpdate: RoundRobinViewProps['onScoreUpdate'], teams: Team[], viewMode: 'full' | 'short', readOnly: boolean, currentUserId?: string, userTeam?: Team | null, tiebreakerRules: TiebreakerRule[], awayGoalsRule: boolean }) => {
   const groupTeams = useMemo(() => group.teams.map(name => teams.find(t => t.name === name)!).filter(Boolean), [group.teams, teams]);
 
   const pointsTable = useMemo(() => {
-    return calculatePointsTable(groupTeams, group.rounds, scores, group.groupName, undefined, tiebreakerRules);
-  }, [scores, groupTeams, group, tiebreakerRules]);
+    return calculatePointsTable(groupTeams, group.rounds, scores, awayGoalsRule, group.groupName, undefined, tiebreakerRules);
+  }, [scores, groupTeams, group, tiebreakerRules, awayGoalsRule]);
 
   const displayedRounds = group.rounds.filter(r => r.round === viewedRound);
 
@@ -195,11 +195,13 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
   };
 
   const allRounds = fixture.rounds || [];
-  const tiebreakerRules = tournament.tiebreakerRules || ['goalDifference', 'goalsFor'];
+  const tiebreakerRules = tournament.tiebreakerRules || ['goalDifference', 'goalsFor', 'headToHead'];
+  const awayGoalsRule = tournament.awayGoalsRule ?? false;
+  
   const pointsTable = useMemo(() => {
     if (!fixture.rounds) return [];
-    return calculatePointsTable(teams, allRounds, scores, undefined, undefined, tiebreakerRules);
-  }, [scores, teams, allRounds, tiebreakerRules, fixture.rounds]);
+    return calculatePointsTable(teams, allRounds, scores, awayGoalsRule, undefined, undefined, tiebreakerRules);
+  }, [scores, teams, allRounds, awayGoalsRule, tiebreakerRules, fixture.rounds]);
 
   const finalWinner = useMemo(() => {
     const allRoundsPlayed = activeRound > maxRound && maxRound > 0;
@@ -303,6 +305,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
               currentUserId={currentUserId}
               userTeam={userTeam}
               tiebreakerRules={tiebreakerRules}
+              awayGoalsRule={awayGoalsRule}
             />
           </TabsContent>
         ))}
