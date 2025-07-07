@@ -111,8 +111,11 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
         });
         
         const parsedFixture = JSON.parse(result.fixture);
+        
+        // Create a shuffled copy of the teams array to ensure random grouping
+        const shuffledTeams = [...teams].sort(() => Math.random() - 0.5);
 
-        const teamMap = teams.reduce((acc, team, index) => {
+        const teamMap = shuffledTeams.reduce((acc, team, index) => {
             // The AI might use "Team 1", "Team 2", etc. as placeholders.
             // We map these generic names to the actual team data provided earlier.
             acc[`Team ${index + 1}`] = team;
