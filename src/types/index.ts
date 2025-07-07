@@ -41,6 +41,7 @@ export interface Team {
   id: string;
   name: string;
   ownerName: string;
+  ownerId: string;
   logo?: string;
 }
 

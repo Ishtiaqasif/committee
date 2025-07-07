@@ -18,10 +18,10 @@ import Link from 'next/link';
 import { generateTeamLogo } from '@/ai/flows/generate-team-logo';
 import ChampionView from '@/components/champion-view';
 import { useAuth } from '@/context/auth-context';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const formSchema = z.object({
   teamName: z.string().min(1, 'Team name is required.'),
-  ownerName: z.string().min(1, 'Owner name is required.'),
 });
 
 // Helper function to resize and compress the image
@@ -82,7 +82,6 @@ export default function RegisterTeamPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       teamName: '',
-      ownerName: '',
     },
   });
 
@@ -142,7 +141,7 @@ export default function RegisterTeamPage() {
   };
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
-    if (!tournamentId) return;
+    if (!tournamentId || !user) return;
     
     if (teams.some(team => team.name.toLowerCase() === values.teamName.toLowerCase())) {
         form.setError('teamName', { message: 'This team name is already taken.'});
@@ -151,7 +150,12 @@ export default function RegisterTeamPage() {
 
     setIsSubmitting(true);
     try {
-      await addTeamToTournament(tournamentId, { name: values.teamName, ownerName: values.ownerName, logo: logo });
+      await addTeamToTournament(tournamentId, {
+        name: values.teamName,
+        ownerId: user.uid,
+        ownerName: user.displayName || 'Participant',
+        logo: logo
+      });
       setIsRegistered(true);
       toast({ title: 'Success!', description: 'Your team has been registered.' });
     } catch (error: any) {
@@ -241,6 +245,16 @@ export default function RegisterTeamPage() {
           ) : (
              <Form {...form}>
                 <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                     <div className="flex items-center gap-3 rounded-md border p-3 bg-muted/50">
+                        <Avatar>
+                            <AvatarImage src={user.photoURL ?? ''} />
+                            <AvatarFallback>{user.displayName?.charAt(0) ?? 'U'}</AvatarFallback>
+                        </Avatar>
+                        <div>
+                            <p className="text-sm font-medium">You are registering as</p>
+                            <p className="text-sm text-muted-foreground">{user.displayName} ({user.email})</p>
+                        </div>
+                    </div>
                     <div className="flex justify-center">
                         <div className="relative h-32 w-32 bg-muted rounded-full flex items-center justify-center border-2 border-dashed">
                             {logo ? (
@@ -255,47 +269,31 @@ export default function RegisterTeamPage() {
                             )}
                         </div>
                     </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <FormField
-                            control={form.control}
-                            name="teamName"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="flex items-center gap-2"><Shield className="h-4 w-4" /> Team Name</FormLabel>
-                                    <div className="flex items-center gap-2">
-                                        <FormControl>
-                                            <Input placeholder="Enter team name" {...field} />
-                                        </FormControl>
-                                        <Button 
-                                            type="button" 
-                                            variant="outline" 
-                                            size="icon"
-                                            onClick={handleGenerateLogo}
-                                            disabled={isGeneratingLogo}
-                                            title="Generate Logo"
-                                        >
-                                            {isGeneratingLogo ? <Loader className="animate-spin" /> : <Sparkles />}
-                                        </Button>
-                                    </div>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                         <FormField
-                            control={form.control}
-                            name="ownerName"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="flex items-center gap-2"><User className="h-4 w-4" /> Owner's Name</FormLabel>
+                    <FormField
+                        control={form.control}
+                        name="teamName"
+                        render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="flex items-center gap-2"><Shield className="h-4 w-4" /> Team Name</FormLabel>
+                                <div className="flex items-center gap-2">
                                     <FormControl>
-                                        <Input placeholder="Enter your name" {...field} />
+                                        <Input placeholder="Enter team name" {...field} />
                                     </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
-                    </div>
+                                    <Button 
+                                        type="button" 
+                                        variant="outline" 
+                                        size="icon"
+                                        onClick={handleGenerateLogo}
+                                        disabled={isGeneratingLogo}
+                                        title="Generate Logo"
+                                    >
+                                        {isGeneratingLogo ? <Loader className="animate-spin" /> : <Sparkles />}
+                                    </Button>
+                                </div>
+                                <FormMessage />
+                            </FormItem>
+                        )}
+                    />
                      <Button type="submit" disabled={isSubmitting || isGeneratingLogo} className="w-full">
                         {isSubmitting ? <Loader className="animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
                         Register Team

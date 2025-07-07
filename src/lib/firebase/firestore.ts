@@ -61,7 +61,8 @@ export async function addTeamToTournament(tournamentId: string, teamData: Omit<T
     const teamToSave = {
         name: teamData.name,
         ownerName: teamData.ownerName,
-        logo: logoUrl // This will be the public URL from Storage or an empty string
+        logo: logoUrl, // This will be the public URL from Storage or an empty string
+        ownerId: teamData.ownerId,
     };
 
     const teamDocRef = await addDoc(collection(db, "tournaments", tournamentId, "teams"), teamToSave);
