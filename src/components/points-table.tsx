@@ -42,7 +42,10 @@ export default function PointsTable({ title, table, viewMode, userTeamName }: Po
           </TableHeader>
           <TableBody>
             {table.map(entry => (
-              <TableRow key={entry.teamName} className={cn(entry.teamName === userTeamName && "bg-primary/10")}>
+              <TableRow key={entry.teamName} className={cn(
+                entry.teamName === userTeamName && "bg-primary/10",
+                entry.qualified && "bg-accent/10",
+              )}>
                 <TableCell className="font-medium">
                   <div className="flex items-center gap-2">
                     {entry.logo ? <Image src={entry.logo} alt={`${entry.teamName} logo`} width={24} height={24} className="rounded-full" /> : <Shield className="h-5 w-5 text-muted-foreground" />}

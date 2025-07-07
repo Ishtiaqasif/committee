@@ -313,14 +313,14 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
       </div>
       
       {!readOnly && isViewingActiveRound && (
-        <>
+        <div className="text-center space-y-2 border-t pt-4 mt-4 w-full max-w-md">
             {hasNextRound && isRoundComplete && (
-                <div className="text-center space-y-2 border-t pt-4 mt-4 w-full max-w-md">
+                <>
                     <p className="text-sm text-muted-foreground">All matches in the current round are complete.</p>
                     <Button size="lg" onClick={handleProceed}>
                         Lock Round & Proceed <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
-                </div>
+                </>
             )}
 
             {hasNextRound && !isRoundComplete && (
@@ -328,28 +328,28 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
                 Enter all match results for the current round to proceed.
                 </p>
             )}
-        </>
-      )}
 
-      {!readOnly && isRoundComplete && !hasNextRound && isViewingActiveRound && (
-        <div className="mt-4 text-center">
-            {isHybrid && onProceedToKnockout ? (
-                <Button size="lg" onClick={onProceedToKnockout} disabled={!isRoundComplete}>
-                    Proceed to Knockout Stage <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-            ) : finalWinner ? (
-                <div className="space-y-2">
-                    <p className="text-lg font-semibold text-primary">
-                        Tournament Complete! The winner is {finalWinner.name}.
-                    </p>
-                    <Button size="lg" onClick={() => onTournamentUpdate({ winner: finalWinner })}>
-                        <Trophy className="mr-2 h-4 w-4" /> Crown Champion & Finish
-                    </Button>
-                </div>
-            ) : (
-                 <p className="text-lg font-semibold text-primary">
-                    All rounds are complete!
-                </p>
+            {!hasNextRound && isRoundComplete && (
+                 <>
+                    {isHybrid && onProceedToKnockout ? (
+                        <Button size="lg" onClick={onProceedToKnockout}>
+                            Proceed to Knockout Stage <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                    ) : finalWinner ? (
+                        <div className="space-y-2">
+                            <p className="text-lg font-semibold text-primary">
+                                Tournament Complete! The winner is {finalWinner.name}.
+                            </p>
+                            <Button size="lg" onClick={() => onTournamentUpdate({ winner: finalWinner })}>
+                                <Trophy className="mr-2 h-4 w-4" /> Crown Champion & Finish
+                            </Button>
+                        </div>
+                    ) : (
+                        <p className="text-lg font-semibold text-primary">
+                            All rounds are complete!
+                        </p>
+                    )}
+                 </>
             )}
         </div>
       )}
