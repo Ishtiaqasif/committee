@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -10,8 +11,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Loader, UserPlus, UserMinus, KeyRound, Shield, Crown } from 'lucide-react';
-import { getUserProfiles } from '@/lib/firebase/firestore';
+import { Loader, UserPlus, UserMinus, KeyRound, Shield, Crown, Mail } from 'lucide-react';
+import { getUserProfiles, getUserByEmail } from '@/lib/firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 
@@ -21,7 +22,7 @@ interface UserManagementProps {
 }
 
 const formSchema = z.object({
-  adminUid: z.string().min(1, 'Admin UID is required.'),
+  adminEmail: z.string().email('Please enter a valid email address.'),
 });
 
 export default function UserManagement({ tournament, onUpdate }: UserManagementProps) {
@@ -52,24 +53,34 @@ export default function UserManagement({ tournament, onUpdate }: UserManagementP
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
-      adminUid: '',
+      adminEmail: '',
     },
   });
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     setIsUpdating(true);
-    const currentAdmins = tournament.admins || [];
-    if (currentAdmins.includes(values.adminUid) || tournament.creatorId === values.adminUid) {
-      toast({ variant: 'destructive', title: 'Error', description: 'User is already an owner or admin.' });
-      setIsUpdating(false);
-      return;
-    }
-    const newAdmins = [...currentAdmins, values.adminUid];
     try {
+      const userToAdd = await getUserByEmail(values.adminEmail);
+
+      if (!userToAdd) {
+        form.setError('adminEmail', { message: 'No user found with this email address.' });
+        setIsUpdating(false);
+        return;
+      }
+
+      const currentAdmins = tournament.admins || [];
+      if (currentAdmins.includes(userToAdd.uid) || tournament.creatorId === userToAdd.uid) {
+        form.setError('adminEmail', { message: 'User is already an owner or admin.' });
+        setIsUpdating(false);
+        return;
+      }
+
+      const newAdmins = [...currentAdmins, userToAdd.uid];
       await onUpdate({ admins: newAdmins });
       form.reset();
       toast({ title: 'Success', description: 'New admin added.' });
     } catch (e) {
+      console.error("Error adding admin:", e);
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to add admin.' });
     } finally {
       setIsUpdating(false);
@@ -176,19 +187,19 @@ export default function UserManagement({ tournament, onUpdate }: UserManagementP
        <Card className="mt-6">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><UserPlus /> Add New Admin</CardTitle>
-                <CardDescription>Enter the User ID of the user you want to grant admin privileges to. They can find their ID on their profile page.</CardDescription>
+                <CardDescription>Enter the email address of the user you want to grant admin privileges to.</CardDescription>
             </CardHeader>
             <CardContent>
                  <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="flex items-start gap-4">
                         <FormField
                             control={form.control}
-                            name="adminUid"
+                            name="adminEmail"
                             render={({ field }) => (
                                 <FormItem className="flex-grow">
-                                    <FormLabel>User ID</FormLabel>
+                                    <FormLabel className="flex items-center gap-2"><Mail className="h-4 w-4" /> Admin's Email</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="Enter user's unique ID" {...field} />
+                                        <Input placeholder="Enter admin's email address" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

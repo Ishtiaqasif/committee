@@ -1,4 +1,5 @@
-import { doc, collection, addDoc, getDoc, getDocs, query, serverTimestamp, where, orderBy, updateDoc, setDoc, documentId } from "firebase/firestore";
+
+import { doc, collection, addDoc, getDoc, getDocs, query, serverTimestamp, where, orderBy, updateDoc, setDoc, documentId, limit } from "firebase/firestore";
 import { db, storage } from "./config";
 import type { Tournament, TournamentCreationData, Team, UserProfile } from "@/types";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
@@ -115,4 +116,17 @@ export async function getUserProfiles(uids: string[]): Promise<Record<string, Us
     });
 
     return profiles;
+}
+
+export async function getUserByEmail(email: string): Promise<UserProfile | null> {
+    const usersRef = collection(db, "users");
+    const q = query(usersRef, where("email", "==", email), limit(1));
+    const querySnapshot = await getDocs(q);
+
+    if (querySnapshot.empty) {
+        return null;
+    }
+
+    const userDoc = querySnapshot.docs[0];
+    return { uid: userDoc.id, ...userDoc.data() } as UserProfile;
 }
