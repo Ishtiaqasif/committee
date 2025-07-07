@@ -65,6 +65,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
   }, [user, tournament]);
 
   const isPrivilegedUser = userRole === 'owner' || userRole === 'admin';
+  const canAccessSettings = userRole === 'owner';
   
   useEffect(() => {
     if (tournament.fixture) {
@@ -415,7 +416,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
             </div>
         );
       case 'settings':
-        return <TournamentSettings tournament={tournament} onUpdate={onTournamentUpdate} isPrivilegedUser={isPrivilegedUser} />;
+        return <TournamentSettings tournament={tournament} onUpdate={onTournamentUpdate} isPrivilegedUser={canAccessSettings} />;
       case 'user-management':
         return <UserManagement tournament={tournament} onUpdate={onTournamentUpdate} />;
       default:
@@ -500,8 +501,8 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
                         <SidebarMenuButton 
                             onClick={() => setActiveView('settings')} 
                             isActive={activeView === 'settings'}
-                            disabled={!isPrivilegedUser}
-                            tooltip={!isPrivilegedUser ? 'Only owners and admins can change settings' : 'Settings'}
+                            disabled={!canAccessSettings}
+                            tooltip={!canAccessSettings ? 'Only the owner can change settings' : 'Settings'}
                         >
                             <Settings/>
                             Settings
