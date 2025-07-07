@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -11,7 +10,6 @@ import { Button } from '@/components/ui/button';
 import { Clipboard, Check, Users, Shield, Link as LinkIcon, ArrowRight, Loader, User } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import Image from 'next/image';
-import { QRCodeCanvas } from 'qrcode.react';
 
 interface TeamInvitationProps {
     tournament: Tournament;
@@ -66,33 +64,16 @@ export default function TeamInvitation({ tournament, onTeamsFinalized }: TeamInv
                     <LinkIcon className="h-8 w-8" />
                 </div>
                 <CardTitle>Invite Teams to Register</CardTitle>
-                <CardDescription>Share the unique link or QR code below with participants to let them register their own teams.</CardDescription>
+                <CardDescription>Share the unique link below with participants to let them register their own teams.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-8">
-                <div className="space-y-4">
-                     <div className="flex flex-col md:flex-row gap-4 items-start">
-                        <div className="flex-grow w-full space-y-2">
-                             <label htmlFor="invite-link" className="text-sm font-medium">Unique Registration Link</label>
-                            <div className="flex gap-2">
-                                <Input id="invite-link" readOnly value={registrationLink} />
-                                <Button variant="outline" size="icon" onClick={handleCopyLink}>
-                                    {copied ? <Check className="text-green-500" /> : <Clipboard />}
-                                </Button>
-                            </div>
-                        </div>
-                        {registrationLink && (
-                             <div className="flex flex-col items-center gap-2 p-4 bg-card rounded-lg border self-center md:self-start">
-                                <QRCodeCanvas
-                                    value={registrationLink}
-                                    size={128}
-                                    bgColor={"#ffffff"}
-                                    fgColor={"#000000"}
-                                    level={"M"}
-                                    includeMargin={true}
-                                />
-                                <span className="text-sm text-muted-foreground">Scan to Register</span>
-                            </div>
-                        )}
+                <div className="space-y-2">
+                    <label htmlFor="invite-link" className="text-sm font-medium">Unique Registration Link</label>
+                    <div className="flex gap-2">
+                        <Input id="invite-link" readOnly value={registrationLink} />
+                        <Button variant="outline" size="icon" onClick={handleCopyLink}>
+                            {copied ? <Check className="text-green-500" /> : <Clipboard />}
+                        </Button>
                     </div>
                 </div>
 
