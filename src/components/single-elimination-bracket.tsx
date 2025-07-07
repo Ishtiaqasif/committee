@@ -23,8 +23,14 @@ interface SingleEliminationBracketProps {
 const MatchComponent = ({ match, round, onScoreUpdate, currentScores, isActive, readOnly }: { match: Match, round: number, onScoreUpdate: SingleEliminationBracketProps['onScoreUpdate'], currentScores: any, isActive: boolean, readOnly: boolean }) => {
   const matchId = `r${round}m${match.match}`;
   const score = currentScores[matchId];
-  const isTeam1Winner = score && score.score1 !== null && score.score2 !== null && score.score1 > score.score2;
-  const isTeam2Winner = score && score.score1 !== null && score.score2 !== null && score.score2 > score.score1;
+  
+  const isDraw = score && score.score1 !== null && score.score2 !== null && score.score1 === score.score2;
+  const isTeam1WinnerByTiebreak = isDraw && score.score1_tiebreak != null && score.score2_tiebreak != null && score.score1_tiebreak > score.score2_tiebreak;
+  const isTeam2WinnerByTiebreak = isDraw && score.score1_tiebreak != null && score.score2_tiebreak != null && score.score2_tiebreak > score.score1_tiebreak;
+
+  const isTeam1Winner = (score && score.score1 !== null && score.score2 !== null && score.score1 > score.score2) || isTeam1WinnerByTiebreak;
+  const isTeam2Winner = (score && score.score1 !== null && score.score2 !== null && score.score2 > score.score1) || isTeam2WinnerByTiebreak;
+
 
   const getTeamClass = (isWinner: boolean, teamName: string) => {
     let baseClass = "flex items-center justify-between p-2 rounded-t-md";
@@ -45,7 +51,10 @@ const MatchComponent = ({ match, round, onScoreUpdate, currentScores, isActive, 
             {match.team1.logo ? <Image src={match.team1.logo} alt={`${match.team1.name} logo`} width={20} height={20} className="rounded-full" /> : <Shield className="h-5 w-5" />}
             <span>{match.team1.name}</span>
           </div>
-          <span className="font-bold text-lg">{score?.score1 ?? '-'}</span>
+          <span className="font-bold text-lg">
+            {score?.score1 ?? '-'}
+            {isDraw && score.score1_tiebreak != null ? ` (${score.score1_tiebreak})` : ''}
+          </span>
         </div>
         <div className="border-t border-border my-0"></div>
         <div className={getTeamClass(isTeam2Winner, match.team2.name).replace('rounded-t-md', 'rounded-b-md')}>
@@ -53,7 +62,10 @@ const MatchComponent = ({ match, round, onScoreUpdate, currentScores, isActive, 
             {match.team2.logo ? <Image src={match.team2.logo} alt={`${match.team2.name} logo`} width={20} height={20} className="rounded-full" /> : <Shield className="h-5 w-5" />}
             <span>{match.team2.name}</span>
           </div>
-          <span className="font-bold text-lg">{score?.score2 ?? '-'}</span>
+          <span className="font-bold text-lg">
+             {score?.score2 ?? '-'}
+             {isDraw && score.score2_tiebreak != null ? ` (${score.score2_tiebreak})` : ''}
+          </span>
         </div>
       </CardContent>
        <CardFooter className="p-2 flex-col gap-2 items-stretch">
@@ -137,6 +149,14 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTou
                         winner = match.team1;
                     } else if (matchScores.score2 > matchScores.score1) {
                         winner = match.team2;
+                    } else { // Draw, check tiebreaker
+                        if (matchScores.score1_tiebreak != null && matchScores.score2_tiebreak != null) {
+                            if (matchScores.score1_tiebreak > matchScores.score2_tiebreak) {
+                                winner = match.team1;
+                            } else if (matchScores.score2_tiebreak > matchScores.score1_tiebreak) {
+                                winner = match.team2;
+                            }
+                        }
                     }
                 }
                 
@@ -165,7 +185,12 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTou
       const finalMatchId = `r${finalRound.round}m${finalMatch.match}`;
       const finalScores = scores[finalMatchId];
       if (finalScores && finalScores.score1 !== null && finalScores.score2 !== null) {
-          return finalScores.score1 > finalScores.score2 ? finalMatch.team1 : finalMatch.team2;
+          if (finalScores.score1 > finalScores.score2) return finalMatch.team1;
+          if (finalScores.score2 > finalScores.score1) return finalMatch.team2;
+          if (finalScores.score1_tiebreak != null && finalScores.score2_tiebreak != null) {
+            if (finalScores.score1_tiebreak > finalScores.score2_tiebreak) return finalMatch.team1;
+            if (finalScores.score2_tiebreak > finalScores.score1_tiebreak) return finalMatch.team2;
+          }
       }
     }
     return null;

@@ -99,5 +99,7 @@ export interface PointsTableEntry {
 export interface Score {
   score1: number | null;
   score2: number | null;
+  score1_tiebreak?: number | null;
+  score2_tiebreak?: number | null;
   locked: boolean;
 }
