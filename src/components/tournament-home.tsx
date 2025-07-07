@@ -56,13 +56,15 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
         setUserRole('owner');
       } else if (tournament.admins?.includes(user.uid)) {
         setUserRole('admin');
-      } else {
+      } else if (tournament.participants?.includes(user.uid)) {
         setUserRole('participant');
+      } else {
+        setUserRole('guest');
       }
     } else {
       setUserRole('guest');
     }
-  }, [user, tournament.creatorId, tournament.admins]);
+  }, [user, tournament]);
 
   const isPrivilegedUser = userRole === 'owner' || userRole === 'admin';
   const canAccessSettings = userRole === 'owner';
@@ -78,11 +80,10 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     // This effect handles setting the default view when major
     // tournament state changes occur (e.g., loading for the first time,
     // or a winner is declared).
+    if (!tournament.id) return; // Guard against running on initial empty state
     if (tournament.winner || !tournament.fixture) {
-      setActiveView('overview');
+        setActiveView('overview');
     }
-    // Note: We don't reset the view in other cases, so the user's
-    // selected view is preserved across score updates.
   }, [tournament.id, tournament.fixture, tournament.winner]);
 
 
@@ -121,8 +122,8 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
             return {
                 ...match,
                 match: match.match ?? (matchIndex + 1), // Ensure a match number exists
-                team1: { name: team1Info.name, score: null, logo: team1Info.logo || null, ownerName: team1Info.ownerName || 'TBD' },
-                team2: { name: team2Info.name, score: null, logo: team2Info.logo || null, ownerName: team2Info.ownerName || 'TBD' },
+                team1: { name: team1Info.name, score: null, logo: team1Info.logo || null, ownerName: team1Info.ownerName || null },
+                team2: { name: team2Info.name, score: null, logo: team2Info.logo || null, ownerName: team2Info.ownerName || null },
                 venue: match.venue || null,
             }
         });
@@ -325,7 +326,6 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
               activeRound={tournament.activeRound || 1}
               onActiveRoundChange={handleActiveRoundChange}
               readOnly={readOnly}
-              allowTiebreaker={false}
             />
           </div>
         )
@@ -352,7 +352,6 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
               activeRound={tournament.activeRound || 1}
               onActiveRoundChange={handleActiveRoundChange}
               readOnly={readOnly}
-              allowTiebreaker={true}
             />
           </div>
         )
@@ -360,11 +359,11 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     }
     
     if (tournament.tournamentType === 'round-robin' && (fixture.rounds || fixture.groups)) {
-      return <RoundRobinView fixture={{rounds: fixture.rounds, groups: fixture.groups}} teams={teams} scores={scores} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} allowTiebreaker={false} />;
+      return <RoundRobinView fixture={{rounds: fixture.rounds, groups: fixture.groups}} teams={teams} scores={scores} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} />;
     }
 
     if (tournament.tournamentType === 'single elimination' && fixture.rounds) {
-      return <SingleEliminationBracket fixture={{rounds: fixture.rounds}} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} scores={scores} knockoutHomeAndAway={tournament.knockoutHomeAndAway} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} allowTiebreaker={true} />;
+      return <SingleEliminationBracket fixture={{rounds: fixture.rounds}} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} scores={scores} knockoutHomeAndAway={tournament.knockoutHomeAndAway} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} />;
     }
 
     return <p>Could not display fixture.</p>;
@@ -391,7 +390,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
             </div>
         );
       case 'teams':
-        return <TeamsList teams={teams} />;
+        return <TeamsList teams={teams} fixture={fixture} scores={scores} />;
       case 'points-table':
         return <PointsTableView fixture={fixture!} teams={teams} scores={scores} tournamentType={tournament.tournamentType}/>;
       case 'knockout':
