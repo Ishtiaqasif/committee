@@ -1,7 +1,8 @@
-import { doc, collection, addDoc, getDoc, getDocs, query, serverTimestamp, where, orderBy, updateDoc } from "firebase/firestore";
+import { doc, collection, addDoc, getDoc, getDocs, query, serverTimestamp, where, orderBy, updateDoc, setDoc, documentId } from "firebase/firestore";
 import { db, storage } from "./config";
-import type { Tournament, TournamentCreationData, Team } from "@/types";
+import type { Tournament, TournamentCreationData, Team, UserProfile } from "@/types";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
+import type { User } from "firebase/auth";
 
 export async function createTournament(tournamentData: TournamentCreationData, userId: string): Promise<string> {
     const dataToSave: Partial<TournamentCreationData> = { ...tournamentData };
@@ -84,4 +85,34 @@ export async function getTournamentsForUser(userId: string): Promise<Tournament[
 export async function updateTournament(tournamentId: string, data: Partial<Tournament>): Promise<void> {
     const tournamentRef = doc(db, "tournaments", tournamentId);
     await updateDoc(tournamentRef, data);
+}
+
+
+export async function upsertUserProfile(user: User): Promise<void> {
+    const userRef = doc(db, "users", user.uid);
+    // Only save public-safe information
+    await setDoc(userRef, {
+        displayName: user.displayName,
+        email: user.email,
+        photoURL: user.photoURL,
+    }, { merge: true });
+}
+
+export async function getUserProfiles(uids: string[]): Promise<Record<string, UserProfile>> {
+    if (uids.length === 0) return {};
+    
+    // Firestore 'in' queries are limited to 30 items per query.
+    // For a larger number of UIDs, this would need to be chunked.
+    const uidsToQuery = uids.slice(0, 30);
+
+    const usersRef = collection(db, "users");
+    const q = query(usersRef, where(documentId(), "in", uidsToQuery));
+    const querySnapshot = await getDocs(q);
+
+    const profiles: Record<string, UserProfile> = {};
+    querySnapshot.forEach(doc => {
+        profiles[doc.id] = { uid: doc.id, ...doc.data() } as UserProfile;
+    });
+
+    return profiles;
 }

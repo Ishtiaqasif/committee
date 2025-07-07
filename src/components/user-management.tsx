@@ -1,16 +1,19 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import type { Tournament } from '@/types';
+import type { Tournament, UserProfile } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader, UserPlus, UserMinus, KeyRound, Shield, Crown } from 'lucide-react';
+import { getUserProfiles } from '@/lib/firebase/firestore';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
 
 interface UserManagementProps {
   tournament: Tournament;
@@ -23,7 +26,28 @@ const formSchema = z.object({
 
 export default function UserManagement({ tournament, onUpdate }: UserManagementProps) {
   const [isUpdating, setIsUpdating] = useState(false);
+  const [userProfiles, setUserProfiles] = useState<Record<string, UserProfile>>({});
+  const [isLoadingProfiles, setIsLoadingProfiles] = useState(true);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const fetchProfiles = async () => {
+      setIsLoadingProfiles(true);
+      const uidsToFetch = [tournament.creatorId, ...(tournament.admins || [])].filter(Boolean);
+      if (uidsToFetch.length > 0) {
+        try {
+          const profiles = await getUserProfiles(uidsToFetch);
+          setUserProfiles(profiles);
+        } catch (error) {
+          console.error("Failed to fetch user profiles:", error);
+          toast({ variant: 'destructive', title: 'Error', description: 'Could not load user details.' });
+        }
+      }
+      setIsLoadingProfiles(false);
+    };
+    fetchProfiles();
+  }, [tournament.creatorId, tournament.admins, toast]);
+
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -64,23 +88,51 @@ export default function UserManagement({ tournament, onUpdate }: UserManagementP
       setIsUpdating(false);
     }
   };
+  
+  const ownerProfile = userProfiles[tournament.creatorId];
+  const adminProfiles = (tournament.admins || []).map(id => userProfiles[id]).filter(Boolean);
+
+  if (isLoadingProfiles) {
+    return (
+        <div>
+            <h2 className="text-3xl font-bold text-primary">User Management</h2>
+            <p className="text-muted-foreground">Add or remove tournament administrators.</p>
+            <div className="mt-6 flex justify-center items-center h-64">
+                <Loader className="h-8 w-8 animate-spin" />
+            </div>
+        </div>
+    );
+  }
 
   return (
     <div>
       <h2 className="text-3xl font-bold text-primary">User Management</h2>
       <p className="text-muted-foreground">Add or remove tournament administrators.</p>
       
-      <div className="mt-6 grid gap-6 md:grid-cols-2">
+      <div className="mt-6 grid gap-6 md:grid-cols-1 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2"><Crown className="text-accent"/> Owner</CardTitle>
             <CardDescription>The primary owner of the tournament.</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-3 rounded-md border p-3">
-                <KeyRound className="h-5 w-5 text-muted-foreground" />
-                <p className="font-mono text-xs">{tournament.creatorId}</p>
-            </div>
+            {ownerProfile ? (
+              <div className="flex items-center gap-3 rounded-md border p-3">
+                  <Avatar>
+                      <AvatarImage src={ownerProfile.photoURL ?? ''} alt={ownerProfile.displayName ?? ''} />
+                      <AvatarFallback>{ownerProfile.displayName?.charAt(0) ?? 'U'}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 overflow-hidden">
+                      <p className="font-medium truncate">{ownerProfile.displayName}</p>
+                      <p className="text-xs text-muted-foreground truncate">{ownerProfile.email}</p>
+                  </div>
+              </div>
+            ) : (
+                <div className="flex items-center gap-3 rounded-md border p-3">
+                    <KeyRound className="h-5 w-5 text-muted-foreground" />
+                    <p className="font-mono text-xs">{tournament.creatorId}</p>
+                </div>
+            )}
           </CardContent>
         </Card>
 
@@ -90,18 +142,24 @@ export default function UserManagement({ tournament, onUpdate }: UserManagementP
             <CardDescription>Users with administrative privileges.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
-            {(tournament.admins && tournament.admins.length > 0) ? (
-              tournament.admins.map(adminId => (
-                <div key={adminId} className="flex items-center justify-between gap-3 rounded-md border p-3">
-                    <div className="flex items-center gap-2 overflow-hidden">
-                        <KeyRound className="h-5 w-5 text-muted-foreground flex-shrink-0" />
-                        <p className="font-mono text-xs truncate">{adminId}</p>
+            {adminProfiles.length > 0 ? (
+              adminProfiles.map(admin => (
+                <div key={admin.uid} className="flex items-center justify-between gap-3 rounded-md border p-3">
+                    <div className="flex items-center gap-3 overflow-hidden">
+                         <Avatar>
+                            <AvatarImage src={admin.photoURL ?? ''} alt={admin.displayName ?? ''} />
+                            <AvatarFallback>{admin.displayName?.charAt(0) ?? 'U'}</AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 overflow-hidden">
+                            <p className="font-medium truncate">{admin.displayName}</p>
+                            <p className="text-xs text-muted-foreground truncate">{admin.email}</p>
+                        </div>
                     </div>
                     <Button 
                         variant="ghost" 
                         size="icon" 
                         className="h-7 w-7 flex-shrink-0"
-                        onClick={() => handleRemoveAdmin(adminId)}
+                        onClick={() => handleRemoveAdmin(admin.uid)}
                         disabled={isUpdating}
                     >
                         <UserMinus className="h-4 w-4 text-destructive" />
@@ -118,7 +176,7 @@ export default function UserManagement({ tournament, onUpdate }: UserManagementP
        <Card className="mt-6">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><UserPlus /> Add New Admin</CardTitle>
-                <CardDescription>Enter the User ID of the user you want to grant admin privileges to.</CardDescription>
+                <CardDescription>Enter the User ID of the user you want to grant admin privileges to. They can find their ID on their profile page.</CardDescription>
             </CardHeader>
             <CardContent>
                  <Form {...form}>
