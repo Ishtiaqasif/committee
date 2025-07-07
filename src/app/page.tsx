@@ -6,12 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ClipboardList, Bot, Users, Trophy, SwatchBook, ListChecks } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import AuthButton from '@/components/auth-button';
+import Image from 'next/image';
 
 export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-        <div className="container mx-auto flex h-14 items-center px-4">
+        <div className="container mx-auto flex h-14 max-w-7xl items-center px-4">
           <Link href="/" className="flex items-center gap-2 font-bold">
             <ClipboardList className="h-6 w-6 text-primary" />
             <span className="text-lg">Committee</span>
@@ -26,7 +27,7 @@ export default function LandingPage() {
       <main className="flex-1">
         {/* Hero Section */}
         <section className="w-full py-20 md:py-32">
-          <div className="container mx-auto px-4 md:px-6">
+          <div className="container mx-auto max-w-7xl px-4 md:px-6">
             <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-16">
                 <div className="space-y-6 text-center lg:text-left">
                     <h1 className="text-4xl font-extrabold tracking-tight lg:text-6xl">
@@ -41,11 +42,14 @@ export default function LandingPage() {
                         </Button>
                     </div>
                 </div>
-                <div data-ai-hint="tournament bracket esports">
-                    <img
-                        src="https://placehold.co/1200x800.png"
-                        alt="Tournament bracket illustration"
+                <div>
+                    <Image
+                        src="https://placehold.co/900x600.png"
+                        alt="AI generated tournament bracket"
+                        width={900}
+                        height={600}
                         className="mx-auto aspect-[3/2] overflow-hidden rounded-xl object-cover object-center shadow-2xl"
+                        data-ai-hint="esports tournament"
                     />
                 </div>
             </div>
@@ -53,8 +57,8 @@ export default function LandingPage() {
         </section>
 
         {/* Features Section */}
-        <section id="features" className="py-20 bg-muted/40">
-          <div className="container mx-auto px-4">
+        <section id="features" className="w-full py-20 bg-muted/40">
+          <div className="container mx-auto max-w-7xl px-4">
             <div className="text-center mb-12">
               <h2 className="text-3xl font-bold">Powerful Features, Effortlessly Simple</h2>
               <p className="mt-2 text-muted-foreground">Everything you need to run a successful tournament.</p>
