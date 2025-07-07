@@ -81,16 +81,16 @@ export default function TeamInvitation({ tournament, onTeamsFinalized }: TeamInv
                             </div>
                         </div>
                         {registrationLink && (
-                             <div className="flex flex-col items-center gap-2 p-3 bg-card rounded-md border self-center">
+                             <div className="flex flex-col items-center gap-2 p-4 bg-card rounded-lg border self-center md:self-start">
                                 <QRCodeCanvas
                                     value={registrationLink}
-                                    size={100}
+                                    size={128}
                                     bgColor={"#ffffff"}
                                     fgColor={"#000000"}
-                                    level={"L"}
-                                    includeMargin={false}
+                                    level={"M"}
+                                    includeMargin={true}
                                 />
-                                <span className="text-xs text-muted-foreground">Scan Code</span>
+                                <span className="text-sm text-muted-foreground">Scan to Register</span>
                             </div>
                         )}
                     </div>
