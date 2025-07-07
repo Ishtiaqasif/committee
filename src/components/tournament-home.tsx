@@ -29,6 +29,7 @@ import TournamentSettings from "./tournament-settings";
 import TournamentOverview from "./tournament-overview";
 import ChampionView from "./champion-view";
 import KnockoutBracketView from "./knockout-bracket-view";
+import AuthButton from "./auth-button";
 
 interface TournamentHomeProps {
   tournament: Tournament;
@@ -79,7 +80,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
           language: tournament.language || 'en',
         });
 
-        const parsedFixture = JSON.parse(result.fixture);
+        const parsedFixture = result.fixture;
         
         const teamMap = teams.reduce((acc, team, index) => {
             acc[`Team ${index + 1}`] = team;
@@ -407,7 +408,10 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
                             <span className="text-sm text-muted-foreground capitalize truncate">{tournament.tournamentType.replace('-', ' ')}</span>
                         </div>
                     </div>
-                    <ThemeToggle />
+                    <div className="flex items-center gap-2">
+                        <ThemeToggle />
+                        <AuthButton />
+                    </div>
                 </div>
             </SidebarHeader>
             <SidebarContent>
