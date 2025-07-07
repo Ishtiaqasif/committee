@@ -17,9 +17,10 @@ interface QualificationSummaryViewProps {
   scores: Record<string, Score>;
   tournament: Tournament;
   onProceed: () => void;
+  isPrivilegedUser: boolean;
 }
 
-export default function QualificationSummaryView({ groupStage, teams, scores, tournament, onProceed }: QualificationSummaryViewProps) {
+export default function QualificationSummaryView({ groupStage, teams, scores, tournament, onProceed, isPrivilegedUser }: QualificationSummaryViewProps) {
   const { tables, teamsAdvancingPerGroup } = useMemo(() => {
     if (!groupStage?.groups) {
       return { tables: [], teamsAdvancingPerGroup: 0 };
@@ -70,12 +71,20 @@ export default function QualificationSummaryView({ groupStage, teams, scores, to
             ))}
         </div>
         <div className="text-center">
-            <Button size="lg" onClick={onProceed}>
-                Generate Knockout Fixture <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-            <p className="text-sm text-muted-foreground mt-2">
-                The knockout bracket will be generated based on these standings.
-            </p>
+            {isPrivilegedUser ? (
+              <>
+                <Button size="lg" onClick={onProceed}>
+                    Generate Knockout Fixture <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+                <p className="text-sm text-muted-foreground mt-2">
+                    The knockout bracket will be generated based on these standings.
+                </p>
+              </>
+            ) : (
+               <p className="text-sm text-muted-foreground mt-2">
+                  Waiting for the tournament owner or an admin to generate the knockout fixture.
+              </p>
+            )}
         </div>
       </CardContent>
     </Card>

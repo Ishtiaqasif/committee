@@ -421,6 +421,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
             scores={scores}
             tournament={tournament}
             onProceed={handleProceedToKnockout}
+            isPrivilegedUser={isPrivilegedUser}
           />
         );
       } else { // 'knockout' stage
