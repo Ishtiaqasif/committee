@@ -2,7 +2,7 @@
 "use client"
 
 import { useMemo, useState, useEffect } from 'react';
-import type { Team, PointsTableEntry, Match, Round, Group, Score, Tournament } from '@/types';
+import type { Team, Match, Round, Group, Score, Tournament, TiebreakerRule } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dices, MapPin, Lock, ArrowRight, Shield, ArrowLeft, Trophy } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -13,6 +13,7 @@ import PointsTable from './points-table';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { calculatePointsTable } from './points-table-view';
 
 interface RoundRobinViewProps {
   fixture: { rounds?: Round[], groups?: Group[] };
@@ -26,59 +27,15 @@ interface RoundRobinViewProps {
   onActiveRoundChange: (round: number) => void;
   readOnly: boolean;
   currentUserId?: string;
+  tournament: Tournament;
 }
 
-const GroupedRoundRobinView = ({ group, viewedRound, activeRound, scores, onScoreUpdate, teams, viewMode, readOnly, currentUserId, userTeam }: { group: Group, viewedRound: number, activeRound: number, scores: RoundRobinViewProps['scores'], onScoreUpdate: RoundRobinViewProps['onScoreUpdate'], teams: Team[], viewMode: 'full' | 'short', readOnly: boolean, currentUserId?: string, userTeam?: Team | null }) => {
+const GroupedRoundRobinView = ({ group, viewedRound, activeRound, scores, onScoreUpdate, teams, viewMode, readOnly, currentUserId, userTeam, tiebreakerRules }: { group: Group, viewedRound: number, activeRound: number, scores: RoundRobinViewProps['scores'], onScoreUpdate: RoundRobinViewProps['onScoreUpdate'], teams: Team[], viewMode: 'full' | 'short', readOnly: boolean, currentUserId?: string, userTeam?: Team | null, tiebreakerRules: TiebreakerRule[] }) => {
   const groupTeams = useMemo(() => group.teams.map(name => teams.find(t => t.name === name)!).filter(Boolean), [group.teams, teams]);
 
   const pointsTable = useMemo(() => {
-    const table: Record<string, PointsTableEntry> = groupTeams.reduce((acc, team) => {
-      acc[team.name] = { teamName: team.name, played: 0, won: 0, lost: 0, drawn: 0, points: 0, logo: team.logo, goalsFor: 0, goalsAgainst: 0, goalDifference: 0, qualified: false };
-      return acc;
-    }, {} as Record<string, PointsTableEntry>);
-
-    group.rounds.forEach(round => {
-      round.matches.forEach(match => {
-        const matchId = `g${group.groupName}r${round.round}m${match.match}`;
-        const matchScores = scores[matchId];
-        if (matchScores?.score1 !== null && matchScores?.score2 !== null && matchScores?.score1 !== undefined && matchScores?.score2 !== undefined) {
-          const team1Name = match.team1.name;
-          const team2Name = match.team2.name;
-          const score1 = matchScores.score1;
-          const score2 = matchScores.score2;
-
-          if(table[team1Name]) {
-            table[team1Name].played += 1;
-            table[team1Name].goalsFor += score1;
-            table[team1Name].goalsAgainst += score2;
-          }
-          if(table[team2Name]) {
-            table[team2Name].played += 1;
-            table[team2Name].goalsFor += score2;
-            table[team2Name].goalsAgainst += score1;
-          }
-
-          if (score1 > score2) {
-            if(table[team1Name]) table[team1Name].won += 1;
-            if(table[team2Name]) table[team2Name].lost += 1;
-          } else if (score2 > score1) {
-            if(table[team2Name]) table[team2Name].won += 1;
-            if(table[team1Name]) table[team1Name].lost += 1;
-          } else {
-            if(table[team1Name]) table[team1Name].drawn += 1;
-            if(table[team2Name]) table[team2Name].drawn += 1;
-          }
-        }
-      });
-    });
-
-    Object.values(table).forEach(entry => {
-      entry.points = entry.won * 3 + entry.drawn * 1;
-      entry.goalDifference = entry.goalsFor - entry.goalsAgainst;
-    });
-
-    return Object.values(table).sort((a, b) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor);
-  }, [scores, groupTeams, group]);
+    return calculatePointsTable(groupTeams, group.rounds, scores, group.groupName, undefined, tiebreakerRules);
+  }, [scores, groupTeams, group, tiebreakerRules]);
 
   const displayedRounds = group.rounds.filter(r => r.round === viewedRound);
 
@@ -159,7 +116,7 @@ const GroupedRoundRobinView = ({ group, viewedRound, activeRound, scores, onScor
 }
 
 
-export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, onTournamentUpdate, isHybrid, onProceedToKnockout, activeRound, onActiveRoundChange, readOnly, currentUserId }: RoundRobinViewProps) {
+export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, onTournamentUpdate, isHybrid, onProceedToKnockout, activeRound, onActiveRoundChange, readOnly, currentUserId, tournament }: RoundRobinViewProps) {
   const [viewMode, setViewMode] = useState<'short' | 'full'>('short');
   const [viewedRound, setViewedRound] = useState(activeRound);
 
@@ -238,56 +195,11 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
   };
 
   const allRounds = fixture.rounds || [];
+  const tiebreakerRules = tournament.tiebreakerRules || ['goalDifference', 'goalsFor'];
   const pointsTable = useMemo(() => {
-    const table: Record<string, PointsTableEntry> = teams.reduce((acc, team) => {
-      acc[team.name] = { teamName: team.name, played: 0, won: 0, lost: 0, drawn: 0, points: 0, logo: team.logo, goalsFor: 0, goalsAgainst: 0, goalDifference: 0, qualified: false };
-      return acc;
-    }, {} as Record<string, PointsTableEntry>);
-
-    allRounds.forEach(round => {
-      round.matches.forEach(match => {
-        const matchScores = scores[`r${round.round}m${match.match}`];
-        if (matchScores?.score1 !== null && matchScores?.score2 !== null && matchScores?.score1 !== undefined && matchScores?.score2 !== undefined) {
-          const team1Name = match.team1.name;
-          const team2Name = match.team2.name;
-
-          if (team1Name.toLowerCase() === 'bye' || team2Name.toLowerCase() === 'bye') return;
-
-          const score1 = matchScores.score1;
-          const score2 = matchScores.score2;
-
-          if(table[team1Name]) {
-            table[team1Name].played += 1;
-            table[team1Name].goalsFor += score1;
-            table[team1Name].goalsAgainst += score2;
-          }
-          if(table[team2Name]) {
-            table[team2Name].played += 1;
-            table[team2Name].goalsFor += score2;
-            table[team2Name].goalsAgainst += score1;
-          }
-
-          if (score1 > score2) {
-            if(table[team1Name]) table[team1Name].won += 1;
-            if(table[team2Name]) table[team2Name].lost += 1;
-          } else if (score2 > score1) {
-            if(table[team2Name]) table[team2Name].won += 1;
-            if(table[team1Name]) table[team1Name].lost += 1;
-          } else {
-            if(table[team1Name]) table[team1Name].drawn += 1;
-            if(table[team2Name]) table[team2Name].drawn += 1;
-          }
-        }
-      });
-    });
-
-    Object.values(table).forEach(entry => {
-      entry.points = entry.won * 3 + entry.drawn * 1;
-      entry.goalDifference = entry.goalsFor - entry.goalsAgainst;
-    });
-
-    return Object.values(table).sort((a, b) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor);
-  }, [scores, teams, allRounds]);
+    if (!fixture.rounds) return [];
+    return calculatePointsTable(teams, allRounds, scores, undefined, undefined, tiebreakerRules);
+  }, [scores, teams, allRounds, tiebreakerRules, fixture.rounds]);
 
   const finalWinner = useMemo(() => {
     const allRoundsPlayed = activeRound > maxRound && maxRound > 0;
@@ -312,7 +224,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
         </Button>
       </div>
       
-      {!readOnly && isViewingActiveRound && (
+      {!readOnly && (
         <div className="text-center space-y-2 border-t pt-4 mt-4 w-full max-w-md">
             {hasNextRound && isRoundComplete && (
                 <>
@@ -323,7 +235,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
                 </>
             )}
 
-            {hasNextRound && !isRoundComplete && (
+            {hasNextRound && !isRoundComplete && isViewingActiveRound && (
                 <p className="text-sm text-muted-foreground mt-2">
                 Enter all match results for the current round to proceed.
                 </p>
@@ -390,6 +302,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
               readOnly={readOnly}
               currentUserId={currentUserId}
               userTeam={userTeam}
+              tiebreakerRules={tiebreakerRules}
             />
           </TabsContent>
         ))}

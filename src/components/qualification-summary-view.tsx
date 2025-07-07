@@ -29,18 +29,19 @@ export default function QualificationSummaryView({ groupStage, teams, scores, to
     const numGroups = groupStage.groups.length;
     const teamsAdvancing = tournament.teamsAdvancing ?? 0;
     const teamsPerGroup = Math.floor(teamsAdvancing / numGroups);
+    const tiebreakerRules = tournament.tiebreakerRules || ['goalDifference', 'goalsFor'];
 
     const calculatedTables = groupStage.groups.map(group => {
       const groupTeams = group.teams.map(name => teams.find(t => t.name === name)!).filter(Boolean) as Team[];
       return {
         title: group.groupName,
-        table: calculatePointsTable(groupTeams, group.rounds, scores, group.groupName, teamsPerGroup)
+        table: calculatePointsTable(groupTeams, group.rounds, scores, group.groupName, teamsPerGroup, tiebreakerRules)
       }
     });
 
     return { tables: calculatedTables, teamsAdvancingPerGroup: teamsPerGroup };
 
-  }, [groupStage, teams, scores, tournament.teamsAdvancing]);
+  }, [groupStage, teams, scores, tournament]);
   
   if (!groupStage?.groups) {
       return (

@@ -19,6 +19,7 @@ export async function createTournament(tournamentData: TournamentCreationData, u
         creatorId: userId,
         createdAt: serverTimestamp(),
         language: 'en',
+        tiebreakerRules: ['goalDifference', 'goalsFor'],
         admins: [],
         participants: [],
     };

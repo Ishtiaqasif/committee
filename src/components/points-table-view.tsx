@@ -2,20 +2,12 @@
 "use client"
 
 import { useMemo, useState } from 'react';
-import type { Team, PointsTableEntry, Fixture, Score, Group, Round as TournamentRound, Tournament } from '@/types';
+import type { Team, PointsTableEntry, Fixture, Score, Group, Round as TournamentRound, Tournament, TiebreakerRule } from '@/types';
 import PointsTable from './points-table';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 
-interface PointsTableViewProps {
-  fixture: Fixture;
-  teams: Team[];
-  scores: Record<string, Score>;
-  tournament: Tournament;
-  currentUserId?: string;
-}
-
-export const calculatePointsTable = (teams: Team[], rounds: TournamentRound[], scores: Record<string, Score>, groupName?: string, teamsToQualify?: number): PointsTableEntry[] => {
+export const calculatePointsTable = (teams: Team[], rounds: TournamentRound[], scores: Record<string, Score>, groupName?: string, teamsToQualify?: number, tiebreakerRules: TiebreakerRule[] = ['goalDifference', 'goalsFor']): PointsTableEntry[] => {
     const table: Record<string, PointsTableEntry> = teams.reduce((acc, team) => {
       acc[team.name] = { teamName: team.name, played: 0, won: 0, lost: 0, drawn: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0, points: 0, logo: team.logo };
       return acc;
@@ -64,7 +56,23 @@ export const calculatePointsTable = (teams: Team[], rounds: TournamentRound[], s
       entry.goalDifference = entry.goalsFor - entry.goalsAgainst;
     });
 
-    const sortedTable = Object.values(table).sort((a, b) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor);
+    const sortedTable = Object.values(table).sort((a, b) => {
+        if (a.points !== b.points) {
+            return b.points - a.points;
+        }
+        for (const rule of tiebreakerRules) {
+            if (rule === 'goalDifference') {
+                if (a.goalDifference !== b.goalDifference) {
+                    return b.goalDifference - a.goalDifference;
+                }
+            } else if (rule === 'goalsFor') {
+                if (a.goalsFor !== b.goalsFor) {
+                    return b.goalsFor - a.goalsFor;
+                }
+            }
+        }
+        return a.teamName.localeCompare(b.teamName);
+    });
 
     if (teamsToQualify && teamsToQualify > 0) {
         return sortedTable.map((entry, index) => ({
@@ -82,7 +90,7 @@ export default function PointsTableView({ fixture, teams, scores, tournament, cu
   const userTeam = useMemo(() => teams.find(t => t.ownerId === currentUserId), [teams, currentUserId]);
   
   const tables = useMemo(() => {
-    const { tournamentType, teamsAdvancing } = tournament;
+    const { tournamentType, teamsAdvancing, tiebreakerRules = ['goalDifference', 'goalsFor'] } = tournament;
     let fixtureForTable: { rounds?: TournamentRound[]; groups?: Group[] } | undefined = fixture;
 
     if (tournamentType === 'hybrid' && fixture.groupStage) {
@@ -99,7 +107,7 @@ export default function PointsTableView({ fixture, teams, scores, tournament, cu
         const groupTeams = group.teams.map(name => teams.find(t => t.name === name)!).filter(Boolean) as Team[];
         return {
           title: group.groupName,
-          table: calculatePointsTable(groupTeams, group.rounds, scores, group.groupName, teamsToQualify)
+          table: calculatePointsTable(groupTeams, group.rounds, scores, group.groupName, teamsToQualify, tiebreakerRules)
         }
       });
     }
@@ -107,7 +115,7 @@ export default function PointsTableView({ fixture, teams, scores, tournament, cu
     if (fixtureForTable?.rounds && tournamentType === 'round-robin') {
       return [{
         title: "Overall Standings",
-        table: calculatePointsTable(teams, fixtureForTable.rounds, scores)
+        table: calculatePointsTable(teams, fixtureForTable.rounds, scores, undefined, undefined, tiebreakerRules)
       }]
     }
 

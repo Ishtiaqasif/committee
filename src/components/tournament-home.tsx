@@ -11,7 +11,7 @@ import SingleEliminationBracket from "@/components/single-elimination-bracket";
 import TeamsList from "@/components/teams-list";
 import PointsTableView, { calculatePointsTable } from "@/components/points-table-view";
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { Loader, Trophy, RefreshCw, Gamepad2, ListOrdered, Users, Settings, LayoutDashboard, ShieldCheck, UserCog, Bot } from "lucide-react";
+import { Loader, Trophy, RefreshCw, Gamepad2, ListOrdered, Users, Settings, LayoutDashboard, ShieldCheck, UserCog, Bot, BookOpen } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -33,6 +33,7 @@ import AuthButton from "./auth-button";
 import { useAuth } from "@/context/auth-context";
 import UserManagement from "./user-management";
 import { SheetTitle } from "./ui/sheet";
+import TournamentRules from "./tournament-rules";
 
 interface TournamentHomeProps {
   tournament: Tournament;
@@ -301,7 +302,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     const groupStandings: Record<string, PointsTableEntry[]> = {};
     fixture.groupStage.groups.forEach(group => {
       const groupTeams = group.teams.map(name => teams.find(t => t.name === name)!).filter(Boolean) as Team[];
-      const table = calculatePointsTable(groupTeams, group.rounds, scores, group.groupName);
+      const table = calculatePointsTable(groupTeams, group.rounds, scores, group.groupName, undefined, tournament.tiebreakerRules);
       groupStandings[group.groupName] = table;
     });
 
@@ -410,6 +411,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
               onActiveRoundChange={handleActiveRoundChange}
               readOnly={readOnly}
               currentUserId={user?.uid}
+              tournament={tournament}
             />
           </div>
         )
@@ -445,7 +447,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     }
     
     if (tournament.tournamentType === 'round-robin' && (fixture.rounds || fixture.groups)) {
-      return <RoundRobinView fixture={{rounds: fixture.rounds, groups: fixture.groups}} teams={teams} scores={scores} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} currentUserId={user?.uid} />;
+      return <RoundRobinView fixture={{rounds: fixture.rounds, groups: fixture.groups}} teams={teams} scores={scores} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} currentUserId={user?.uid} tournament={tournament} />;
     }
 
     if (tournament.tournamentType === 'single elimination' && fixture.rounds) {
@@ -530,6 +532,8 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
                 />
             </div>
         );
+      case 'rules':
+        return <TournamentRules tournament={tournament} onUpdate={onTournamentUpdate} isPrivilegedUser={isPrivilegedUser} />;
       case 'settings':
         return <TournamentSettings tournament={tournament} onUpdate={onTournamentUpdate} isPrivilegedUser={canAccessSettings} />;
       case 'user-management':
@@ -599,6 +603,12 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
                         <SidebarMenuButton onClick={() => setActiveView('teams')} isActive={activeView === 'teams'}>
                             <Users/>
                             Teams
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                     <SidebarMenuItem>
+                        <SidebarMenuButton onClick={() => setActiveView('rules')} isActive={activeView === 'rules'}>
+                            <BookOpen/>
+                            Rules
                         </SidebarMenuButton>
                     </SidebarMenuItem>
                      <SidebarMenuItem>
