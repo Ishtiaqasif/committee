@@ -204,7 +204,7 @@ export default function UserManagement({ tournament, onUpdate }: UserManagementP
             </CardHeader>
             <CardContent>
                  <Form {...form}>
-                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex items-start gap-4">
+                    <form onSubmit={form.handleSubmit(onSubmit)} className="flex items-end gap-4">
                         <FormField
                             control={form.control}
                             name="adminEmail"
@@ -218,7 +218,7 @@ export default function UserManagement({ tournament, onUpdate }: UserManagementP
                                 </FormItem>
                             )}
                         />
-                        <Button type="submit" disabled={isUpdating} className="mt-8">
+                        <Button type="submit" disabled={isUpdating}>
                             {isUpdating && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                             Add Admin
                         </Button>
