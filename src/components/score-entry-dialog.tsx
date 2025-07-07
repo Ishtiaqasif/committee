@@ -21,6 +21,7 @@ interface ScoreEntryDialogProps {
   onScoreSave: (newScore: Score) => void;
   children: React.ReactNode;
   readOnly: boolean;
+  allowTiebreaker: boolean;
 }
 
 const formSchema = z.object({
@@ -42,7 +43,7 @@ const formSchema = z.object({
     path: ["score1_tiebreak"],
 });
 
-export default function ScoreEntryDialog({ match, currentScore, onScoreSave, children, readOnly }: ScoreEntryDialogProps) {
+export default function ScoreEntryDialog({ match, currentScore, onScoreSave, children, readOnly, allowTiebreaker }: ScoreEntryDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -58,7 +59,7 @@ export default function ScoreEntryDialog({ match, currentScore, onScoreSave, chi
   
   const score1 = form.watch('score1');
   const score2 = form.watch('score2');
-  const showTiebreaker = score1 !== null && score2 !== null && score1 === score2;
+  const showTiebreaker = allowTiebreaker && score1 !== null && score2 !== null && score1 === score2;
 
   const handleOpenChange = (open: boolean) => {
     if (open) {

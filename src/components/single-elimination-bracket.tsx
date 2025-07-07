@@ -1,3 +1,4 @@
+
 "use client"
 
 import type { Match, Round, Score, Tournament, MatchTeam } from '@/types';
@@ -75,6 +76,7 @@ const MatchComponent = ({ match, round, onScoreUpdate, currentScores, isActive, 
                 currentScore={score}
                 onScoreSave={(newScore) => onScoreUpdate(matchId, newScore)}
                 readOnly={readOnly}
+                allowTiebreaker={true}
             >
                 <Button className="flex-grow" variant="outline" size="sm" disabled={readOnly || score?.locked || !isActive || match.team1.name.toLowerCase() === 'bye' || match.team2.name.toLowerCase() === 'bye'}>
                     {score?.score1 !== undefined ? 'Edit Score' : 'Enter Score'}

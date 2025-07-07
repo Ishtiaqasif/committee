@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useMemo, useState, useEffect } from 'react';
@@ -119,6 +120,7 @@ const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate, team
                             currentScore={score}
                             onScoreSave={(newScore) => onScoreUpdate(matchId, newScore)}
                             readOnly={readOnly}
+                            allowTiebreaker={false}
                         >
                             <Button variant="outline" size="sm" disabled={readOnly || score?.locked || match.team1.name.toLowerCase() === 'bye' || match.team2.name.toLowerCase() === 'bye'}>
                                 {score?.score1 !== undefined ? 'Edit Score' : 'Enter Score'}
@@ -409,6 +411,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
                             currentScore={score}
                             onScoreSave={(newScore) => onScoreUpdate(matchId, newScore)}
                             readOnly={readOnly}
+                            allowTiebreaker={false}
                         >
                             <Button variant="outline" size="sm" disabled={readOnly || score?.locked || match.team1.name.toLowerCase() === 'bye' || match.team2.name.toLowerCase() === 'bye'}>
                                 {score?.score1 !== undefined ? 'Edit Score' : 'Enter Score'}
