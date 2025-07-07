@@ -15,6 +15,7 @@ import { useTransition } from 'react';
 interface TournamentSettingsProps {
   tournament: Tournament;
   onUpdate: (data: Partial<TournamentCreationData>) => Promise<void> | void;
+  isPrivilegedUser: boolean;
 }
 
 const formSchema = z.object({
@@ -22,7 +23,7 @@ const formSchema = z.object({
   language: z.string(),
 });
 
-export default function TournamentSettings({ tournament, onUpdate }: TournamentSettingsProps) {
+export default function TournamentSettings({ tournament, onUpdate, isPrivilegedUser }: TournamentSettingsProps) {
   const [isPending, startTransition] = useTransition();
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -42,7 +43,7 @@ export default function TournamentSettings({ tournament, onUpdate }: TournamentS
   return (
     <div>
       <h2 className="text-3xl font-bold text-primary">General Settings</h2>
-      <p className="text-muted-foreground">Update your tournament's general information.</p>
+      <p className="text-muted-foreground">Update your tournament's general information. { !isPrivilegedUser && '(View only)'}</p>
 
       <Card className="mt-6 max-w-2xl">
         <CardHeader>
@@ -52,55 +53,59 @@ export default function TournamentSettings({ tournament, onUpdate }: TournamentS
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <FormField
-                control={form.control}
-                name="tournamentName"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2"><FileSignature className="h-4 w-4" /> Tournament Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g., Summer Cup 2024" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={form.control}
-                name="language"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2"><Languages className="h-4 w-4" /> Tournament Language</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <fieldset disabled={!isPrivilegedUser} className="space-y-6">
+                <FormField
+                  control={form.control}
+                  name="tournamentName"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2"><FileSignature className="h-4 w-4" /> Tournament Name</FormLabel>
                       <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a language" />
-                        </SelectTrigger>
+                        <Input placeholder="e.g., Summer Cup 2024" {...field} />
                       </FormControl>
-                      <SelectContent>
-                        <SelectItem value="en">English</SelectItem>
-                        <SelectItem value="es">Español</SelectItem>
-                        <SelectItem value="fr">Français</SelectItem>
-                        <SelectItem value="de">Deutsch</SelectItem>
-                        <SelectItem value="bn">বাংলা</SelectItem>
-                        <SelectItem value="hi">हिन्दी</SelectItem>
-                        <SelectItem value="ur">اردو</SelectItem>
-                        <SelectItem value="ar">العربية</SelectItem>
-                        <SelectItem value="pt">Português</SelectItem>
-                        <SelectItem value="zh">中文</SelectItem>
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="language"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2"><Languages className="h-4 w-4" /> Tournament Language</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select a language" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="en">English</SelectItem>
+                          <SelectItem value="es">Español</SelectItem>
+                          <SelectItem value="fr">Français</SelectItem>
+                          <SelectItem value="de">Deutsch</SelectItem>
+                          <SelectItem value="bn">বাংলা</SelectItem>
+                          <SelectItem value="hi">हिन्दी</SelectItem>
+                          <SelectItem value="ur">اردو</SelectItem>
+                          <SelectItem value="ar">العربية</SelectItem>
+                          <SelectItem value="pt">Português</SelectItem>
+                          <SelectItem value="zh">中文</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                {isPrivilegedUser && (
+                  <div className="flex justify-end">
+                    <Button type="submit" disabled={isPending}>
+                      {isPending && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                      <Save className="mr-2 h-4 w-4" />
+                      Save Changes
+                    </Button>
+                  </div>
                 )}
-              />
-              <div className="flex justify-end">
-                <Button type="submit" disabled={isPending}>
-                  {isPending && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-                  <Save className="mr-2 h-4 w-4" />
-                  Save Changes
-                </Button>
-              </div>
+              </fieldset>
             </form>
           </Form>
         </CardContent>

@@ -19,6 +19,7 @@ interface TournamentOverviewProps {
   teams: Team[];
   onGenerateFixture: () => void;
   isGeneratingFixture: boolean;
+  isPrivilegedUser: boolean;
 }
 
 const getAllMatches = (fixture: Fixture | null): { id: string, roundName: string }[] => {
@@ -50,7 +51,7 @@ const getAllMatches = (fixture: Fixture | null): { id: string, roundName: string
     return allMatches;
 };
 
-export default function TournamentOverview({ tournament, fixture, scores, teams, onGenerateFixture, isGeneratingFixture }: TournamentOverviewProps) {
+export default function TournamentOverview({ tournament, fixture, scores, teams, onGenerateFixture, isGeneratingFixture, isPrivilegedUser }: TournamentOverviewProps) {
   const [copied, setCopied] = useState(false);
   const [registrationLink, setRegistrationLink] = useState('');
 
@@ -154,10 +155,13 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
                 <p className="mt-2 text-muted-foreground">
                     You're all set. Ready to generate the tournament fixture.
                 </p>
-                <Button onClick={onGenerateFixture} disabled={isGeneratingFixture} size="lg" className="mt-6">
+                <Button onClick={onGenerateFixture} disabled={isGeneratingFixture || !isPrivilegedUser} size="lg" className="mt-6">
                     {isGeneratingFixture && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                     {isGeneratingFixture ? "Generating..." : "Generate Fixture"}
                 </Button>
+                {!isPrivilegedUser && (
+                    <p className="text-sm text-muted-foreground mt-2">Only the owner or an admin can generate the fixture.</p>
+                )}
             </div>
             {shareLinkCard}
         </div>

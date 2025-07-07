@@ -17,6 +17,7 @@ interface ScoreEntryDialogProps {
   currentScore: Score;
   onScoreSave: (newScore: Score) => void;
   children: React.ReactNode;
+  readOnly: boolean;
 }
 
 const formSchema = z.object({
@@ -25,7 +26,7 @@ const formSchema = z.object({
   locked: z.boolean(),
 });
 
-export default function ScoreEntryDialog({ match, currentScore, onScoreSave, children }: ScoreEntryDialogProps) {
+export default function ScoreEntryDialog({ match, currentScore, onScoreSave, children, readOnly }: ScoreEntryDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -74,36 +75,16 @@ export default function ScoreEntryDialog({ match, currentScore, onScoreSave, chi
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="flex items-center justify-between">
-              <span className="text-lg font-semibold w-2/5 text-right">{match.team1.name}</span>
-              <div className="flex items-center gap-2 mx-4">
-                <FormField
-                    control={form.control}
-                    name="score1"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormControl>
-                        <Input
-                            type="number"
-                            className="w-20 text-center text-lg"
-                            placeholder="-"
-                            min="0"
-                            {...field}
-                            value={field.value ?? ''}
-                            disabled={form.watch('locked')}
-                            onChange={e => field.onChange(e.target.value === '' ? null : e.target.value)}
-                         />
-                        </FormControl>
-                    </FormItem>
-                    )}
-                />
-                <span className="text-lg">vs</span>
-                <FormField
-                    control={form.control}
-                    name="score2"
-                    render={({ field }) => (
-                    <FormItem>
-                        <FormControl>
+             <fieldset disabled={readOnly} className="space-y-6">
+                <div className="flex items-center justify-between">
+                <span className="text-lg font-semibold w-2/5 text-right">{match.team1.name}</span>
+                <div className="flex items-center gap-2 mx-4">
+                    <FormField
+                        control={form.control}
+                        name="score1"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormControl>
                             <Input
                                 type="number"
                                 className="w-20 text-center text-lg"
@@ -114,39 +95,61 @@ export default function ScoreEntryDialog({ match, currentScore, onScoreSave, chi
                                 disabled={form.watch('locked')}
                                 onChange={e => field.onChange(e.target.value === '' ? null : e.target.value)}
                             />
+                            </FormControl>
+                        </FormItem>
+                        )}
+                    />
+                    <span className="text-lg">vs</span>
+                    <FormField
+                        control={form.control}
+                        name="score2"
+                        render={({ field }) => (
+                        <FormItem>
+                            <FormControl>
+                                <Input
+                                    type="number"
+                                    className="w-20 text-center text-lg"
+                                    placeholder="-"
+                                    min="0"
+                                    {...field}
+                                    value={field.value ?? ''}
+                                    disabled={form.watch('locked')}
+                                    onChange={e => field.onChange(e.target.value === '' ? null : e.target.value)}
+                                />
+                            </FormControl>
+                        </FormItem>
+                        )}
+                    />
+                </div>
+                <span className="text-lg font-semibold w-2/5 text-left">{match.team2.name}</span>
+                </div>
+                <FormField
+                    control={form.control}
+                    name="locked"
+                    render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-center space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                            <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                aria-readonly
+                            />
                         </FormControl>
+                        <div className="space-y-1 leading-none">
+                            <FormLabel className="flex items-center gap-2">
+                            {field.value ? <Lock className="h-4 w-4"/> : <Unlock className="h-4 w-4"/>}
+                            {field.value ? 'Result Locked' : 'Lock Result'}
+                            </FormLabel>
+                        </div>
                     </FormItem>
                     )}
                 />
-              </div>
-              <span className="text-lg font-semibold w-2/5 text-left">{match.team2.name}</span>
-            </div>
-             <FormField
-                control={form.control}
-                name="locked"
-                render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-center space-x-3 space-y-0 rounded-md border p-4">
-                    <FormControl>
-                        <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            aria-readonly
-                        />
-                    </FormControl>
-                    <div className="space-y-1 leading-none">
-                        <FormLabel className="flex items-center gap-2">
-                           {field.value ? <Lock className="h-4 w-4"/> : <Unlock className="h-4 w-4"/>}
-                           {field.value ? 'Result Locked' : 'Lock Result'}
-                        </FormLabel>
-                    </div>
-                </FormItem>
-                )}
-            />
+            </fieldset>
             <DialogFooter>
               <DialogClose asChild>
                 <Button type="button" variant="secondary">Cancel</Button>
               </DialogClose>
-              <Button type="submit">Save Score</Button>
+              {!readOnly && <Button type="submit">Save Score</Button>}
             </DialogFooter>
           </form>
         </Form>

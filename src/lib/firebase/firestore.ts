@@ -16,7 +16,8 @@ export async function createTournament(tournamentData: TournamentCreationData, u
         ...(dataToSave as TournamentCreationData),
         creatorId: userId,
         createdAt: serverTimestamp(),
-        language: 'en'
+        language: 'en',
+        admins: [],
     };
     const docRef = await addDoc(collection(db, "tournaments"), newTournament);
     return docRef.id;

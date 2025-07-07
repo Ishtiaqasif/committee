@@ -22,9 +22,10 @@ interface RoundRobinViewProps {
   onProceedToKnockout?: () => void;
   activeRound: number;
   onActiveRoundChange: (round: number) => void;
+  readOnly: boolean;
 }
 
-const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate, teams, viewMode }: { group: Group, activeRound: number, scores: RoundRobinViewProps['scores'], onScoreUpdate: RoundRobinViewProps['onScoreUpdate'], teams: Team[], viewMode: 'full' | 'short' }) => {
+const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate, teams, viewMode, readOnly }: { group: Group, activeRound: number, scores: RoundRobinViewProps['scores'], onScoreUpdate: RoundRobinViewProps['onScoreUpdate'], teams: Team[], viewMode: 'full' | 'short', readOnly: boolean }) => {
   const groupTeams = useMemo(() => group.teams.map(name => teams.find(t => t.name === name)!).filter(Boolean), [group.teams, teams]);
 
   const pointsTable = useMemo(() => {
@@ -117,8 +118,9 @@ const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate, team
                             match={match}
                             currentScore={score}
                             onScoreSave={(newScore) => onScoreUpdate(matchId, newScore)}
+                            readOnly={readOnly}
                         >
-                            <Button variant="outline" size="sm" disabled={score?.locked || match.team1.name.toLowerCase() === 'bye' || match.team2.name.toLowerCase() === 'bye'}>
+                            <Button variant="outline" size="sm" disabled={readOnly || score?.locked || match.team1.name.toLowerCase() === 'bye' || match.team2.name.toLowerCase() === 'bye'}>
                                 {score?.score1 !== undefined ? 'Edit Score' : 'Enter Score'}
                             </Button>
                         </ScoreEntryDialog>
@@ -152,7 +154,7 @@ const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate, team
 }
 
 
-export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, onTournamentUpdate, isHybrid, onProceedToKnockout, activeRound, onActiveRoundChange }: RoundRobinViewProps) {
+export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, onTournamentUpdate, isHybrid, onProceedToKnockout, activeRound, onActiveRoundChange, readOnly }: RoundRobinViewProps) {
   const [viewMode, setViewMode] = useState<'short' | 'full'>('short');
 
   const { isRoundComplete, hasNextRound, maxRound } = useMemo(() => {
@@ -355,11 +357,11 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
         </TabsList>
         {fixture.groups.map(group => (
           <TabsContent key={group.groupName} value={group.groupName} className="mt-6">
-            <GroupedRoundRobinView group={group} activeRound={activeRound} scores={scores} onScoreUpdate={onScoreUpdate} teams={teams} viewMode={viewMode}/>
+            <GroupedRoundRobinView group={group} activeRound={activeRound} scores={scores} onScoreUpdate={onScoreUpdate} teams={teams} viewMode={viewMode} readOnly={readOnly}/>
           </TabsContent>
         ))}
       </Tabs>
-      <NavigationFooter />
+      {!readOnly && <NavigationFooter />}
       </>
     )
   }
@@ -406,8 +408,9 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
                             match={match}
                             currentScore={score}
                             onScoreSave={(newScore) => onScoreUpdate(matchId, newScore)}
+                            readOnly={readOnly}
                         >
-                            <Button variant="outline" size="sm" disabled={score?.locked || match.team1.name.toLowerCase() === 'bye' || match.team2.name.toLowerCase() === 'bye'}>
+                            <Button variant="outline" size="sm" disabled={readOnly || score?.locked || match.team1.name.toLowerCase() === 'bye' || match.team2.name.toLowerCase() === 'bye'}>
                                 {score?.score1 !== undefined ? 'Edit Score' : 'Enter Score'}
                             </Button>
                         </ScoreEntryDialog>
@@ -438,7 +441,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
         <PointsTable title="Points Table" table={pointsTable} viewMode={viewMode} />
       </div>
     </div>
-    <NavigationFooter />
+    {!readOnly && <NavigationFooter />}
     </>
   )
 }

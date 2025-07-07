@@ -3,7 +3,7 @@
 
 import { useState, useTransition, useEffect } from "react";
 import { generateTournamentFixture } from "@/ai/flows/generate-tournament-fixture";
-import type { Tournament, Team, Fixture, Score, PointsTableEntry, Round, Match, TournamentCreationData } from "@/types";
+import type { Tournament, Team, Fixture, Score, PointsTableEntry, Round, Match, TournamentCreationData, UserRole } from "@/types";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import RoundRobinView from "@/components/round-robin-view";
@@ -11,7 +11,7 @@ import SingleEliminationBracket from "@/components/single-elimination-bracket";
 import TeamsList from "@/components/teams-list";
 import PointsTableView, { calculatePointsTable } from "@/components/points-table-view";
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset } from "@/components/ui/sidebar";
-import { Loader, Trophy, RefreshCw, Gamepad2, ListOrdered, Users, Settings, LayoutDashboard, ShieldCheck } from "lucide-react";
+import { Loader, Trophy, RefreshCw, Gamepad2, ListOrdered, Users, Settings, LayoutDashboard, ShieldCheck, UserCog } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +30,8 @@ import TournamentOverview from "./tournament-overview";
 import ChampionView from "./champion-view";
 import KnockoutBracketView from "./knockout-bracket-view";
 import AuthButton from "./auth-button";
+import { useAuth } from "@/context/auth-context";
+import UserManagement from "./user-management";
 
 interface TournamentHomeProps {
   tournament: Tournament;
@@ -44,6 +46,25 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
   const { toast } = useToast();
   const [scores, setScores] = useState<Record<string, Score>>({});
   const [activeView, setActiveView] = useState('overview');
+  const { user } = useAuth();
+  
+  const [userRole, setUserRole] = useState<UserRole>('guest');
+
+  useEffect(() => {
+    if (user && tournament) {
+      if (user.uid === tournament.creatorId) {
+        setUserRole('owner');
+      } else if (tournament.admins?.includes(user.uid)) {
+        setUserRole('admin');
+      } else {
+        setUserRole('participant');
+      }
+    } else {
+      setUserRole('guest');
+    }
+  }, [user, tournament]);
+
+  const isPrivilegedUser = userRole === 'owner' || userRole === 'admin';
   
   useEffect(() => {
     if (tournament.fixture) {
@@ -80,18 +101,23 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
           language: tournament.language || 'en',
         });
         
+        const parsedFixture = JSON.parse(result.fixture);
+
         const teamMap = teams.reduce((acc, team, index) => {
+            // The AI might use "Team 1", "Team 2", etc. as placeholders.
+            // We map these generic names to the actual team data provided earlier.
             acc[`Team ${index + 1}`] = team;
             return acc;
         }, {} as Record<string, Team>)
 
+        // This function replaces placeholder team names in matches with actual team data.
         const mapMatches = (matches: any[]) => matches.map((match: any, matchIndex: number) => {
             const team1Info = teamMap[match.team1] || { name: match.team1, logo: undefined, ownerName: 'TBD' };
             const team2Info = teamMap[match.team2] || { name: match.team2, logo: undefined, ownerName: 'TBD' };
 
             return {
                 ...match,
-                match: match.match ?? (matchIndex + 1),
+                match: match.match ?? (matchIndex + 1), // Ensure a match number exists
                 team1: { name: team1Info.name, score: null, logo: team1Info.logo, ownerName: team1Info.ownerName },
                 team2: { name: team2Info.name, score: null, logo: team2Info.logo, ownerName: team2Info.ownerName },
                 venue: match.venue,
@@ -100,7 +126,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
         
         const mapRounds = (rounds: any[]) => rounds.map((round: any, roundIndex: number) => ({
             ...round,
-            round: round.round ?? (roundIndex + 1),
+            round: round.round ?? (roundIndex + 1), // Ensure a round number exists
             matches: mapMatches(round.matches)
         }));
 
@@ -114,28 +140,28 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
         let mappedFixture: Fixture;
 
         if (tournament.tournamentType === 'hybrid') {
-            if (!result.groupStage || !result.knockoutStage) {
+            if (!parsedFixture.groupStage || !parsedFixture.knockoutStage) {
                 throw new Error("Hybrid fixture is missing groupStage or knockoutStage");
             }
             
-            const groupStage = result.groupStage.groups 
-                ? { groups: mapGroups(result.groupStage.groups) } 
-                : { rounds: mapRounds(result.groupStage.rounds) };
+            const groupStage = parsedFixture.groupStage.groups 
+                ? { groups: mapGroups(parsedFixture.groupStage.groups) } 
+                : { rounds: mapRounds(parsedFixture.groupStage.rounds) };
 
             mappedFixture = {
                 groupStage: groupStage,
-                knockoutStage: { rounds: mapRounds(result.knockoutStage.rounds) }
+                knockoutStage: { rounds: mapRounds(parsedFixture.knockoutStage.rounds) }
             };
-        } else if (tournament.tournamentType === 'round-robin' && result.groups) {
+        } else if (tournament.tournamentType === 'round-robin' && parsedFixture.groups) {
              mappedFixture = {
-                groups: mapGroups(result.groups)
+                groups: mapGroups(parsedFixture.groups)
             };
         } else {
-            if (!result.rounds) {
+            if (!parsedFixture.rounds) {
                 throw new Error("Fixture is missing rounds");
             }
             mappedFixture = {
-                rounds: mapRounds(result.rounds)
+                rounds: mapRounds(parsedFixture.rounds)
             };
         }
 
@@ -278,6 +304,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
 
   const renderFixtureView = () => {
     if (!fixture) return null;
+    const readOnly = !isPrivilegedUser;
 
     if (tournament.tournamentType === 'hybrid' && fixture.groupStage && fixture.knockoutStage) {
       if (tournament.hybridStage === 'group' || !tournament.hybridStage) {
@@ -294,6 +321,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
               onProceedToKnockout={handleGroupStageComplete}
               activeRound={tournament.activeRound || 1}
               onActiveRoundChange={handleActiveRoundChange}
+              readOnly={readOnly}
             />
           </div>
         )
@@ -319,6 +347,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
               knockoutHomeAndAway={tournament.knockoutHomeAndAway}
               activeRound={tournament.activeRound || 1}
               onActiveRoundChange={handleActiveRoundChange}
+              readOnly={readOnly}
             />
           </div>
         )
@@ -326,11 +355,11 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     }
     
     if (tournament.tournamentType === 'round-robin' && (fixture.rounds || fixture.groups)) {
-      return <RoundRobinView fixture={{rounds: fixture.rounds, groups: fixture.groups}} teams={teams} scores={scores} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} />;
+      return <RoundRobinView fixture={{rounds: fixture.rounds, groups: fixture.groups}} teams={teams} scores={scores} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} />;
     }
 
     if (tournament.tournamentType === 'single elimination' && fixture.rounds) {
-      return <SingleEliminationBracket fixture={{rounds: fixture.rounds}} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} scores={scores} knockoutHomeAndAway={tournament.knockoutHomeAndAway} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} />;
+      return <SingleEliminationBracket fixture={{rounds: fixture.rounds}} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} scores={scores} knockoutHomeAndAway={tournament.knockoutHomeAndAway} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} />;
     }
 
     return <p>Could not display fixture.</p>;
@@ -346,12 +375,13 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
             teams={teams}
             onGenerateFixture={handleGenerateFixture}
             isGeneratingFixture={isPending}
+            isPrivilegedUser={isPrivilegedUser}
          />;
       case 'fixtures':
         return (
             <div>
                  <h2 className="text-3xl font-bold text-primary">Fixtures & Scores</h2>
-                 <p className="text-muted-foreground capitalize">View matches and enter scores.</p>
+                 <p className="text-muted-foreground capitalize">View matches and enter scores. { !isPrivilegedUser && '(View only)'}</p>
                  {renderFixtureView()}
             </div>
         );
@@ -385,7 +415,9 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
             </div>
         );
       case 'settings':
-        return <TournamentSettings tournament={tournament} onUpdate={onTournamentUpdate} />;
+        return <TournamentSettings tournament={tournament} onUpdate={onTournamentUpdate} isPrivilegedUser={isPrivilegedUser} />;
+      case 'user-management':
+        return <UserManagement tournament={tournament} onUpdate={onTournamentUpdate} />;
       default:
         return null;
     }
@@ -453,8 +485,24 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
                             Teams
                         </SidebarMenuButton>
                     </SidebarMenuItem>
+                     <SidebarMenuItem>
+                        <SidebarMenuButton 
+                            onClick={() => setActiveView('user-management')} 
+                            isActive={activeView === 'user-management'}
+                            disabled={userRole !== 'owner'}
+                            tooltip={userRole !== 'owner' ? 'Only the tournament owner can manage users' : 'User Management'}
+                        >
+                            <UserCog/>
+                            User Management
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
                     <SidebarMenuItem>
-                        <SidebarMenuButton onClick={() => setActiveView('settings')} isActive={activeView === 'settings'}>
+                        <SidebarMenuButton 
+                            onClick={() => setActiveView('settings')} 
+                            isActive={activeView === 'settings'}
+                            disabled={!isPrivilegedUser}
+                            tooltip={!isPrivilegedUser ? 'Only owners and admins can change settings' : 'Settings'}
+                        >
                             <Settings/>
                             Settings
                         </SidebarMenuButton>
@@ -464,7 +512,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
             <SidebarFooter>
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
-                        <Button variant="outline" className="w-full">
+                        <Button variant="outline" className="w-full" disabled={!isPrivilegedUser}>
                             <RefreshCw className="mr-2 h-4 w-4" />
                              <span className="group-data-[collapsible=icon]:hidden">Reset Tournament</span>
                         </Button>

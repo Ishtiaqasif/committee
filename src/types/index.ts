@@ -1,5 +1,7 @@
 export type TournamentType = 'round-robin' | 'single elimination' | 'hybrid';
 
+export type UserRole = 'owner' | 'admin' | 'participant' | 'guest';
+
 export type TournamentCreationData = {
   tournamentName: string;
   tournamentType: TournamentType;
@@ -24,6 +26,7 @@ export type Tournament = TournamentCreationData & {
   winner?: { name: string; logo?: string; ownerName?: string };
   activeRound?: number;
   hybridStage?: 'group' | 'qualification-summary' | 'knockout';
+  admins?: string[];
 };
 
 export interface Team {
