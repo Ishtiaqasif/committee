@@ -1,4 +1,4 @@
-import { GoogleAuthProvider, signInWithPopup, signOut, User, createUserWithEmailAndPassword, signInWithEmailAndPassword as firebaseSignInWithEmail, updateProfile, signInAnonymously as firebaseSignInAnonymously } from "firebase/auth";
+import { GoogleAuthProvider, signInWithPopup, signOut, User, createUserWithEmailAndPassword, signInWithEmailAndPassword as firebaseSignInWithEmail, updateProfile } from "firebase/auth";
 import { auth } from "./config";
 import { upsertUserProfile } from "./firestore";
 
@@ -43,17 +43,6 @@ export const signInWithEmailPassword = async (email: string, password: string) =
         throw error;
     }
 };
-
-export const signInAnonymously = async () => {
-    try {
-        const result = await firebaseSignInAnonymously(auth);
-        return result.user;
-    } catch (error) {
-        console.error("Error signing in anonymously: ", error);
-        return null;
-    }
-};
-
 
 export const signOutUser = async () => {
   try {

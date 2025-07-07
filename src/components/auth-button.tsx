@@ -34,31 +34,6 @@ export default function AuthButton() {
     );
   }
 
-  if (user.isAnonymous) {
-     return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                <Avatar className="h-8 w-8">
-                    <AvatarFallback><User /></AvatarFallback>
-                </Avatar>
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent className="w-56" align="end" forceMount>
-                <DropdownMenuLabel>Guest User</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => router.push('/login')}>
-                    Sign Up to Save Progress
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleSignOut}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    <span>End Guest Session</span>
-                </DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
-    );
-  }
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
