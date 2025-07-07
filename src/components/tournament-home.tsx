@@ -79,18 +79,14 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
   }, [tournament.fixture, tournament.scores]);
 
   useEffect(() => {
-    // This effect handles setting the default view when major
-    // tournament state changes occur (e.g., loading for the first time,
-    // or a winner is declared).
+    // This effect handles setting the default view if the fixture is missing.
+    // It no longer resets the view when a winner is declared, to allow navigation.
     if (!tournament.id) return; // Guard against running on initial empty state
     
-    const isMajorStateChange = (tournament.winner || !tournament.fixture);
-    
-    // Only reset the view if it's not already the default and a major change happened.
-    if (isMajorStateChange && activeView !== 'overview') {
+    if (!tournament.fixture && activeView !== 'overview') {
         setActiveView('overview');
     }
-  }, [tournament.id, tournament.fixture, tournament.winner, activeView]);
+  }, [tournament.id, tournament.fixture, activeView]);
 
 
   const handleGenerateFixture = () => {
