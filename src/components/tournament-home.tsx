@@ -121,14 +121,14 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
 
         // This function replaces placeholder team names in matches with actual team data.
         const mapMatches = (matches: any[]) => matches.map((match: any, matchIndex: number) => {
-            const team1Info = teamMap[match.team1] || { name: match.team1, logo: null, ownerName: 'TBD' };
-            const team2Info = teamMap[match.team2] || { name: match.team2, logo: null, ownerName: 'TBD' };
+            const team1Info = teamMap[match.team1] || { name: match.team1, logo: null, ownerName: 'TBD', ownerId: null };
+            const team2Info = teamMap[match.team2] || { name: match.team2, logo: null, ownerName: 'TBD', ownerId: null };
 
             return {
                 ...match,
                 match: match.match ?? (matchIndex + 1), // Ensure a match number exists
-                team1: { name: team1Info.name, score: null, logo: team1Info.logo || null, ownerName: team1Info.ownerName || null },
-                team2: { name: team2Info.name, score: null, logo: team2Info.logo || null, ownerName: team2Info.ownerName || null },
+                team1: { name: team1Info.name, score: null, logo: team1Info.logo, ownerName: team1Info.ownerName, ownerId: team1Info.ownerId },
+                team2: { name: team2Info.name, score: null, logo: team2Info.logo, ownerName: team2Info.ownerName, ownerId: team2Info.ownerId },
                 venue: match.venue || null,
             }
         });
@@ -344,7 +344,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
         if (isPlaceholder1) {
           const team1 = getTeamFromPlaceholder(match.team1.name);
           if (team1) {
-            match.team1 = { name: team1.name, logo: team1.logo, score: null, ownerName: team1.ownerName };
+            match.team1 = { name: team1.name, logo: team1.logo, score: null, ownerName: team1.ownerName, ownerId: team1.ownerId };
           } else {
             allTeamsFound = false;
             console.error(`Could not find qualifying team for placeholder: ${match.team1.name}`);
@@ -355,7 +355,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
         if (isPlaceholder2) {
           const team2 = getTeamFromPlaceholder(match.team2.name);
           if (team2) {
-            match.team2 = { name: team2.name, logo: team2.logo, score: null, ownerName: team2.ownerName };
+            match.team2 = { name: team2.name, logo: team2.logo, score: null, ownerName: team2.ownerName, ownerId: team2.ownerId };
           } else {
             allTeamsFound = false;
             console.error(`Could not find qualifying team for placeholder: ${match.team2.name}`);
@@ -406,6 +406,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
               activeRound={tournament.activeRound || 1}
               onActiveRoundChange={handleActiveRoundChange}
               readOnly={readOnly}
+              currentUserId={user?.uid}
             />
           </div>
         )
@@ -432,6 +433,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
               activeRound={tournament.activeRound || 1}
               onActiveRoundChange={handleActiveRoundChange}
               readOnly={readOnly}
+              currentUserId={user?.uid}
             />
           </div>
         )
@@ -439,11 +441,11 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     }
     
     if (tournament.tournamentType === 'round-robin' && (fixture.rounds || fixture.groups)) {
-      return <RoundRobinView fixture={{rounds: fixture.rounds, groups: fixture.groups}} teams={teams} scores={scores} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} />;
+      return <RoundRobinView fixture={{rounds: fixture.rounds, groups: fixture.groups}} teams={teams} scores={scores} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} currentUserId={user?.uid} />;
     }
 
     if (tournament.tournamentType === 'single elimination' && fixture.rounds) {
-      return <SingleEliminationBracket fixture={{rounds: fixture.rounds}} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} scores={scores} knockoutHomeAndAway={tournament.knockoutHomeAndAway} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} />;
+      return <SingleEliminationBracket fixture={{rounds: fixture.rounds}} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} scores={scores} knockoutHomeAndAway={tournament.knockoutHomeAndAway} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} currentUserId={user?.uid} />;
     }
 
     return <p>Could not display fixture.</p>;

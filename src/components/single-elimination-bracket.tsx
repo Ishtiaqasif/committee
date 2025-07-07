@@ -19,9 +19,10 @@ interface SingleEliminationBracketProps {
   activeRound: number;
   onActiveRoundChange: (round: number) => void;
   readOnly: boolean;
+  currentUserId?: string;
 }
 
-const MatchComponent = ({ match, round, onScoreUpdate, currentScores, isActive, readOnly }: { match: Match, round: number, onScoreUpdate: SingleEliminationBracketProps['onScoreUpdate'], currentScores: any, isActive: boolean, readOnly: boolean }) => {
+const MatchComponent = ({ match, round, onScoreUpdate, currentScores, isActive, readOnly, currentUserId }: { match: Match, round: number, onScoreUpdate: SingleEliminationBracketProps['onScoreUpdate'], currentScores: any, isActive: boolean, readOnly: boolean, currentUserId?: string }) => {
   const matchId = `r${round}m${match.match}`;
   const score = currentScores[matchId];
   
@@ -31,7 +32,8 @@ const MatchComponent = ({ match, round, onScoreUpdate, currentScores, isActive, 
 
   const isTeam1Winner = (score && score.score1 !== null && score.score2 !== null && score.score1 > score.score2) || isTeam1WinnerByTiebreak;
   const isTeam2Winner = (score && score.score1 !== null && score.score2 !== null && score.score2 > score.score1) || isTeam2WinnerByTiebreak;
-
+  
+  const isUserMatch = currentUserId && (match.team1.ownerId === currentUserId || match.team2.ownerId === currentUserId);
 
   const getTeamClass = (isWinner: boolean, teamName: string) => {
     let baseClass = "flex items-center justify-between p-2 rounded-t-md";
@@ -45,7 +47,7 @@ const MatchComponent = ({ match, round, onScoreUpdate, currentScores, isActive, 
   }
 
   return (
-    <Card className={cn("w-64 bg-card shadow-md transition-all", isActive && "border-primary ring-2 ring-primary")}>
+    <Card className={cn("w-64 bg-card shadow-md transition-all", isActive && "border-primary ring-2 ring-primary", isUserMatch && "bg-primary/10")}>
       <CardContent className="p-0">
         <div className={getTeamClass(isTeam1Winner, match.team1.name)}>
           <div className="flex items-center gap-2">
@@ -95,7 +97,7 @@ const MatchComponent = ({ match, round, onScoreUpdate, currentScores, isActive, 
   )
 }
 
-export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTournamentUpdate, scores, knockoutHomeAndAway, activeRound, onActiveRoundChange, readOnly }: SingleEliminationBracketProps) {
+export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTournamentUpdate, scores, knockoutHomeAndAway, activeRound, onActiveRoundChange, readOnly, currentUserId }: SingleEliminationBracketProps) {
     
     const { isRoundComplete, hasNextRound } = useMemo(() => {
         const currentRound = fixture.rounds.find(r => r.round === activeRound);
@@ -222,7 +224,7 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTou
               <div className="flex flex-col gap-8 justify-around h-full">
                 {round.matches.map((match) => (
                   <div key={match.match} className="relative">
-                    <MatchComponent match={match} round={round.round} onScoreUpdate={onScoreUpdate} currentScores={scores} isActive={isActive} readOnly={readOnly} />
+                    <MatchComponent match={match} round={round.round} onScoreUpdate={onScoreUpdate} currentScores={scores} isActive={isActive} readOnly={readOnly} currentUserId={currentUserId}/>
                     {roundIndex < processedFixture.rounds.length -1 && (
                         <div className="absolute top-1/2 -right-4 md:-right-8 w-4 md:w-8 h-px bg-border -translate-y-1/2"></div>
                     )}
@@ -237,10 +239,10 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTou
       </div>
        <div className="mt-8 flex flex-col items-center justify-center gap-4">
             <div className="flex items-center gap-4">
-                <Button size="lg" variant="outline" onClick={handleGoBack} disabled={activeRound === 1}>
+                <Button size="lg" variant="outline" onClick={handleGoBack} disabled={readOnly || activeRound === 1}>
                     <ArrowLeft className="mr-2 h-4 w-4" /> Previous Round
                 </Button>
-                <Button size="lg" variant="outline" onClick={() => onActiveRoundChange(activeRound + 1)} disabled={!hasNextRound}>
+                <Button size="lg" variant="outline" onClick={() => onActiveRoundChange(activeRound + 1)} disabled={readOnly || !hasNextRound}>
                     Next Round <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
             </div>

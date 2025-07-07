@@ -53,6 +53,7 @@ export interface MatchTeam {
   score: number | null;
   logo?: string;
   ownerName?: string;
+  ownerId?: string;
 }
 
 export interface Match {
