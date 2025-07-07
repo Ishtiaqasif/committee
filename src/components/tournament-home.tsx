@@ -498,7 +498,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
       case 'teams':
         return <TeamsList teams={teams} fixture={fixture} scores={scores} currentUserId={user?.uid} />;
       case 'points-table':
-        return <PointsTableView fixture={fixture!} teams={teams} scores={scores} tournamentType={tournament.tournamentType}/>;
+        return <PointsTableView fixture={fixture!} teams={teams} scores={scores} tournament={tournament}/>;
       case 'knockout':
         const knockoutFixture = tournament.tournamentType === 'hybrid'
             ? fixture?.knockoutStage
