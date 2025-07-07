@@ -32,21 +32,34 @@ export default function UserManagement({ tournament, onUpdate }: UserManagementP
   const { toast } = useToast();
 
   useEffect(() => {
+    let isMounted = true;
     const fetchProfiles = async () => {
       setIsLoadingProfiles(true);
-      const uidsToFetch = [tournament.creatorId, ...(tournament.admins || [])].filter(Boolean);
+      const uidsToFetch = Array.from(new Set([tournament.creatorId, ...(tournament.admins || [])].filter(Boolean)));
+      
       if (uidsToFetch.length > 0) {
         try {
           const profiles = await getUserProfiles(uidsToFetch);
-          setUserProfiles(profiles);
+          if (isMounted) {
+            setUserProfiles(profiles);
+          }
         } catch (error) {
           console.error("Failed to fetch user profiles:", error);
-          toast({ variant: 'destructive', title: 'Error', description: 'Could not load user details.' });
+          if (isMounted) {
+            toast({ variant: 'destructive', title: 'Error', description: 'Could not load user details.' });
+          }
         }
       }
-      setIsLoadingProfiles(false);
+      if (isMounted) {
+        setIsLoadingProfiles(false);
+      }
     };
+
     fetchProfiles();
+    
+    return () => {
+      isMounted = false;
+    };
   }, [tournament.creatorId, tournament.admins, toast]);
 
 
