@@ -6,13 +6,13 @@ import type { Tournament, Team, TournamentCreationData } from "@/types";
 import TournamentCreator from "@/components/tournament-creator";
 import TeamInvitation from "@/components/team-invitation";
 import TournamentHome from "@/components/tournament-home";
-import { ClipboardList, Loader } from "lucide-react";
+import { Loader } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
-import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 import { createTournament, getTournament, getTeamsForTournament, updateTournament } from "@/lib/firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
+import AuthButton from "@/components/auth-button";
 
 type AppState = "configuring" | "inviting" | "fixture";
 
@@ -44,7 +44,7 @@ function CreatePageComponent() {
         setPageLoading(true);
         try {
           const tournamentData = await getTournament(tournamentId);
-          if (tournamentData && tournamentData.creatorId === user.uid) {
+          if (tournamentData && (tournamentData.creatorId === user.uid || tournamentData.admins?.includes(user.uid))) {
             const teamsData = await getTeamsForTournament(tournamentId);
             setTournament(tournamentData);
             setTeams(teamsData);
@@ -54,13 +54,13 @@ function CreatePageComponent() {
               setAppState("inviting");
             }
           } else {
-            toast({ variant: 'destructive', title: 'Error', description: 'Tournament not found or you are not the creator.' });
-            router.push('/tournaments');
+            toast({ variant: 'destructive', title: 'Error', description: 'Tournament not found or you do not have access.' });
+            router.push('/profile');
           }
         } catch (error) {
           console.error("Failed to load tournament:", error);
           toast({ variant: 'destructive', title: 'Error', description: 'Failed to load tournament data.' });
-          router.push('/tournaments');
+          router.push('/profile');
         } finally {
           setPageLoading(false);
         }
@@ -160,28 +160,13 @@ function CreatePageComponent() {
       {appState === 'fixture' ? (
         renderContent()
       ) : (
-         <div className="relative min-h-screen flex flex-col items-center justify-center p-4 overflow-hidden">
+         <div className="relative flex min-h-screen flex-col items-center justify-center bg-muted/40 p-4">
             <div className="absolute top-4 right-4 z-20 flex items-center gap-4">
-                <Link href="/" className="text-sm font-medium text-primary hover:underline">
-                    &larr; Back to Home
-                </Link>
+                <AuthButton />
                 <ThemeToggle />
             </div>
-            <div className="absolute inset-0 bg-gradient-to-br from-background via-card to-background opacity-40"></div>
-            <div className="relative z-10 w-full max-w-6xl">
-                <header className="mb-12 text-center">
-                    <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold tracking-wider uppercase text-primary flex items-center justify-center gap-4">
-                        <ClipboardList className="w-12 h-12 sm:w-16 md:w-20 text-accent" />
-                        Committee
-                    </h1>
-                    <p className="mt-4 text-xl text-muted-foreground">
-                        Your Ultimate Tournament Companion
-                    </p>
-                </header>
-
-                <div className="w-full">
-                    {renderContent()}
-                </div>
+            <div className="w-full max-w-2xl">
+                {renderContent()}
             </div>
         </div>
       )}
