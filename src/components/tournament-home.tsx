@@ -46,29 +46,19 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
   
   useEffect(() => {
     if (tournament.fixture) {
-      try {
-        const parsedFixture = JSON.parse(tournament.fixture);
-        setFixture(parsedFixture);
-        setScores(tournament.scores || {});
-         if (!tournament.winner) {
-            setActiveView('overview');
-        } else {
-            setActiveView('overview');
-        }
-      } catch (error) {
-        console.error("Failed to parse fixture:", error);
-        toast({
-          variant: 'destructive',
-          title: 'Error loading saved fixture',
-          description: 'The saved data might be corrupted. You may need to reset.',
-        });
+      setFixture(tournament.fixture);
+      setScores(tournament.scores || {});
+       if (!tournament.winner) {
+          setActiveView('overview');
+      } else {
+          setActiveView('overview');
       }
     } else {
       setFixture(null);
       setScores({});
       setActiveView('overview');
     }
-  }, [tournament, toast]);
+  }, [tournament]);
 
 
   const handleGenerateFixture = () => {
@@ -151,7 +141,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
         }
 
         setFixture(mappedFixture);
-        onTournamentUpdate({ fixture: JSON.stringify(mappedFixture), scores: {}, activeRound: 1, hybridStage: 'group' });
+        onTournamentUpdate({ fixture: mappedFixture, scores: {}, activeRound: 1, hybridStage: 'group' });
         toast({
           title: "Fixture Generated!",
           description: "The tournament fixture is ready.",
@@ -281,7 +271,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     
     const newFixture = { ...fixture!, knockoutStage: newKnockoutStage };
     setFixture(newFixture);
-    onTournamentUpdate({ fixture: JSON.stringify(newFixture), hybridStage: 'knockout', activeRound: 1 });
+    onTournamentUpdate({ fixture: newFixture, hybridStage: 'knockout', activeRound: 1 });
 
     toast({
       title: "Knockout Stage Ready!",

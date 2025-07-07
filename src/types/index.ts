@@ -19,7 +19,7 @@ export type Tournament = TournamentCreationData & {
   id: string;
   creatorId: string;
   createdAt: any; 
-  fixture?: string;
+  fixture?: Fixture;
   scores?: Record<string, Score>;
   winner?: { name: string; logo?: string; ownerName?: string };
   activeRound?: number;

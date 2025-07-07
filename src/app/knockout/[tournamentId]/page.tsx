@@ -57,16 +57,13 @@ export default function KnockoutPage() {
   
   const getFixture = (): Fixture | null => {
     if (!tournament?.fixture) return null;
-    try {
-        const parsedFixture = JSON.parse(tournament.fixture);
-        if (tournament.tournamentType === 'hybrid') {
-            return parsedFixture.knockoutStage;
-        }
-        return parsedFixture;
-    } catch {
-        setError("Failed to parse fixture data.");
-        return null;
+    
+    const fixtureObject = tournament.fixture;
+
+    if (tournament.tournamentType === 'hybrid') {
+        return fixtureObject.knockoutStage ?? null;
     }
+    return fixtureObject;
   }
   
   const fixture = getFixture();
@@ -108,7 +105,7 @@ export default function KnockoutPage() {
             </div>
         )}
         
-        {!loading && !error && fixture && (
+        {fixture && fixture.rounds && (
             <KnockoutBracketView 
                 fixture={fixture} 
                 scores={tournament?.scores || {}} 
