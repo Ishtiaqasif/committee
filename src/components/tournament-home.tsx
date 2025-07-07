@@ -112,15 +112,15 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
 
         // This function replaces placeholder team names in matches with actual team data.
         const mapMatches = (matches: any[]) => matches.map((match: any, matchIndex: number) => {
-            const team1Info = teamMap[match.team1] || { name: match.team1, logo: undefined, ownerName: 'TBD' };
-            const team2Info = teamMap[match.team2] || { name: match.team2, logo: undefined, ownerName: 'TBD' };
+            const team1Info = teamMap[match.team1] || { name: match.team1, logo: null, ownerName: 'TBD' };
+            const team2Info = teamMap[match.team2] || { name: match.team2, logo: null, ownerName: 'TBD' };
 
             return {
                 ...match,
                 match: match.match ?? (matchIndex + 1), // Ensure a match number exists
-                team1: { name: team1Info.name, score: null, logo: team1Info.logo, ownerName: team1Info.ownerName },
-                team2: { name: team2Info.name, score: null, logo: team2Info.logo, ownerName: team2Info.ownerName },
-                venue: match.venue,
+                team1: { name: team1Info.name, score: null, logo: team1Info.logo || null, ownerName: team1Info.ownerName || 'TBD' },
+                team2: { name: team2Info.name, score: null, logo: team2Info.logo || null, ownerName: team2Info.ownerName || 'TBD' },
+                venue: match.venue || null,
             }
         });
         
