@@ -106,6 +106,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
           teamsPerGroup: tournament.teamsPerGroup,
           roundRobinHomeAndAway: tournament.roundRobinHomeAndAway,
           knockoutHomeAndAway: tournament.knockoutHomeAndAway,
+          awayGoalsRule: tournament.awayGoalsRule,
           teamsAdvancing: tournament.teamsAdvancing,
           fixtureGeneration: tournament.fixtureGeneration,
           language: tournament.language || 'en',
@@ -302,7 +303,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     const groupStandings: Record<string, PointsTableEntry[]> = {};
     fixture.groupStage.groups.forEach(group => {
       const groupTeams = group.teams.map(name => teams.find(t => t.name === name)!).filter(Boolean) as Team[];
-      const table = calculatePointsTable(groupTeams, group.rounds, scores, group.groupName, undefined, tournament.tiebreakerRules);
+      const table = calculatePointsTable(groupTeams, group.rounds, scores, tournament.awayGoalsRule ?? false, group.groupName, undefined, tournament.tiebreakerRules);
       groupStandings[group.groupName] = table;
     });
 
@@ -436,6 +437,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
               onTournamentUpdate={onTournamentUpdate}
               scores={scores} 
               knockoutHomeAndAway={tournament.knockoutHomeAndAway}
+              awayGoalsRule={tournament.awayGoalsRule ?? false}
               activeRound={tournament.activeRound || 1}
               onActiveRoundChange={handleActiveRoundChange}
               readOnly={readOnly}
@@ -451,7 +453,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     }
 
     if (tournament.tournamentType === 'single elimination' && fixture.rounds) {
-      return <SingleEliminationBracket fixture={{rounds: fixture.rounds}} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} scores={scores} knockoutHomeAndAway={tournament.knockoutHomeAndAway} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} currentUserId={user?.uid} />;
+      return <SingleEliminationBracket fixture={{rounds: fixture.rounds}} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} scores={scores} knockoutHomeAndAway={tournament.knockoutHomeAndAway} awayGoalsRule={tournament.awayGoalsRule ?? false} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} currentUserId={user?.uid} />;
     }
 
     return <p>Could not display fixture.</p>;
@@ -529,6 +531,8 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
                 <KnockoutBracketView
                     fixture={knockoutFixture}
                     scores={scores}
+                    knockoutHomeAndAway={tournament.knockoutHomeAndAway}
+                    awayGoalsRule={tournament.awayGoalsRule ?? false}
                 />
             </div>
         );

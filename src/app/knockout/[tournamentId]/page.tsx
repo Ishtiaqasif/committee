@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -125,10 +126,12 @@ export default function KnockoutPage() {
             </div>
         )}
         
-        {fixture && fixture.rounds && (
+        {fixture && fixture.rounds && tournament && (
             <KnockoutBracketView 
                 fixture={fixture} 
-                scores={tournament?.scores || {}} 
+                scores={tournament?.scores || {}}
+                knockoutHomeAndAway={tournament.knockoutHomeAndAway}
+                awayGoalsRule={tournament.awayGoalsRule ?? false}
             />
         )}
       </main>
