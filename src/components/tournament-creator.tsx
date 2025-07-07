@@ -381,7 +381,7 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                                       <RadioGroupItem value="random" />
                                   </FormControl>
                                   <FormLabel className="font-normal">
-                                      Redraw Every Round
+                                      Randomly Seeded Bracket
                                   </FormLabel>
                                   </FormItem>
                               </RadioGroup>
