@@ -62,26 +62,28 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     } else {
       setUserRole('guest');
     }
-  }, [user, tournament]);
+  }, [user, tournament.creatorId, tournament.admins]);
 
   const isPrivilegedUser = userRole === 'owner' || userRole === 'admin';
   const canAccessSettings = userRole === 'owner';
   
   useEffect(() => {
-    if (tournament.fixture) {
-      setFixture(tournament.fixture);
-      setScores(tournament.scores || {});
-       if (!tournament.winner) {
-          setActiveView('overview');
-      } else {
-          setActiveView('overview');
-      }
-    } else {
-      setFixture(null);
-      setScores({});
+    // This effect handles syncing the local fixture/scores state
+    // with the tournament prop from the parent.
+    setFixture(tournament.fixture || null);
+    setScores(tournament.scores || {});
+  }, [tournament.fixture, tournament.scores]);
+
+  useEffect(() => {
+    // This effect handles setting the default view when major
+    // tournament state changes occur (e.g., loading for the first time,
+    // or a winner is declared).
+    if (tournament.winner || !tournament.fixture) {
       setActiveView('overview');
     }
-  }, [tournament]);
+    // Note: We don't reset the view in other cases, so the user's
+    // selected view is preserved across score updates.
+  }, [tournament.id, tournament.fixture, tournament.winner]);
 
 
   const handleGenerateFixture = () => {
@@ -323,6 +325,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
               activeRound={tournament.activeRound || 1}
               onActiveRoundChange={handleActiveRoundChange}
               readOnly={readOnly}
+              allowTiebreaker={false}
             />
           </div>
         )
@@ -349,6 +352,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
               activeRound={tournament.activeRound || 1}
               onActiveRoundChange={handleActiveRoundChange}
               readOnly={readOnly}
+              allowTiebreaker={true}
             />
           </div>
         )
@@ -356,11 +360,11 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     }
     
     if (tournament.tournamentType === 'round-robin' && (fixture.rounds || fixture.groups)) {
-      return <RoundRobinView fixture={{rounds: fixture.rounds, groups: fixture.groups}} teams={teams} scores={scores} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} />;
+      return <RoundRobinView fixture={{rounds: fixture.rounds, groups: fixture.groups}} teams={teams} scores={scores} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} allowTiebreaker={false} />;
     }
 
     if (tournament.tournamentType === 'single elimination' && fixture.rounds) {
-      return <SingleEliminationBracket fixture={{rounds: fixture.rounds}} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} scores={scores} knockoutHomeAndAway={tournament.knockoutHomeAndAway} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} />;
+      return <SingleEliminationBracket fixture={{rounds: fixture.rounds}} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} scores={scores} knockoutHomeAndAway={tournament.knockoutHomeAndAway} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} allowTiebreaker={true} />;
     }
 
     return <p>Could not display fixture.</p>;
