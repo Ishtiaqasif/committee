@@ -9,11 +9,13 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import KnockoutBracketView from '@/components/knockout-bracket-view';
 import { ThemeToggle } from '@/components/theme-toggle';
+import { useAuth } from '@/context/auth-context';
 
 export default function KnockoutPage() {
   const params = useParams();
   const router = useRouter();
   const tournamentId = params.tournamentId as string;
+  const { user, loading: authLoading } = useAuth();
 
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [teams, setTeams] = useState<Team[]>([]);
@@ -21,8 +23,14 @@ export default function KnockoutPage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!tournamentId) {
-      setError("No tournament ID provided.");
+    if (!authLoading && !user) {
+      const currentPath = `/knockout/${tournamentId}`;
+      router.push(`/login?returnUrl=${encodeURIComponent(currentPath)}`);
+    }
+  }, [user, authLoading, router, tournamentId]);
+
+  useEffect(() => {
+    if (!tournamentId || !user) {
       setLoading(false);
       return;
     }
@@ -53,7 +61,7 @@ export default function KnockoutPage() {
       }
     };
     fetchTournamentData();
-  }, [tournamentId]);
+  }, [tournamentId, user]);
   
   const getFixture = (): Fixture | null => {
     if (!tournament?.fixture) return null;
@@ -67,6 +75,18 @@ export default function KnockoutPage() {
   }
   
   const fixture = getFixture();
+  
+  if (authLoading || (user && loading)) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center">
+        <Loader className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null; // or a loading spinner, while redirecting
+  }
 
   return (
     <div className="min-h-screen bg-muted/40 p-4 sm:p-6 lg:p-8">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { getTournament, addTeamToTournament, getTeamsForTournament } from '@/lib/firebase/firestore';
 import type { Tournament, Team } from '@/types';
@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import Link from 'next/link';
 import { generateTeamLogo } from '@/ai/flows/generate-team-logo';
 import ChampionView from '@/components/champion-view';
+import { useAuth } from '@/context/auth-context';
 
 const formSchema = z.object({
   teamName: z.string().min(1, 'Team name is required.'),
@@ -64,6 +65,8 @@ const compressImage = (dataUri: string, maxWidth: number, maxHeight: number): Pr
 
 export default function RegisterTeamPage() {
   const params = useParams();
+  const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const tournamentId = params.tournamentId as string;
   const { toast } = useToast();
 
@@ -84,7 +87,15 @@ export default function RegisterTeamPage() {
   });
 
   useEffect(() => {
-    if (!tournamentId) return;
+    if (!authLoading && !user) {
+      const currentPath = `/register/${tournamentId}`;
+      router.push(`/login?returnUrl=${encodeURIComponent(currentPath)}`);
+    }
+  }, [user, authLoading, router, tournamentId]);
+
+
+  useEffect(() => {
+    if (!tournamentId || !user) return;
 
     const fetchTournamentData = async () => {
       setLoading(true);
@@ -107,7 +118,7 @@ export default function RegisterTeamPage() {
       }
     };
     fetchTournamentData();
-  }, [tournamentId, toast]);
+  }, [tournamentId, toast, user]);
 
   const handleGenerateLogo = async () => {
     const teamName = form.getValues('teamName');
@@ -153,12 +164,16 @@ export default function RegisterTeamPage() {
   
   const isTournamentFull = tournament ? teams.length >= tournament.numberOfTeams : false;
 
-  if (loading) {
+  if (authLoading || (user && loading)) {
     return (
       <div className="flex min-h-screen w-full items-center justify-center">
         <Loader className="h-8 w-8 animate-spin" />
       </div>
     );
+  }
+
+  if (!user) {
+    return null;
   }
 
   if (!tournament) {
