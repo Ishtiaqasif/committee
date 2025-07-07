@@ -7,8 +7,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import Image from 'next/image';
 import { Shield, Trophy } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Badge } from './ui/badge';
-
 
 interface PointsTableProps {
   title: string;
@@ -50,10 +48,7 @@ export default function PointsTable({ title, table, viewMode, userTeamName }: Po
                     {entry.logo ? <Image src={entry.logo} alt={`${entry.teamName} logo`} width={24} height={24} className="rounded-full" /> : <Shield className="h-5 w-5 text-muted-foreground" />}
                     <span>{entry.teamName}</span>
                      {entry.qualified && (
-                      <Badge variant="outline" className="ml-2 gap-1 px-2 py-0.5 border-accent text-accent-foreground bg-accent/20">
-                          <Trophy className="h-3 w-3"/>
-                          <span>Qualifies</span>
-                      </Badge>
+                        <Trophy className="h-4 w-4 text-accent" title="Qualifies for next stage" />
                     )}
                   </div>
                 </TableCell>
