@@ -1,3 +1,4 @@
+
 "use client"
 
 import type { Match, Round, Score, MatchTeam } from '@/types';
@@ -130,23 +131,49 @@ export default function KnockoutBracketView({ fixture, scores }: KnockoutBracket
     return `Round ${round.round}`;
   };
 
+  const roundsWithPairs = useMemo(() => {
+    return processedFixture.rounds.map(round => {
+        const matchPairs = [];
+        for (let i = 0; i < round.matches.length; i+=2) {
+            matchPairs.push(round.matches.slice(i, i + 2));
+        }
+        return { ...round, matchPairs };
+    });
+  }, [processedFixture]);
+
+
   return (
     <div>
-      <div className="flex gap-8 md:gap-16 overflow-x-auto pb-4 px-2">
-        {processedFixture.rounds.map((round, roundIndex) => (
+      <div className="flex gap-8 md:gap-24 overflow-x-auto pb-8 pt-4 px-4">
+        {roundsWithPairs.map((round, roundIndex) => (
             <div key={`round-${round.round}-${roundIndex}`} className="flex flex-col items-center flex-shrink-0">
-              <h3 className="text-2xl font-bold mb-6 text-primary tracking-wide">
+              <h3 className="text-2xl font-bold mb-8 text-primary tracking-wide">
                 {round.name || getRoundName(round)}
               </h3>
-              <div className="flex flex-col gap-8 justify-around h-full">
-                {round.matches.map((match) => (
-                  <div key={match.match} className="relative">
-                    <MatchComponent match={match} round={round.round} currentScores={scores} />
-                    {roundIndex < processedFixture.rounds.length -1 && (
-                        <div className="absolute top-1/2 -right-4 md:-right-8 w-4 md:w-8 h-px bg-border -translate-y-1/2"></div>
+              <div className="flex flex-col gap-12 justify-center flex-grow">
+                {round.matchPairs.map((pair, pairIndex) => (
+                  <div key={pairIndex} className="relative">
+                    <div className="flex flex-col gap-8">
+                       {pair.map(match => (
+                           <MatchComponent key={match.match} match={match} round={round.round} currentScores={scores} />
+                       ))}
+                    </div>
+
+                    {/* Bracket lines */}
+                    {roundIndex < roundsWithPairs.length - 1 && pair.length > 1 && (
+                        <>
+                            {/* Top horizontal line */}
+                            <div className="absolute top-1/4 left-full w-4 md:w-12 h-px bg-border"></div>
+                            {/* Bottom horizontal line */}
+                            <div className="absolute bottom-1/4 left-full w-4 md:w-12 h-px bg-border"></div>
+                            {/* Vertical line */}
+                            <div className="absolute top-1/4 left-[calc(100%_+_1rem)] md:left-[calc(100%_+_3rem)] w-px h-1/2 bg-border"></div>
+                        </>
                     )}
-                    {roundIndex > 0 && (
-                        <div className="absolute top-1/2 -left-4 md:-left-8 w-4 md:w-8 h-px bg-border -translate-y-1/2"></div>
+                    
+                    {roundIndex < roundsWithPairs.length - 1 && (
+                       // Horizontal line to next round
+                       <div className="absolute top-1/2 left-[calc(100%_+_1rem)] md:left-[calc(100%_+_3rem)] w-4 md:w-12 h-px bg-border"></div>
                     )}
                   </div>
                 ))}

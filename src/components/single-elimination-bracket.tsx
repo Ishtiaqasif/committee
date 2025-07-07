@@ -77,7 +77,7 @@ const MatchComponent = ({ match, round, onScoreUpdate, currentScores, isActive, 
                 match={match}
                 currentScore={score}
                 onScoreSave={(newScore) => onScoreUpdate(matchId, newScore)}
-                readOnly={readOnly}
+                readOnly={readOnly || !isActive}
                 allowTiebreaker={true}
             >
                 <Button className="flex-grow" variant="outline" size="sm" disabled={readOnly || score?.locked || !isActive || match.team1.name.toLowerCase() === 'bye' || match.team2.name.toLowerCase() === 'bye'}>
@@ -129,10 +129,6 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTou
         onActiveRoundChange(activeRound + 1);
     };
 
-    const handleGoBack = () => {
-        onActiveRoundChange(Math.max(1, activeRound - 1));
-    };
-
     const processedFixture = useMemo(() => {
         const newRounds = JSON.parse(JSON.stringify(fixture.rounds));
 
@@ -179,6 +175,16 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTou
         }
         return { rounds: newRounds };
     }, [fixture, scores]);
+    
+    const roundsWithPairs = useMemo(() => {
+        return processedFixture.rounds.map(round => {
+            const matchPairs = [];
+            for (let i = 0; i < round.matches.length; i += 2) {
+                matchPairs.push(round.matches.slice(i, i + 2));
+            }
+            return { ...round, matchPairs };
+        });
+    }, [processedFixture]);
 
   const finalWinner = useMemo(() => {
     if (isRoundComplete && !hasNextRound) {
@@ -213,23 +219,47 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTou
 
   return (
     <div>
-      <div className="flex gap-8 md:gap-16 overflow-x-auto pb-4 px-2">
-        {processedFixture.rounds.map((round, roundIndex) => {
+      <div className="flex gap-8 md:gap-24 overflow-x-auto pb-8 pt-4 px-4">
+        {roundsWithPairs.map((round, roundIndex) => {
           const isActive = round.round === activeRound;
           return (
             <div key={`round-${round.round}-${roundIndex}`} className="flex flex-col items-center flex-shrink-0">
-              <h3 className="text-2xl font-bold mb-6 text-primary tracking-wide">
+              <h3 className="text-2xl font-bold mb-8 text-primary tracking-wide">
                 {round.name || getRoundName(round)}
               </h3>
-              <div className="flex flex-col gap-8 justify-around h-full">
-                {round.matches.map((match) => (
-                  <div key={match.match} className="relative">
-                    <MatchComponent match={match} round={round.round} onScoreUpdate={onScoreUpdate} currentScores={scores} isActive={isActive} readOnly={readOnly} currentUserId={currentUserId}/>
-                    {roundIndex < processedFixture.rounds.length -1 && (
-                        <div className="absolute top-1/2 -right-4 md:-right-8 w-4 md:w-8 h-px bg-border -translate-y-1/2"></div>
+              <div className="flex flex-col gap-12 justify-center flex-grow">
+                {round.matchPairs.map((pair, pairIndex) => (
+                  <div key={pairIndex} className="relative">
+                    <div className="flex flex-col gap-8">
+                       {pair.map(match => (
+                           <MatchComponent
+                                key={match.match}
+                                match={match}
+                                round={round.round}
+                                onScoreUpdate={onScoreUpdate}
+                                currentScores={scores}
+                                isActive={isActive}
+                                readOnly={readOnly}
+                                currentUserId={currentUserId}
+                            />
+                       ))}
+                    </div>
+
+                    {/* Bracket lines */}
+                    {roundIndex < roundsWithPairs.length - 1 && pair.length > 1 && (
+                        <>
+                            {/* Top horizontal line */}
+                            <div className="absolute top-1/4 left-full w-4 md:w-12 h-px bg-border"></div>
+                            {/* Bottom horizontal line */}
+                            <div className="absolute bottom-1/4 left-full w-4 md:w-12 h-px bg-border"></div>
+                            {/* Vertical line */}
+                            <div className="absolute top-1/4 left-[calc(100%_+_1rem)] md:left-[calc(100%_+_3rem)] w-px h-1/2 bg-border"></div>
+                        </>
                     )}
-                    {roundIndex > 0 && (
-                        <div className="absolute top-1/2 -left-4 md:-left-8 w-4 md:w-8 h-px bg-border -translate-y-1/2"></div>
+                    
+                    {roundIndex < roundsWithPairs.length - 1 && (
+                       // Horizontal line to next round
+                       <div className="absolute top-1/2 left-[calc(100%_+_1rem)] md:left-[calc(100%_+_3rem)] w-4 md:w-12 h-px bg-border"></div>
                     )}
                   </div>
                 ))}
@@ -238,16 +268,14 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTou
           )})}
       </div>
        <div className="mt-8 flex flex-col items-center justify-center gap-4">
-            {!readOnly && (
-                <div className="flex items-center gap-4">
-                    <Button size="lg" variant="outline" onClick={handleGoBack} disabled={activeRound === 1}>
-                        <ArrowLeft className="mr-2 h-4 w-4" /> Previous Round
-                    </Button>
-                    <Button size="lg" variant="outline" onClick={() => onActiveRoundChange(activeRound + 1)} disabled={!hasNextRound}>
-                        Next Round <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                </div>
-            )}
+            <div className="flex items-center gap-4">
+                <Button size="lg" variant="outline" onClick={() => onActiveRoundChange(Math.max(1, activeRound - 1))} disabled={activeRound === 1}>
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Previous Round
+                </Button>
+                <Button size="lg" variant="outline" onClick={() => onActiveRoundChange(activeRound + 1)} disabled={!hasNextRound && fixture.rounds.some(r => r.round === activeRound + 1)}>
+                    Next Round <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+            </div>
             
             {!readOnly && (
                 <>
