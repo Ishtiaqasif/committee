@@ -12,6 +12,7 @@ interface PointsTableViewProps {
   teams: Team[];
   scores: Record<string, Score>;
   tournament: Tournament;
+  currentUserId?: string;
 }
 
 export const calculatePointsTable = (teams: Team[], rounds: TournamentRound[], scores: Record<string, Score>, groupName?: string, teamsToQualify?: number): PointsTableEntry[] => {
@@ -76,8 +77,9 @@ export const calculatePointsTable = (teams: Team[], rounds: TournamentRound[], s
 }
 
 
-export default function PointsTableView({ fixture, teams, scores, tournament }: PointsTableViewProps) {
+export default function PointsTableView({ fixture, teams, scores, tournament, currentUserId }: PointsTableViewProps) {
   const [viewMode, setViewMode] = useState<'short' | 'full'>('full');
+  const userTeam = useMemo(() => teams.find(t => t.ownerId === currentUserId), [teams, currentUserId]);
   
   const tables = useMemo(() => {
     const { tournamentType, teamsAdvancing } = tournament;
@@ -141,7 +143,7 @@ export default function PointsTableView({ fixture, teams, scores, tournament }: 
         </div>
         <div className="grid grid-cols-1 gap-8">
             {tables.map(t => (
-                <PointsTable key={t.title} title={t.title} table={t.table} viewMode={viewMode}/>
+                <PointsTable key={t.title} title={t.title} table={t.table} viewMode={viewMode} userTeamName={userTeam?.name} />
             ))}
         </div>
     </div>
