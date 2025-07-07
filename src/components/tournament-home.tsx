@@ -79,8 +79,6 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
           fixtureGeneration: tournament.fixtureGeneration,
           language: tournament.language || 'en',
         });
-
-        const parsedFixture = result.fixture;
         
         const teamMap = teams.reduce((acc, team, index) => {
             acc[`Team ${index + 1}`] = team;
@@ -116,28 +114,28 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
         let mappedFixture: Fixture;
 
         if (tournament.tournamentType === 'hybrid') {
-            if (!parsedFixture.groupStage || !parsedFixture.knockoutStage) {
+            if (!result.groupStage || !result.knockoutStage) {
                 throw new Error("Hybrid fixture is missing groupStage or knockoutStage");
             }
             
-            const groupStage = parsedFixture.groupStage.groups 
-                ? { groups: mapGroups(parsedFixture.groupStage.groups) } 
-                : { rounds: mapRounds(parsedFixture.groupStage.rounds) };
+            const groupStage = result.groupStage.groups 
+                ? { groups: mapGroups(result.groupStage.groups) } 
+                : { rounds: mapRounds(result.groupStage.rounds) };
 
             mappedFixture = {
                 groupStage: groupStage,
-                knockoutStage: { rounds: mapRounds(parsedFixture.knockoutStage.rounds) }
+                knockoutStage: { rounds: mapRounds(result.knockoutStage.rounds) }
             };
-        } else if (tournament.tournamentType === 'round-robin' && parsedFixture.groups) {
+        } else if (tournament.tournamentType === 'round-robin' && result.groups) {
              mappedFixture = {
-                groups: mapGroups(parsedFixture.groups)
+                groups: mapGroups(result.groups)
             };
         } else {
-            if (!parsedFixture.rounds) {
+            if (!result.rounds) {
                 throw new Error("Fixture is missing rounds");
             }
             mappedFixture = {
-                rounds: mapRounds(parsedFixture.rounds)
+                rounds: mapRounds(result.rounds)
             };
         }
 
@@ -232,8 +230,6 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     if (newKnockoutStage.rounds && newKnockoutStage.rounds.length > 0) {
       const firstRound = newKnockoutStage.rounds[0];
       firstRound.matches.forEach((match: Match) => {
-        // Only try to replace placeholders, not actual team names that might already be there
-        // or winner placeholders from previous knockout rounds
         const isPlaceholder1 = /^(Winner|Runner-up|\d+(st|nd|rd|th) Place) Group/i.test(match.team1.name)
         if (isPlaceholder1) {
           const team1 = getTeamFromPlaceholder(match.team1.name);
@@ -408,10 +404,6 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
                             <span className="text-xs text-muted-foreground capitalize truncate">{tournament.tournamentType.replace('-', ' ')}</span>
                         </div>
                     </div>
-                    <div className="flex items-center gap-1 group-data-[collapsible=icon]:hidden">
-                        <ThemeToggle />
-                        <AuthButton />
-                    </div>
                 </div>
             </SidebarHeader>
             <SidebarContent>
@@ -473,7 +465,8 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
                 <AlertDialog>
                     <AlertDialogTrigger asChild>
                         <Button variant="outline" className="w-full">
-                            <RefreshCw className="mr-2 h-4 w-4" /> Reset Tournament
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                             <span className="group-data-[collapsible=icon]:hidden">Reset Tournament</span>
                         </Button>
                     </AlertDialogTrigger>
                     <AlertDialogContent>
@@ -489,6 +482,10 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
                         </AlertDialogFooter>
                     </AlertDialogContent>
                 </AlertDialog>
+                <div className="flex w-full items-center justify-between border-t border-sidebar-border pt-2 mt-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-2 group-data-[collapsible=icon]:border-none group-data-[collapsible=icon]:mt-2 group-data-[collapsible=icon]:pt-0">
+                    <ThemeToggle />
+                    <AuthButton />
+                </div>
             </SidebarFooter>
         </Sidebar>
         <SidebarInset>
