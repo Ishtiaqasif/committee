@@ -31,7 +31,7 @@ const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate, team
 
   const pointsTable = useMemo(() => {
     const table: Record<string, PointsTableEntry> = groupTeams.reduce((acc, team) => {
-      acc[team.name] = { teamName: team.name, played: 0, won: 0, lost: 0, drawn: 0, points: 0, logo: team.logo, goalsFor: 0, goalsAgainst: 0, goalDifference: 0 };
+      acc[team.name] = { teamName: team.name, played: 0, won: 0, lost: 0, drawn: 0, points: 0, logo: team.logo, goalsFor: 0, goalsAgainst: 0, goalDifference: 0, qualified: false };
       return acc;
     }, {} as Record<string, PointsTableEntry>);
 
@@ -84,7 +84,7 @@ const GroupedRoundRobinView = ({ group, activeRound, scores, onScoreUpdate, team
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div className="lg:col-span-2 space-y-6">
         {displayedRounds.map((round, roundIndex) => (
-          <Card key={`round-${round.round}-${roundIndex}`}>
+          <Card key={`round-${round.round}-${roundIndex}`} className="border-primary ring-2 ring-primary">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Dices className="text-accent"/> {round.name || `Round ${round.round}`}
@@ -235,7 +235,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
   const allRounds = fixture.rounds || [];
   const pointsTable = useMemo(() => {
     const table: Record<string, PointsTableEntry> = teams.reduce((acc, team) => {
-      acc[team.name] = { teamName: team.name, played: 0, won: 0, lost: 0, drawn: 0, points: 0, logo: team.logo, goalsFor: 0, goalsAgainst: 0, goalDifference: 0 };
+      acc[team.name] = { teamName: team.name, played: 0, won: 0, lost: 0, drawn: 0, points: 0, logo: team.logo, goalsFor: 0, goalsAgainst: 0, goalDifference: 0, qualified: false };
       return acc;
     }, {} as Record<string, PointsTableEntry>);
 
@@ -295,43 +295,56 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
   }, [activeRound, maxRound, isHybrid, pointsTable, fixture, teams]);
 
   const NavigationFooter = () => (
-    <div className="mt-8 flex flex-col items-center justify-center gap-2">
+    <div className="mt-8 flex flex-col items-center justify-center gap-4">
       <div className="flex items-center gap-4">
         <Button size="lg" variant="outline" onClick={handleGoBack} disabled={activeRound === 1}>
             <ArrowLeft className="mr-2 h-4 w-4" /> Previous Round
         </Button>
-        {hasNextRound && (
-            <Button size="lg" onClick={handleProceed} disabled={!isRoundComplete}>
-                Next Round <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-        )}
+        <Button size="lg" variant="outline" onClick={() => onActiveRoundChange(activeRound + 1)} disabled={!hasNextRound}>
+            Next Round <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
       </div>
-      {hasNextRound && !isRoundComplete && (
-        <p className="text-sm text-muted-foreground mt-2">
-          Enter all match results for the current round to proceed.
-        </p>
-      )}
-      {isRoundComplete && !hasNextRound && (
-        <div className="mt-4 text-center">
-            {isHybrid && onProceedToKnockout ? (
-                <Button size="lg" onClick={onProceedToKnockout} disabled={!isRoundComplete}>
-                    Proceed to Knockout Stage <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-            ) : finalWinner ? (
-                 <div className="space-y-2">
-                    <p className="text-lg font-semibold text-primary">
-                        Tournament Complete! The winner is {finalWinner.name}.
-                    </p>
-                    <Button size="lg" onClick={() => onTournamentUpdate({ winner: finalWinner })}>
-                        <Trophy className="mr-2 h-4 w-4" /> Crown Champion & Finish
+      
+      {!readOnly && (
+        <>
+            {hasNextRound && isRoundComplete && (
+                <div className="text-center space-y-2 border-t pt-4 mt-4 w-full max-w-md">
+                    <p className="text-sm text-muted-foreground">All matches in the current round are complete.</p>
+                    <Button size="lg" onClick={handleProceed}>
+                        Lock Round & Proceed <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                 </div>
-            ) : (
-                <p className="text-lg font-semibold text-primary">
-                    All rounds are complete!
+            )}
+
+            {hasNextRound && !isRoundComplete && (
+                <p className="text-sm text-muted-foreground mt-2">
+                Enter all match results for the current round to proceed.
                 </p>
             )}
-        </div>
+
+            {isRoundComplete && !hasNextRound && (
+                <div className="mt-4 text-center">
+                    {isHybrid && onProceedToKnockout ? (
+                        <Button size="lg" onClick={onProceedToKnockout} disabled={!isRoundComplete}>
+                            Proceed to Knockout Stage <ArrowRight className="ml-2 h-4 w-4" />
+                        </Button>
+                    ) : finalWinner ? (
+                        <div className="space-y-2">
+                            <p className="text-lg font-semibold text-primary">
+                                Tournament Complete! The winner is {finalWinner.name}.
+                            </p>
+                            <Button size="lg" onClick={() => onTournamentUpdate({ winner: finalWinner })}>
+                                <Trophy className="mr-2 h-4 w-4" /> Crown Champion & Finish
+                            </Button>
+                        </div>
+                    ) : (
+                        <p className="text-lg font-semibold text-primary">
+                            All rounds are complete!
+                        </p>
+                    )}
+                </div>
+            )}
+        </>
       )}
     </div>
   );
@@ -363,7 +376,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
           </TabsContent>
         ))}
       </Tabs>
-      {!readOnly && <NavigationFooter />}
+      <NavigationFooter />
       </>
     )
   }
@@ -375,7 +388,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
       <div className="lg:col-span-2 space-y-6">
         {displayedRounds.map((round, roundIndex) => (
-          <Card key={`round-${round.round}-${roundIndex}`}>
+          <Card key={`round-${round.round}-${roundIndex}`} className="border-primary ring-2 ring-primary">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Dices className="text-accent"/> {round.name || `Round ${round.round}`}
@@ -444,7 +457,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
         <PointsTable title="Points Table" table={pointsTable} viewMode={viewMode} />
       </div>
     </div>
-    {!readOnly && <NavigationFooter />}
+    <NavigationFooter />
     </>
   )
 }

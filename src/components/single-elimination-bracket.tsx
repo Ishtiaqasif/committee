@@ -45,7 +45,7 @@ const MatchComponent = ({ match, round, onScoreUpdate, currentScores, isActive, 
   }
 
   return (
-    <Card className={cn("w-64 bg-card shadow-md transition-all", isActive && !score?.locked && !readOnly && "border-primary ring-2 ring-primary")}>
+    <Card className={cn("w-64 bg-card shadow-md transition-all", isActive && "border-primary ring-2 ring-primary")}>
       <CardContent className="p-0">
         <div className={getTeamClass(isTeam1Winner, match.team1.name)}>
           <div className="flex items-center gap-2">
@@ -235,40 +235,54 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTou
             </div>
           )})}
       </div>
-       {!readOnly && (
-         <div className="mt-8 flex flex-col items-center justify-center gap-2">
+       <div className="mt-8 flex flex-col items-center justify-center gap-4">
             <div className="flex items-center gap-4">
                 <Button size="lg" variant="outline" onClick={handleGoBack} disabled={activeRound === 1}>
                     <ArrowLeft className="mr-2 h-4 w-4" /> Previous Round
                 </Button>
-                {hasNextRound && (
-                    <Button size="lg" onClick={handleProceed} disabled={!isRoundComplete}>
-                        Next Round <ArrowRight className="ml-2 h-4 w-4" />
-                    </Button>
-                )}
-            </div>
-            {hasNextRound && !isRoundComplete && (
-                <p className="text-sm text-muted-foreground mt-2">
-                Enter all match results for the current round to proceed.
-                </p>
-            )}
-            {isRoundComplete && !hasNextRound && finalWinner && (
-              <div className="mt-8 text-center space-y-2">
-                <p className="text-lg font-semibold text-primary">
-                  Final match complete! {finalWinner.name} is the potential champion.
-                </p>
-                <Button size="lg" onClick={() => onTournamentUpdate({ winner: finalWinner })}>
-                  <Trophy className="mr-2 h-4 w-4" /> Crown Champion & Finish
+                <Button size="lg" variant="outline" onClick={() => onActiveRoundChange(activeRound + 1)} disabled={!hasNextRound}>
+                    Next Round <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
-              </div>
-            )}
-            {isRoundComplete && !hasNextRound && !finalWinner && (
-              <div className="mt-8 text-center text-lg font-semibold text-primary">
-                Enter final match score to determine the winner!
-              </div>
+            </div>
+            
+            {!readOnly && (
+                <>
+                    {isRoundComplete && hasNextRound && (
+                        <div className="text-center space-y-2 border-t pt-4 mt-4 w-full max-w-md">
+                            <p className="text-sm text-muted-foreground">
+                                All matches in this round are complete.
+                            </p>
+                            <Button size="lg" onClick={handleProceed}>
+                                Lock Round & Proceed <ArrowRight className="ml-2 h-4 w-4" />
+                            </Button>
+                        </div>
+                    )}
+                    
+                    {hasNextRound && !isRoundComplete && (
+                        <p className="text-sm text-muted-foreground mt-2">
+                        Enter all match results for the current round to proceed.
+                        </p>
+                    )}
+
+                    {isRoundComplete && !hasNextRound && finalWinner && (
+                    <div className="mt-8 text-center space-y-2">
+                        <p className="text-lg font-semibold text-primary">
+                        Final match complete! {finalWinner.name} is the potential champion.
+                        </p>
+                        <Button size="lg" onClick={() => onTournamentUpdate({ winner: finalWinner })}>
+                        <Trophy className="mr-2 h-4 w-4" /> Crown Champion & Finish
+                        </Button>
+                    </div>
+                    )}
+
+                    {isRoundComplete && !hasNextRound && !finalWinner && (
+                    <div className="mt-8 text-center text-lg font-semibold text-primary">
+                        Enter final match score to determine the winner!
+                    </div>
+                    )}
+                </>
             )}
         </div>
-      )}
     </div>
   );
 }
