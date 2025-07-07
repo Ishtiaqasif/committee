@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { PointsTableEntry } from '@/types';
+import { PointsTableEntry } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import Image from 'next/image';

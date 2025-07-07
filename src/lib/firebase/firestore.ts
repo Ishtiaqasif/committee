@@ -1,9 +1,9 @@
 
 import { doc, collection, addDoc, getDoc, getDocs, query, serverTimestamp, where, orderBy, updateDoc, setDoc, documentId, limit, QuerySnapshot, arrayUnion } from "firebase/firestore";
 import { db, storage } from "./config";
-import type { Tournament, TournamentCreationData, Team, UserProfile, UserRole } from "@/types";
+import { Tournament, TournamentCreationData, Team, UserProfile, UserRole } from "@/types";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
-import type { User } from "firebase/auth";
+import { User } from "firebase/auth";
 
 export async function createTournament(tournamentData: TournamentCreationData, userId: string): Promise<string> {
     const dataToSave: Partial<TournamentCreationData> = { ...tournamentData };

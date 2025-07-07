@@ -10,7 +10,7 @@ import { Loader, KeyRound, Mail, User as UserIcon, PlusCircle, LayoutGrid, Calen
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getTournamentsForUserWithRoles } from "@/lib/firebase/firestore";
-import type { Tournament } from "@/types";
+import { Tournament } from "@/types";
 import { Button } from "@/components/ui/button";
 import { format } from 'date-fns';
 import { Badge } from "@/components/ui/badge";

@@ -2,7 +2,7 @@
 "use client"
 
 import { useMemo, useState, useEffect } from 'react';
-import type { Team, Match, Round, Group, Score, Tournament, TiebreakerRule } from '@/types';
+import { Team, Match, Round, Group, Score, Tournament, TiebreakerRule } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dices, MapPin, Lock, ArrowRight, Shield, ArrowLeft, Trophy } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";

@@ -1,7 +1,7 @@
 
 "use client";
 
-import type { Team, Fixture, Score, Match, Round } from '@/types';
+import { Team, Fixture, Score, Match, Round } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Shield, User, Swords } from 'lucide-react';
 import Image from 'next/image';

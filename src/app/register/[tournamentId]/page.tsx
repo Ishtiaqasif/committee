@@ -1,10 +1,11 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { getTournament, addTeamToTournament, getTeamsForTournament } from '@/lib/firebase/firestore';
-import type { Tournament, Team } from '@/types';
+import { Tournament, Team } from '@/types';
 import { Loader, UserPlus, ClipboardList, Shield, CheckCircle, Sparkles, Image as ImageIcon, User } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';

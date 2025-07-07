@@ -3,7 +3,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import type { Tournament, Team, TournamentCreationData } from "@/types";
+import { Tournament, Team, TournamentCreationData } from "@/types";
 import TournamentCreator from "@/components/tournament-creator";
 import TeamInvitation from "@/components/team-invitation";
 import TournamentHome from "@/components/tournament-home";

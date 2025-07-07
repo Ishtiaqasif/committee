@@ -2,7 +2,7 @@
 "use client"
 
 import { useMemo, useState } from 'react';
-import type { Team, PointsTableEntry, Fixture, Score, Group, Round as TournamentRound, Tournament, TiebreakerRule, Match } from '@/types';
+import { Team, PointsTableEntry, Fixture, Score, Group, Round as TournamentRound, Tournament, TiebreakerRule, Match } from '@/types';
 import PointsTable from './points-table';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';

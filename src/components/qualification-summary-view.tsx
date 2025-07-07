@@ -2,7 +2,7 @@
 "use client"
 
 import { useMemo } from 'react';
-import type { Fixture, Team, Score, Tournament } from '@/types';
+import { Fixture, Team, Score, Tournament } from '@/types';
 import { calculatePointsTable } from './points-table-view';
 import PointsTable from './points-table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';

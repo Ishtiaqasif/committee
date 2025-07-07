@@ -1,7 +1,7 @@
 
 "use client"
 
-import type { Match, Round, Score, MatchTeam } from '@/types';
+import { Match, Round, Score, MatchTeam } from '@/types';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { useMemo } from 'react';
 import { MapPin, Shield, Trophy } from 'lucide-react';

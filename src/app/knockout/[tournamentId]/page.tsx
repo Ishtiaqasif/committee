@@ -4,7 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getTournament, getTeamsForTournament } from '@/lib/firebase/firestore';
-import type { Tournament, Team, Fixture } from '@/types';
+import { Tournament, Team, Fixture } from '@/types';
 import { Loader, ClipboardList, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
