@@ -164,6 +164,12 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
   const [viewedRound, setViewedRound] = useState(activeRound);
 
   const userTeam = useMemo(() => teams.find(t => t.ownerId === currentUserId), [teams, currentUserId]);
+  
+  const userGroup = useMemo(() => {
+    if (!userTeam || !fixture.groups) return null;
+    const group = fixture.groups.find(g => g.teams.includes(userTeam.name));
+    return group ? group.groupName : null;
+  }, [userTeam, fixture.groups]);
 
   useEffect(() => {
     // When the official activeRound changes, update the view to match
@@ -325,32 +331,24 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
         </>
       )}
 
-      {isRoundComplete && !hasNextRound && isViewingActiveRound && (
+      {!readOnly && isRoundComplete && !hasNextRound && isViewingActiveRound && (
         <div className="mt-4 text-center">
-            {!readOnly ? (
-                <>
-                    {isHybrid && onProceedToKnockout ? (
-                        <Button size="lg" onClick={onProceedToKnockout} disabled={!isRoundComplete}>
-                            Proceed to Knockout Stage <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
-                    ) : finalWinner ? (
-                        <div className="space-y-2">
-                            <p className="text-lg font-semibold text-primary">
-                                Tournament Complete! The winner is {finalWinner.name}.
-                            </p>
-                            <Button size="lg" onClick={() => onTournamentUpdate({ winner: finalWinner })}>
-                                <Trophy className="mr-2 h-4 w-4" /> Crown Champion & Finish
-                            </Button>
-                        </div>
-                    ) : (
-                         <p className="text-lg font-semibold text-primary">
-                            All rounds are complete!
-                        </p>
-                    )}
-                </>
+            {isHybrid && onProceedToKnockout ? (
+                <Button size="lg" onClick={onProceedToKnockout} disabled={!isRoundComplete}>
+                    Proceed to Knockout Stage <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+            ) : finalWinner ? (
+                <div className="space-y-2">
+                    <p className="text-lg font-semibold text-primary">
+                        Tournament Complete! The winner is {finalWinner.name}.
+                    </p>
+                    <Button size="lg" onClick={() => onTournamentUpdate({ winner: finalWinner })}>
+                        <Trophy className="mr-2 h-4 w-4" /> Crown Champion & Finish
+                    </Button>
+                </div>
             ) : (
-                <p className="text-lg font-semibold text-primary">
-                    {isHybrid ? 'Group stage is complete!' : 'All rounds are complete!'}
+                 <p className="text-lg font-semibold text-primary">
+                    All rounds are complete!
                 </p>
             )}
         </div>
@@ -373,7 +371,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
     return (
       <>
        <TableViewToggle />
-       <Tabs defaultValue={fixture.groups[0].groupName} className="w-full">
+       <Tabs defaultValue={userGroup || fixture.groups[0].groupName} className="w-full">
         <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${fixture.groups.length}, minmax(0, 1fr))` }}>
           {fixture.groups.map(group => (
             <TabsTrigger key={group.groupName} value={group.groupName}>{group.groupName}</TabsTrigger>
