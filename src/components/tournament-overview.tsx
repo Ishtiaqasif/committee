@@ -116,8 +116,9 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
     if (status === 'Ongoing') {
         const firstUnplayedMatch = allMatches.find(m => !scores[m.id] || scores[m.id].score1 === null || scores[m.id].score2 === null);
         currentRoundName = firstUnplayedMatch ? firstUnplayedMatch.roundName : "Finalizing";
-    } else if (status === 'Completed') {
+    } else if (status === 'Completed' || tournament.winner) {
         currentRoundName = "Finished";
+        status = 'Completed';
     } else if (status === 'Upcoming') {
         const firstRound = allMatches.length > 0 ? allMatches[0].roundName : "Round 1";
         currentRoundName = `Ready to start (${firstRound})`;
@@ -130,7 +131,13 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
         currentRoundName,
         progress: totalMatches > 0 ? (playedMatches / totalMatches) * 100 : 0
     };
-  }, [fixture, scores]);
+  }, [fixture, scores, tournament.winner]);
+
+  const StatusIcon = {
+      'Upcoming': <ListTodo className="w-8 h-8 text-blue-500" />,
+      'Ongoing': <Flame className="w-8 h-8 text-orange-500" />,
+      'Completed': <CheckCircle className="w-8 h-8 text-green-500" />,
+  }[stats.status];
 
   if (tournament.winner) {
     return (
@@ -139,6 +146,42 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
         <p className="text-muted-foreground">The champion has been crowned!</p>
         <div className="mt-6 flex items-center justify-center">
             <ChampionView winner={tournament.winner} />
+        </div>
+        
+        <div className="my-8 border-t pt-8">
+            <h3 className="text-2xl font-bold text-primary text-center mb-6">Final Summary</h3>
+            <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Status</CardTitle>
+                    {StatusIcon}
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{stats.status}</div>
+                    <p className="text-xs text-muted-foreground">The tournament has concluded.</p>
+                </CardContent>
+                </Card>
+                <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Final Round</CardTitle>
+                    <Swords className="w-8 h-8 text-accent" />
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold capitalize">{stats.currentRoundName}</div>
+                    <p className="text-xs text-muted-foreground">The competition has finished.</p>
+                </CardContent>
+                </Card>
+                <Card className="md:col-span-2 lg:col-span-1">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                    <CardTitle className="text-sm font-medium">Match Progress</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <div className="text-2xl font-bold">{stats.playedMatches} / {stats.totalMatches}</div>
+                    <p className="text-xs text-muted-foreground mb-2">Total matches played.</p>
+                    <Progress value={stats.progress} />
+                </CardContent>
+                </Card>
+            </div>
         </div>
         {shareLinkCard}
       </div>
@@ -172,12 +215,6 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
         </div>
       );
   }
-
-  const StatusIcon = {
-      'Upcoming': <ListTodo className="w-8 h-8 text-blue-500" />,
-      'Ongoing': <Flame className="w-8 h-8 text-orange-500" />,
-      'Completed': <CheckCircle className="w-8 h-8 text-green-500" />,
-  }[stats.status];
 
   return (
     <div>
