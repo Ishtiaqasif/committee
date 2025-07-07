@@ -10,7 +10,7 @@ import RoundRobinView from "@/components/round-robin-view";
 import SingleEliminationBracket from "@/components/single-elimination-bracket";
 import TeamsList from "@/components/teams-list";
 import PointsTableView, { calculatePointsTable } from "@/components/points-table-view";
-import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset } from "@/components/ui/sidebar";
+import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
 import { Loader, Trophy, RefreshCw, Gamepad2, ListOrdered, Users, Settings, LayoutDashboard, ShieldCheck, UserCog } from "lucide-react";
 import {
   AlertDialog,
@@ -545,7 +545,17 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
             </SidebarFooter>
         </Sidebar>
         <SidebarInset>
-            <div className="p-4 sm:p-6 lg:p-8 h-full">
+            <header className="sticky top-0 z-10 flex h-14 shrink-0 items-center justify-between gap-4 border-b bg-background px-4 sm:px-6 md:hidden">
+                <div className="flex items-center gap-2">
+                    <SidebarTrigger />
+                    <h1 className="text-lg font-semibold truncate">{tournament.tournamentName}</h1>
+                </div>
+                <div className="flex items-center gap-2">
+                    <ThemeToggle />
+                    <AuthButton />
+                </div>
+            </header>
+            <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
                 {renderContent()}
             </div>
         </SidebarInset>

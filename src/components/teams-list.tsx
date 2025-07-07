@@ -3,10 +3,11 @@
 
 import type { Team, Fixture, Score, Match, Round } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
-import { Shield, User, Swords, Star } from 'lucide-react';
+import { Shield, User, Swords } from 'lucide-react';
 import Image from 'next/image';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useMemo } from 'react';
+import { cn } from '@/lib/utils';
 
 // Helper function to get all matches for a specific team from the fixture
 const getMatchesForTeam = (teamName: string, fixture: Fixture | null): { match: Match, roundName: string, matchId: string }[] => {
@@ -83,9 +84,11 @@ export default function TeamsList({ teams, fixture, scores, currentUserId }: { t
                 <p className="text-muted-foreground">A total of {teams.length} teams are participating.</p>
                 <div className="mt-6 grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(280px,1fr))]">
                     {sortedTeams.map(team => (
-                        <Card key={team.id} className="bg-secondary/50">
+                        <Card key={team.id} className={cn(
+                            "bg-secondary/50 transition-colors",
+                            team.ownerId === currentUserId && "bg-primary/10 border-primary"
+                        )}>
                             <CardContent className="p-4 flex items-center gap-3">
-                                {team.ownerId === currentUserId && <Star className="h-5 w-5 text-accent flex-shrink-0" />}
                                {team.logo ? (
                                     <Image src={team.logo} alt={`${team.name} logo`} width={40} height={40} className="rounded-full bg-background object-cover" />
                                 ) : (
@@ -119,12 +122,12 @@ export default function TeamsList({ teams, fixture, scores, currentUserId }: { t
                     const teamMatches = getMatchesForTeam(team.name, fixture);
 
                     return (
-                        <AccordionItem value={team.id} key={team.id} className="border rounded-lg bg-card overflow-hidden">
+                        <AccordionItem value={team.id} key={team.id} className={cn(
+                            "border rounded-lg bg-card overflow-hidden transition-colors",
+                             team.ownerId === currentUserId && "bg-primary/10 border-primary"
+                        )}>
                             <AccordionTrigger className="p-4 hover:no-underline">
                                 <div className="flex items-center gap-3 w-full">
-                                    {team.ownerId === currentUserId && (
-                                        <Star className="h-5 w-5 text-accent flex-shrink-0" />
-                                    )}
                                     {team.logo ? (
                                         <Image src={team.logo} alt={`${team.name} logo`} width={40} height={40} className="rounded-full bg-background object-cover" />
                                     ) : (
