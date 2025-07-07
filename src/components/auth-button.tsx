@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useAuth } from "@/context/auth-context";
@@ -63,13 +64,7 @@ export default function AuthButton() {
         <DropdownMenuItem asChild>
           <Link href="/profile">
             <User className="mr-2 h-4 w-4" />
-            <span>Profile</span>
-          </Link>
-        </DropdownMenuItem>
-        <DropdownMenuItem asChild>
-          <Link href="/tournaments">
-            <LayoutGrid className="mr-2 h-4 w-4" />
-            <span>My Tournaments</span>
+            <span>Profile & Tournaments</span>
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>

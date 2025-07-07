@@ -1,7 +1,7 @@
 
-import { doc, collection, addDoc, getDoc, getDocs, query, serverTimestamp, where, orderBy, updateDoc, setDoc, documentId, limit } from "firebase/firestore";
+import { doc, collection, addDoc, getDoc, getDocs, query, serverTimestamp, where, orderBy, updateDoc, setDoc, documentId, limit, QuerySnapshot, arrayUnion } from "firebase/firestore";
 import { db, storage } from "./config";
-import type { Tournament, TournamentCreationData, Team, UserProfile } from "@/types";
+import type { Tournament, TournamentCreationData, Team, UserProfile, UserRole } from "@/types";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import type { User } from "firebase/auth";
 
@@ -20,6 +20,7 @@ export async function createTournament(tournamentData: TournamentCreationData, u
         createdAt: serverTimestamp(),
         language: 'en',
         admins: [],
+        participants: [],
     };
     const docRef = await addDoc(collection(db, "tournaments"), newTournament);
     return docRef.id;
@@ -66,6 +67,13 @@ export async function addTeamToTournament(tournamentId: string, teamData: Omit<T
     };
 
     const teamDocRef = await addDoc(collection(db, "tournaments", tournamentId, "teams"), teamToSave);
+    
+    // Also update the parent tournament to include this user in the participants list
+    const tournamentRef = doc(db, "tournaments", tournamentId);
+    await updateDoc(tournamentRef, {
+        participants: arrayUnion(teamData.ownerId)
+    });
+
     return teamDocRef.id;
 }
 
@@ -77,12 +85,45 @@ export async function getTeamsForTournament(tournamentId: string): Promise<Team[
     return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as unknown as Team)).sort((a, b) => a.name.localeCompare(b.name));
 }
 
-export async function getTournamentsForUser(userId: string): Promise<Tournament[]> {
+export async function getTournamentsForUserWithRoles(userId: string): Promise<Tournament[]> {
+    const tournamentsMap = new Map<string, Tournament & { roles: UserRole[] }>();
     const tournamentsRef = collection(db, "tournaments");
-    const q = query(tournamentsRef, where("creatorId", "==", userId), orderBy("createdAt", "desc"));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Tournament));
+
+    const processResults = (snapshot: QuerySnapshot, role: UserRole) => {
+        snapshot.forEach(doc => {
+            const tournament = { id: doc.id, ...doc.data() } as Tournament;
+            const existingEntry = tournamentsMap.get(tournament.id);
+
+            if (existingEntry) {
+                if (!existingEntry.roles.includes(role)) {
+                    existingEntry.roles.push(role);
+                }
+            } else {
+                tournamentsMap.set(tournament.id, { ...tournament, roles: [role] });
+            }
+        });
+    };
+
+    const ownerQuery = query(tournamentsRef, where("creatorId", "==", userId));
+    const adminQuery = query(tournamentsRef, where("admins", "array-contains", userId));
+    const participantQuery = query(tournamentsRef, where("participants", "array-contains", userId));
+
+    const [ownerSnapshot, adminSnapshot, participantSnapshot] = await Promise.all([
+        getDocs(ownerQuery),
+        getDocs(adminQuery),
+        getDocs(participantQuery)
+    ]);
+
+    processResults(ownerSnapshot, 'owner');
+    processResults(adminSnapshot, 'admin');
+    processResults(participantSnapshot, 'participant');
+
+    const results = Array.from(tournamentsMap.values());
+    results.sort((a, b) => (b.createdAt?.toDate()?.getTime() || 0) - (a.createdAt?.toDate()?.getTime() || 0));
+
+    return results;
 }
+
 
 export async function updateTournament(tournamentId: string, data: Partial<Tournament>): Promise<void> {
     const tournamentRef = doc(db, "tournaments", tournamentId);

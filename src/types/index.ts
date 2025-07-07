@@ -35,6 +35,9 @@ export type Tournament = TournamentCreationData & {
   activeRound?: number;
   hybridStage?: 'group' | 'qualification-summary' | 'knockout';
   admins?: string[];
+  participants?: string[];
+  // Client-side property
+  roles?: UserRole[];
 };
 
 export interface Team {
