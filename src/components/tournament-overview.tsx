@@ -152,15 +152,20 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
             <div className="mt-6 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border py-24 text-center w-full">
                 <Trophy className="mx-auto h-12 w-12 text-accent" />
                 <h3 className="mt-4 text-2xl font-semibold">All Teams Registered!</h3>
-                <p className="mt-2 text-muted-foreground">
-                    You're all set. Ready to generate the tournament fixture.
-                </p>
-                <Button onClick={onGenerateFixture} disabled={isGeneratingFixture || !isPrivilegedUser} size="lg" className="mt-6">
-                    {isGeneratingFixture && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-                    {isGeneratingFixture ? "Generating..." : "Generate Fixture"}
-                </Button>
-                {!isPrivilegedUser && (
-                    <p className="text-sm text-muted-foreground mt-2">Only the owner or an admin can generate the fixture.</p>
+                {isPrivilegedUser ? (
+                    <>
+                        <p className="mt-2 text-muted-foreground">
+                            You're all set. Ready to generate the tournament fixture.
+                        </p>
+                        <Button onClick={onGenerateFixture} disabled={isGeneratingFixture} size="lg" className="mt-6">
+                            {isGeneratingFixture && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                            {isGeneratingFixture ? "Generating..." : "Generate Fixture"}
+                        </Button>
+                    </>
+                ) : (
+                    <p className="mt-2 text-muted-foreground">
+                        Waiting for the tournament owner or an admin to generate the fixture.
+                    </p>
                 )}
             </div>
             {shareLinkCard}
