@@ -131,11 +131,14 @@ export async function updateTournament(tournamentId: string, data: Partial<Tourn
 }
 
 
-export async function upsertUserProfile(user: User): Promise<void> {
+export async function upsertUserProfile(user: Pick<User, 'uid' | 'displayName' | 'email' | 'photoURL'> & { isAnonymous?: boolean }): Promise<void> {
+    if (user.isAnonymous) {
+        return; // Do not create profiles for anonymous users
+    }
     const userRef = doc(db, "users", user.uid);
     // Only save public-safe information
     await setDoc(userRef, {
-        displayName: user.displayName,
+        displayName: user.displayName || 'Unnamed User',
         email: user.email,
         photoURL: user.photoURL,
     }, { merge: true });

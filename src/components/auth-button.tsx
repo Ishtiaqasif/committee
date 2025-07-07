@@ -2,7 +2,7 @@
 "use client";
 
 import { useAuth } from "@/context/auth-context";
-import { signInWithGoogle, signOutUser } from "@/lib/firebase/auth";
+import { signOutUser } from "@/lib/firebase/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -15,18 +15,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, PlusCircle, User, LayoutGrid } from "lucide-react";
+import { LogOut, PlusCircle, User } from "lucide-react";
 
 export default function AuthButton() {
   const { user } = useAuth();
   const router = useRouter();
-
-  const handleSignIn = async () => {
-    const user = await signInWithGoogle();
-    if (user) {
-      router.push("/create");
-    }
-  };
 
   const handleSignOut = async () => {
     await signOutUser();
@@ -35,9 +28,34 @@ export default function AuthButton() {
   
   if (!user) {
     return (
-      <Button onClick={handleSignIn}>
+      <Button onClick={() => router.push('/login')}>
         Login / Sign Up
       </Button>
+    );
+  }
+
+  if (user.isAnonymous) {
+     return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                <Avatar className="h-8 w-8">
+                    <AvatarFallback><User /></AvatarFallback>
+                </Avatar>
+                </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="end" forceMount>
+                <DropdownMenuLabel>Guest User</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => router.push('/login')}>
+                    Sign Up to Save Progress
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleSignOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>End Guest Session</span>
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
     );
   }
 
@@ -47,7 +65,7 @@ export default function AuthButton() {
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
             <AvatarImage src={user.photoURL ?? ""} alt={user.displayName ?? "User"} />
-            <AvatarFallback>{user.displayName?.charAt(0)}</AvatarFallback>
+            <AvatarFallback>{user.displayName?.charAt(0) ?? 'U'}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
