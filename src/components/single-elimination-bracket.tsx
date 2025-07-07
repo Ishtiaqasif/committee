@@ -100,21 +100,32 @@ const MatchComponent = ({ match, round, onScoreUpdate, currentScores, isActive, 
 
 export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTournamentUpdate, scores, knockoutHomeAndAway, awayGoalsRule, activeRound, onActiveRoundChange, readOnly, currentUserId }: SingleEliminationBracketProps) {
     
-    const { isRoundComplete, hasNextRound } = useMemo(() => {
+    const { isRoundComplete, hasNextRound, isRoundLocked } = useMemo(() => {
         const currentRound = fixture.rounds.find(r => r.round === activeRound);
-        if (!currentRound) return { isRoundComplete: false, hasNextRound: false };
+        if (!currentRound) return { isRoundComplete: false, hasNextRound: false, isRoundLocked: false };
 
         const currentRoundMatches = currentRound.matches.filter(m => m.team1.name.toLowerCase() !== 'bye' && m.team2.name.toLowerCase() !== 'bye');
         
+        if (currentRoundMatches.length === 0) {
+            const next = fixture.rounds.some(r => r.round === activeRound + 1);
+            return { isRoundComplete: true, hasNextRound: next, isRoundLocked: true };
+        }
+
         const complete = currentRoundMatches.every(match => {
             const matchId = `r${currentRound.round}m${match.match}`;
             const score = scores[matchId];
             return score?.score1 !== null && score?.score2 !== null && score?.score1 !== undefined && score?.score2 !== undefined;
         });
+        
+        const locked = currentRoundMatches.every(match => {
+            const matchId = `r${currentRound.round}m${match.match}`;
+            const score = scores[matchId];
+            return !!score?.locked;
+        });
 
         const next = fixture.rounds.some(r => r.round === activeRound + 1);
 
-        return { isRoundComplete: complete, hasNextRound: next };
+        return { isRoundComplete: complete, hasNextRound: next, isRoundLocked: locked };
     }, [activeRound, fixture.rounds, scores]);
 
     const handleProceed = () => {
@@ -355,17 +366,17 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTou
       </div>
        <div className="mt-8 flex flex-col items-center justify-center gap-4">
             <div className="flex items-center gap-4">
-                <Button size="lg" variant="outline" onClick={() => onActiveRoundChange(Math.max(1, activeRound - 1))} disabled={activeRound === 1}>
+                <Button size="lg" variant="outline" onClick={() => onActiveRoundChange(Math.max(1, activeRound - 1))} disabled={activeRound === 1 || readOnly}>
                     <ArrowLeft className="mr-2 h-4 w-4" /> Previous Round
                 </Button>
-                <Button size="lg" variant="outline" onClick={() => onActiveRoundChange(activeRound + 1)} disabled={!hasNextRound && fixture.rounds.some(r => r.round === activeRound + 1)}>
+                <Button size="lg" variant="outline" onClick={() => onActiveRoundChange(activeRound + 1)} disabled={!hasNextRound || readOnly}>
                     Next Round <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
             </div>
             
             {!readOnly && (
                 <div className="text-center space-y-2 border-t pt-4 mt-4 w-full max-w-md">
-                    {isRoundComplete && hasNextRound && (
+                    {isRoundComplete && hasNextRound && !isRoundLocked && (
                         <>
                             <p className="text-sm text-muted-foreground">
                                 All matches in this round are complete.

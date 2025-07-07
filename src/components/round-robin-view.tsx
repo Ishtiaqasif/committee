@@ -133,8 +133,8 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
     setViewedRound(activeRound);
   }, [activeRound]);
 
-  const { isRoundComplete, hasNextRound, maxRound } = useMemo(() => {
-    if (!fixture.rounds && !fixture.groups) return { isRoundComplete: false, hasNextRound: false, maxRound: 0 };
+  const { isRoundComplete, hasNextRound, maxRound, isRoundLocked } = useMemo(() => {
+    if (!fixture.rounds && !fixture.groups) return { isRoundComplete: false, hasNextRound: false, maxRound: 0, isRoundLocked: false };
 
     let matchesInActiveRound: { match: Match, id: string }[] = [];
     let currentMaxRound = 0;
@@ -157,16 +157,21 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
         fixture.rounds.forEach(r => processRound(r));
     }
     
-    if (matchesInActiveRound.length === 0 && currentMaxRound > 0) {
-       return { isRoundComplete: true, hasNextRound: activeRound < currentMaxRound, maxRound: currentMaxRound };
+    if (matchesInActiveRound.length === 0 && currentMaxRound > 0 && activeRound <= currentMaxRound) {
+       return { isRoundComplete: true, hasNextRound: activeRound < currentMaxRound, maxRound: currentMaxRound, isRoundLocked: true };
     }
 
     const complete = matchesInActiveRound.every(m => {
         const score = scores[m.id];
         return score?.score1 !== null && score?.score2 !== null && score?.score1 !== undefined && score?.score2 !== undefined;
     });
+    
+    const locked = matchesInActiveRound.every(m => {
+        const score = scores[m.id];
+        return !!score?.locked;
+    });
 
-    return { isRoundComplete: complete, hasNextRound: activeRound < currentMaxRound, maxRound: currentMaxRound };
+    return { isRoundComplete: complete, hasNextRound: activeRound < currentMaxRound, maxRound: currentMaxRound, isRoundLocked: locked };
 
   }, [activeRound, fixture, scores]);
 
@@ -228,7 +233,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
       
       {!readOnly && (
         <div className="text-center space-y-2 border-t pt-4 mt-4 w-full max-w-md">
-            {hasNextRound && isRoundComplete && (
+            {hasNextRound && isRoundComplete && !isRoundLocked && (
                 <>
                     <p className="text-sm text-muted-foreground">All matches in the current round are complete.</p>
                     <Button size="lg" onClick={handleProceed}>
