@@ -81,10 +81,14 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     // tournament state changes occur (e.g., loading for the first time,
     // or a winner is declared).
     if (!tournament.id) return; // Guard against running on initial empty state
-    if (tournament.winner || !tournament.fixture) {
+    
+    const shouldResetView = (tournament.winner || !tournament.fixture);
+    
+    // Only reset the view if it's not already the default and a reset is needed.
+    if (shouldResetView && activeView !== 'overview') {
         setActiveView('overview');
     }
-  }, [tournament.id, tournament.fixture, tournament.winner]);
+  }, [tournament.id, tournament.fixture, tournament.winner, activeView]);
 
 
   const handleGenerateFixture = () => {
@@ -390,7 +394,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
             </div>
         );
       case 'teams':
-        return <TeamsList teams={teams} fixture={fixture} scores={scores} />;
+        return <TeamsList teams={teams} fixture={fixture} scores={scores} currentUserId={user?.uid} />;
       case 'points-table':
         return <PointsTableView fixture={fixture!} teams={teams} scores={scores} tournamentType={tournament.tournamentType}/>;
       case 'knockout':

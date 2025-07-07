@@ -3,9 +3,10 @@
 
 import type { Team, Fixture, Score, Match, Round } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
-import { Shield, User, Swords } from 'lucide-react';
+import { Shield, User, Swords, Star } from 'lucide-react';
 import Image from 'next/image';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { useMemo } from 'react';
 
 // Helper function to get all matches for a specific team from the fixture
 const getMatchesForTeam = (teamName: string, fixture: Fixture | null): { match: Match, roundName: string, matchId: string }[] => {
@@ -57,7 +58,23 @@ const getMatchesForTeam = (teamName: string, fixture: Fixture | null): { match: 
 };
 
 
-export default function TeamsList({ teams, fixture, scores }: { teams: Team[]; fixture: Fixture | null; scores: Record<string, Score> }) {
+export default function TeamsList({ teams, fixture, scores, currentUserId }: { teams: Team[]; fixture: Fixture | null; scores: Record<string, Score>, currentUserId?: string }) {
+    
+    const sortedTeams = useMemo(() => {
+        if (!currentUserId) return teams;
+
+        const myTeamIndex = teams.findIndex(t => t.ownerId === currentUserId);
+
+        if (myTeamIndex > -1) {
+            const myTeam = teams[myTeamIndex];
+            const otherTeams = [...teams];
+            otherTeams.splice(myTeamIndex, 1);
+            return [myTeam, ...otherTeams];
+        }
+        return teams;
+
+    }, [teams, currentUserId]);
+
     if (!fixture) {
         // Render original view if no fixture is generated
         return (
@@ -65,9 +82,10 @@ export default function TeamsList({ teams, fixture, scores }: { teams: Team[]; f
                 <h2 className="text-3xl font-bold text-primary">Registered Teams</h2>
                 <p className="text-muted-foreground">A total of {teams.length} teams are participating.</p>
                 <div className="mt-6 grid gap-4 [grid-template-columns:repeat(auto-fit,minmax(280px,1fr))]">
-                    {teams.map(team => (
+                    {sortedTeams.map(team => (
                         <Card key={team.id} className="bg-secondary/50">
                             <CardContent className="p-4 flex items-center gap-3">
+                                {team.ownerId === currentUserId && <Star className="h-5 w-5 text-accent flex-shrink-0" />}
                                {team.logo ? (
                                     <Image src={team.logo} alt={`${team.name} logo`} width={40} height={40} className="rounded-full bg-background object-cover" />
                                 ) : (
@@ -97,13 +115,16 @@ export default function TeamsList({ teams, fixture, scores }: { teams: Team[]; f
             <h2 className="text-3xl font-bold text-primary">Teams & Fixtures</h2>
             <p className="text-muted-foreground">Expand each team to see their schedule.</p>
             <Accordion type="single" collapsible className="w-full mt-6 space-y-2">
-                {teams.map(team => {
+                {sortedTeams.map(team => {
                     const teamMatches = getMatchesForTeam(team.name, fixture);
 
                     return (
                         <AccordionItem value={team.id} key={team.id} className="border rounded-lg bg-card overflow-hidden">
                             <AccordionTrigger className="p-4 hover:no-underline">
                                 <div className="flex items-center gap-3 w-full">
+                                    {team.ownerId === currentUserId && (
+                                        <Star className="h-5 w-5 text-accent flex-shrink-0" />
+                                    )}
                                     {team.logo ? (
                                         <Image src={team.logo} alt={`${team.name} logo`} width={40} height={40} className="rounded-full bg-background object-cover" />
                                     ) : (
