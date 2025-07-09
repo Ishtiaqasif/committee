@@ -1,3 +1,4 @@
+
 "use client";
 
 import Link from 'next/link';
@@ -38,7 +39,7 @@ export default function LandingPage() {
                     </p>
                     <div className="flex flex-col gap-4 min-[400px]:flex-row justify-center lg:justify-start">
                         <Button size="lg" asChild>
-                          <Link href="/create">Get Started for Free</Link>
+                          <Link href="/tournament">Get Started for Free</Link>
                         </Button>
                     </div>
                 </div>

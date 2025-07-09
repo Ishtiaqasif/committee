@@ -343,7 +343,7 @@ export default function RegisterTeamPage() {
         </CardContent>
         <CardFooter className="flex-col gap-2 text-center text-xs text-muted-foreground">
             <p>Powered by Committee</p>
-             <Link href="/" className="underline hover:text-primary">Create your own tournament</Link>
+             <Link href="/tournament" className="underline hover:text-primary">Create your own tournament</Link>
         </CardFooter>
       </Card>
     </div>

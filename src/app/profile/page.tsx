@@ -106,7 +106,7 @@ const TournamentCard = ({ tournament, status, onArchive, isArchiving }: { tourna
         <CardFooter className="pt-4">
             <div className="grid w-full gap-2">
                 <Button asChild className="w-full" variant="outline">
-                    <Link href={`/create?id=${tournament.id}`}>
+                    <Link href={`/tournament?id=${tournament.id}`}>
                         {status === 'finished' ? 'View Results' : 'View Dashboard'}
                     </Link>
                 </Button>
@@ -260,7 +260,7 @@ export default function ProfilePage() {
                     </p>
                 </div>
                 <Button asChild size="lg">
-                    <Link href="/create">
+                    <Link href="/tournament">
                         <PlusCircle className="mr-2 h-4 w-4" /> Create New
                     </Link>
                 </Button>
@@ -350,7 +350,7 @@ export default function ProfilePage() {
                     <h3 className="mt-4 text-lg font-semibold">No Tournaments Yet</h3>
                     <p className="mb-4 mt-2 text-sm text-muted-foreground">You haven't created or joined any tournaments.</p>
                     <Button asChild>
-                    <Link href="/create">Create Your First Tournament</Link>
+                    <Link href="/tournament">Create Your First Tournament</Link>
                     </Button>
                 </div>
             )}

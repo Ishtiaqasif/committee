@@ -61,7 +61,7 @@ export default function AuthButton() {
           </Link>
         </DropdownMenuItem>
         <DropdownMenuItem asChild>
-          <Link href="/create">
+          <Link href="/tournament">
             <PlusCircle className="mr-2 h-4 w-4" />
             <span>New Tournament</span>
           </Link>
