@@ -53,7 +53,7 @@ export async function getTournament(tournamentId: string): Promise<Tournament | 
     }
 }
 
-export async function addTeamToTournament(tournamentId: string, teamData: Omit<Team, 'id' | 'status'>): Promise<string> {
+export async function addTeamToTournament(tournamentId: string, teamData: Omit<Team, 'id' | 'status'>, isManualAdd = false): Promise<string> {
     const tournament = await getTournament(tournamentId);
     if (!tournament) throw new Error("Tournament not found");
 
@@ -83,7 +83,7 @@ export async function addTeamToTournament(tournamentId: string, teamData: Omit<T
         ownerName: teamData.ownerName,
         logo: logoUrl, // This will be the public URL from Storage or an empty string
         ownerId: teamData.ownerId,
-        status: tournament.isTeamCountFixed ? 'approved' : 'pending',
+        status: (tournament.isTeamCountFixed || isManualAdd) ? 'approved' : 'pending',
     };
 
     const teamDocRef = await addDoc(collection(db, "tournaments", tournamentId, "teams"), teamToSave);

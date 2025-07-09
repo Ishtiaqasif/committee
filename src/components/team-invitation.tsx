@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -201,8 +202,8 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
                 ownerId: owner.uid,
                 ownerName: owner.displayName || 'Participant',
                 logo: logo
-            });
-            toast({ title: 'Team Added', description: `${values.teamName} has been submitted for registration.` });
+            }, true);
+            toast({ title: 'Team Added', description: `${values.teamName} has been approved and registered.` });
             manualRegForm.reset();
             setLogo('');
         } catch (error: any) {
@@ -229,6 +230,7 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
     const isPrivilegedUser = user?.uid === tournament.creatorId || tournament.admins?.includes(user?.uid ?? '');
     const isReadyToProceed = tournament.isTeamCountFixed && approvedTeams.length === tournament.numberOfTeams;
     const isTournamentFull = tournament.isTeamCountFixed && approvedTeams.length >= (tournament.numberOfTeams ?? 0);
+    const needsApproval = !tournament.isTeamCountFixed;
 
     const TeamList = ({ teamList, title, children }: { teamList: Team[], title: string, children?: React.ReactNode }) => (
         <div>
@@ -299,7 +301,7 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
       <Card className="mt-8 border-primary/50">
         <CardHeader>
           <CardTitle>Manually Add a Team</CardTitle>
-          <CardDescription>Add a team directly to the tournament. If registration requires approval, the team will appear in the pending list.</CardDescription>
+          <CardDescription>Add a team directly to the tournament. Manually added teams are automatically approved.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...manualRegForm}>
@@ -386,7 +388,7 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
                     </div>
                 )}
                 
-                {!tournament.isTeamCountFixed && isPrivilegedUser && (
+                {needsApproval && isPrivilegedUser && (
                    <Alert>
                         <AlertTitle>Registration Approval</AlertTitle>
                         <AlertDescription>
@@ -396,7 +398,7 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
                 )}
 
                 <div className="space-y-6">
-                    {!tournament.isTeamCountFixed && isPrivilegedUser && (
+                    {needsApproval && isPrivilegedUser && (
                         <TeamList title="Pending Approval" teamList={pendingTeams}>
                             <ThumbsUp className="h-5 w-5 text-primary" />
                         </TeamList>

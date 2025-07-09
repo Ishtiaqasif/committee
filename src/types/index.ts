@@ -49,6 +49,7 @@ export type Tournament = TournamentCreationData & {
   isActive?: boolean;
   // Client-side property
   roles?: UserRole[];
+  needsApproval?: boolean;
 };
 
 export interface Team {
