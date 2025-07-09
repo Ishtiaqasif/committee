@@ -4,14 +4,15 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Tournament } from "@/types";
+import { Tournament, TournamentType } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { Settings, Gamepad2, Loader } from "lucide-react";
+import { Settings } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "./ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
 
 interface FixtureSettingsProps {
   tournament: Tournament;
@@ -20,6 +21,9 @@ interface FixtureSettingsProps {
 }
 
 const createFormSchema = (tournament: Tournament) => z.object({
+  tournamentType: z.enum(["round-robin", "single elimination", "hybrid"], {
+    required_error: "You need to select a tournament type.",
+  }),
   roundRobinGrouping: z.enum(['all-play-all', 'grouped']).optional(),
   teamsPerGroup: z.coerce.number().optional(),
   teamsAdvancing: z.coerce.number().optional(),
@@ -28,7 +32,7 @@ const createFormSchema = (tournament: Tournament) => z.object({
   awayGoalsRule: z.boolean().default(false),
   fixtureGeneration: z.enum(['random', 'predefined']).default('predefined'),
 }).superRefine((data, ctx) => {
-    if (tournament.tournamentType === 'hybrid') {
+    if (data.tournamentType === 'hybrid') {
         if (!data.teamsAdvancing) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Number of advancing teams is required.", path: ["teamsAdvancing"] });
         } else if (data.teamsAdvancing < 2) {
@@ -40,7 +44,7 @@ const createFormSchema = (tournament: Tournament) => z.object({
         }
     }
     
-    if ((tournament.tournamentType === 'hybrid' || tournament.tournamentType === 'round-robin') && data.roundRobinGrouping === 'grouped') {
+    if ((data.tournamentType === 'hybrid' || data.tournamentType === 'round-robin') && data.roundRobinGrouping === 'grouped') {
          if (!data.teamsPerGroup) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Teams per group is required.", path: ["teamsPerGroup"] });
         } else if (data.teamsPerGroup <= 1) {
@@ -58,6 +62,7 @@ export default function FixtureSettings({ tournament, onUpdate, isPrivilegedUser
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      tournamentType: tournament.tournamentType,
       roundRobinGrouping: tournament.roundRobinGrouping || 'all-play-all',
       teamsPerGroup: tournament.teamsPerGroup,
       teamsAdvancing: tournament.teamsAdvancing,
@@ -68,10 +73,10 @@ export default function FixtureSettings({ tournament, onUpdate, isPrivilegedUser
     },
   });
 
+  const watchedTournamentType = form.watch("tournamentType");
   const roundRobinGrouping = form.watch("roundRobinGrouping");
   const roundRobinHomeAndAway = form.watch("roundRobinHomeAndAway");
   const knockoutHomeAndAway = form.watch("knockoutHomeAndAway");
-  const tournamentType = tournament.tournamentType;
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     onUpdate(values);
@@ -105,7 +110,32 @@ export default function FixtureSettings({ tournament, onUpdate, isPrivilegedUser
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <CardContent className="space-y-6">
-                {(tournamentType === 'round-robin' || tournamentType === 'hybrid') && (
+                <FormField
+                    control={form.control}
+                    name="tournamentType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tournament Type</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a type" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="round-robin">Round-robin</SelectItem>
+                            <SelectItem value="single elimination">
+                              Single Elimination
+                            </SelectItem>
+                            <SelectItem value="hybrid">Hybrid (Group + Knockout)</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                {(watchedTournamentType === 'round-robin' || watchedTournamentType === 'hybrid') && (
                     <div className="space-y-6">
                         <FormField
                             control={form.control}
@@ -161,7 +191,7 @@ export default function FixtureSettings({ tournament, onUpdate, isPrivilegedUser
                         )}
                     </div>
                 )}
-                 {tournamentType === 'hybrid' && (
+                 {watchedTournamentType === 'hybrid' && (
                     <FormField
                         control={form.control}
                         name="teamsAdvancing"
@@ -180,14 +210,14 @@ export default function FixtureSettings({ tournament, onUpdate, isPrivilegedUser
                     />
                 )}
                 
-                {(tournamentType === 'round-robin' || tournamentType === 'hybrid') && (
+                {(watchedTournamentType === 'round-robin' || watchedTournamentType === 'hybrid') && (
                 <FormField
                     control={form.control}
                     name="roundRobinHomeAndAway"
                     render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                         <div className="space-y-0.5">
-                        <FormLabel>{tournamentType === 'hybrid' ? 'Group Stage Home & Away' : 'Home & Away'}</FormLabel>
+                        <FormLabel>{watchedTournamentType === 'hybrid' ? 'Group Stage Home & Away' : 'Home & Away'}</FormLabel>
                         <FormDescription>
                             Play each opponent twice.
                         </FormDescription>
@@ -203,14 +233,14 @@ export default function FixtureSettings({ tournament, onUpdate, isPrivilegedUser
                 />
                 )}
 
-                {(tournamentType === 'single elimination' || tournamentType === 'hybrid') && (
+                {(watchedTournamentType === 'single elimination' || watchedTournamentType === 'hybrid') && (
                 <FormField
                     control={form.control}
                     name="knockoutHomeAndAway"
                     render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
                         <div className="space-y-0.5">
-                        <FormLabel>{tournamentType === 'hybrid' ? 'Knockout Stage Home & Away' : 'Home & Away'}</FormLabel>
+                        <FormLabel>{watchedTournamentType === 'hybrid' ? 'Knockout Stage Home & Away' : 'Home & Away'}</FormLabel>
                         <FormDescription>
                             Play two-legged (home & away) ties.
                         </FormDescription>
@@ -283,7 +313,7 @@ export default function FixtureSettings({ tournament, onUpdate, isPrivilegedUser
                     )}
                 />
                  
-                 { (tournamentType === 'single elimination') && (
+                 { (watchedTournamentType === 'single elimination') && (
                     <p className="text-center text-muted-foreground p-4">No additional settings are required for a Single Elimination tournament.</p>
                  )}
             </CardContent>

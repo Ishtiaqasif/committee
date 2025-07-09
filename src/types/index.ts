@@ -16,29 +16,39 @@ export type TeamStatus = 'approved' | 'pending';
 
 export type TournamentCreationData = {
   tournamentName: string;
-  tournamentType: TournamentType;
   logo: string;
   isEsports: boolean;
   venues?: string;
+  isTeamCountFixed: boolean;
+  numberOfTeams?: number;
+};
+
+export type Tournament = {
+  id: string;
+  creatorId: string;
+  createdAt: any;
+  
+  // From creation
+  tournamentName: string;
+  logo: string;
+  isTeamCountFixed: boolean;
+  numberOfTeams?: number;
+  isEsports: boolean;
+  venues?: string;
+
+  // From settings
+  tournamentType?: TournamentType;
   fixtureGeneration?: 'random' | 'predefined';
   roundRobinHomeAndAway?: boolean;
   knockoutHomeAndAway?: boolean;
   awayGoalsRule?: boolean;
   tiebreakerRules?: TiebreakerRule[];
   language?: string;
-
-  // New and modified fields
-  isTeamCountFixed: boolean;
-  numberOfTeams?: number;
   roundRobinGrouping?: 'all-play-all' | 'grouped';
   teamsPerGroup?: number;
   teamsAdvancing?: number;
-};
-
-export type Tournament = TournamentCreationData & {
-  id: string;
-  creatorId: string;
-  createdAt: any; 
+  
+  // Runtime
   fixture?: Fixture;
   scores?: Record<string, Score>;
   winner?: { name: string; logo?: string; ownerName?: string };
@@ -47,7 +57,8 @@ export type Tournament = TournamentCreationData & {
   admins?: string[];
   participants?: string[];
   isActive?: boolean;
-  // Client-side property
+  
+  // Client-side
   roles?: UserRole[];
 };
 

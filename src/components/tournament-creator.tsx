@@ -1,17 +1,16 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { TournamentCreationData } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { Trophy, Settings, MapPin, Gamepad2, Wand2, Sparkles, Loader, ImageIcon } from "lucide-react";
+import { Trophy, MapPin, Gamepad2, Wand2, Sparkles, Loader, ImageIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
 import { generateTournamentLogo } from "@/ai/flows/generate-tournament-logo";
@@ -26,15 +25,8 @@ const formSchema = z.object({
   logo: z.string().min(1, "A tournament logo is required."),
   isTeamCountFixed: z.boolean().default(true),
   numberOfTeams: z.coerce.number().min(3, "Must have at least 3 teams.").max(32, "Cannot have more than 32 teams.").optional(),
-  tournamentType: z.enum(["round-robin", "single elimination", "hybrid"], {
-    required_error: "You need to select a tournament type.",
-  }),
   isEsports: z.boolean().default(false),
   venues: z.string().optional(),
-  roundRobinHomeAndAway: z.boolean().default(false),
-  knockoutHomeAndAway: z.boolean().default(false),
-  awayGoalsRule: z.boolean().default(false),
-  fixtureGeneration: z.enum(['random', 'predefined']).default('predefined'),
 }).superRefine((data, ctx) => {
     if (data.isTeamCountFixed && !data.numberOfTeams) {
         ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Number of teams is required for a fixed-size tournament.", path: ["numberOfTeams"] });
@@ -96,22 +88,12 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
       numberOfTeams: 8,
       isEsports: false,
       venues: "",
-      fixtureGeneration: 'predefined',
-      roundRobinHomeAndAway: false,
-      knockoutHomeAndAway: false,
-      awayGoalsRule: false,
     },
   });
 
   const isTeamCountFixed = form.watch("isTeamCountFixed");
   const isEsports = form.watch("isEsports");
   const logo = form.watch("logo");
-
-  useEffect(() => {
-    if (isEsports) {
-        form.setValue('venues', '', { shouldValidate: true });
-    }
-  }, [isEsports, form]);
 
   const handleGenerateRandomName = () => {
     const randomName = TOURNAMENT_NAMES[Math.floor(Math.random() * TOURNAMENT_NAMES.length)];
@@ -226,9 +208,9 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                     render={({ field }) => (
                     <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm sm:col-span-2">
                         <div className="space-y-0.5">
-                            <FormLabel>Fixed Number of Teams</FormLabel>
+                            <FormLabel>Number of Teams</FormLabel>
                             <FormDescription>
-                                Specify the number of teams now, or leave it open for admin approval.
+                                {field.value ? 'Fixed number of teams.' : 'Open registration (admin approval).'}
                             </FormDescription>
                         </div>
                         <FormControl>
@@ -255,30 +237,6 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                       )}
                     />
                   )}
-                  <FormField
-                    control={form.control}
-                    name="tournamentType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tournament Type</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select a type" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="round-robin">Round-robin</SelectItem>
-                            <SelectItem value="single elimination">
-                              Single Elimination
-                            </SelectItem>
-                            <SelectItem value="hybrid">Hybrid (Group + Knockout)</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
                 </div>
                  <FormField
                     control={form.control}

@@ -83,7 +83,7 @@ export default function TournamentRules({ tournament, onUpdate, isPrivilegedUser
             </CardHeader>
             <CardContent>
                 <dl>
-                    <InfoRow label="Tournament Type" value={<Badge variant="secondary" className="capitalize">{tournament.tournamentType.replace('-', ' ')}</Badge>} />
+                    <InfoRow label="Tournament Type" value={<Badge variant="secondary" className="capitalize">{tournament.tournamentType?.replace('-', ' ') ?? 'Not Set'}</Badge>} />
                     <InfoRow label="Number of Teams" value={<Badge variant="secondary"><Users className="h-3 w-3 mr-1.5"/>{tournament.numberOfTeams}</Badge>} />
                     <InfoRow label="Venue Type" value={<Badge variant="secondary"><Gamepad2 className="h-3 w-3 mr-1.5"/>{tournament.isEsports ? 'Esports' : 'In-Person'}</Badge>} />
                     {tournament.venues && <InfoRow label="Venues" value={<span className="text-muted-foreground text-xs">{tournament.venues}</span>} />}

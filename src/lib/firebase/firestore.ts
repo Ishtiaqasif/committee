@@ -27,16 +27,17 @@ export async function createTournament(tournamentData: TournamentCreationData, u
         }
     });
 
-    const newTournament: Omit<Tournament, 'id' | 'fixture' | 'scores' | 'numberOfTeams'> & { numberOfTeams?: number } = {
-        ...(dataToSave as TournamentCreationData),
+    const newTournament: Partial<Tournament> = {
+        ...dataToSave,
         creatorId: userId,
         createdAt: serverTimestamp(),
-        language: 'en',
-        tiebreakerRules: ['goalDifference', 'goalsFor', 'headToHead'],
-        awayGoalsRule: tournamentData.awayGoalsRule ?? false,
         admins: [],
         participants: [],
         isActive: false,
+        // Set defaults for settings that will be confirmed later
+        language: 'en',
+        tiebreakerRules: ['goalDifference', 'goalsFor', 'headToHead'],
+        fixtureGeneration: 'predefined',
     };
     const docRef = await addDoc(collection(db, "tournaments"), newTournament);
     return docRef.id;

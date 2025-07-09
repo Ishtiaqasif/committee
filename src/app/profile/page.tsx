@@ -78,7 +78,7 @@ const TournamentCard = ({ tournament, status, onDelete }: { tournament: Tourname
                     <Trophy className="h-5 w-5 text-accent flex-shrink-0" />
                 )}
             </CardTitle>
-            <CardDescription className="capitalize">{tournament.tournamentType.replace('-', ' ')}</CardDescription>
+            <CardDescription className="capitalize">{tournament.tournamentType?.replace('-', ' ') ?? 'Type not set'}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm text-muted-foreground flex-grow">
             <div className="flex items-center gap-2">
