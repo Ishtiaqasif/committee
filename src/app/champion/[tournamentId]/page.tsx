@@ -5,11 +5,13 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { getTournament } from '@/lib/firebase/firestore';
 import { Tournament } from '@/types';
-import { Trophy } from 'lucide-react';
+import { Trophy, Clipboard, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import ChampionView from '@/components/champion-view';
 import { FootballLoader } from '@/components/football-loader';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 
 export default function ChampionPage() {
   const params = useParams();
@@ -18,6 +20,21 @@ export default function ChampionPage() {
   const [tournament, setTournament] = useState<Tournament | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [championLink, setChampionLink] = useState('');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        setChampionLink(window.location.href);
+    }
+  }, []);
+
+  const handleCopyLink = () => {
+      if (!championLink) return;
+      navigator.clipboard.writeText(championLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+  };
 
   useEffect(() => {
     if (!tournamentId) {
@@ -74,12 +91,16 @@ export default function ChampionPage() {
             <p className="text-muted-foreground">This tournament is complete.</p>
         </div>
         <ChampionView winner={tournament.winner} />
-         <Button asChild className="mt-12">
-            <Link href="/create">
-                <Trophy className="mr-2 h-4 w-4"/>
-                Create Your Own Tournament
-            </Link>
-        </Button>
+         <div className="mt-12 w-full max-w-md text-center">
+            <Label htmlFor="champion-link" className="text-sm font-medium">Share The Victory</Label>
+            <div className="flex gap-2 mt-2">
+                <Input id="champion-link" readOnly value={championLink} />
+                <Button variant="outline" size="icon" onClick={handleCopyLink} disabled={!championLink}>
+                    {copied ? <Check className="text-green-500" /> : <Clipboard />}
+                </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">Share this public link to show off the champion.</p>
+        </div>
       </div>
     )
   }
