@@ -32,6 +32,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
+import Image from "next/image";
 
 
 const RoleBadge = ({ role }: { role: string }) => {
@@ -58,7 +59,12 @@ const TournamentCard = ({ tournament, status, onDelete }: { tournament: Tourname
     const isOwner = tournament.roles?.includes('owner');
     
     return (
-    <Card key={tournament.id} className="flex flex-col">
+    <Card key={tournament.id} className="flex flex-col overflow-hidden">
+        {tournament.logo && (
+          <div className="aspect-video w-full overflow-hidden bg-muted">
+              <Image src={tournament.logo} alt={`${tournament.tournamentName} logo`} width={400} height={225} className="object-cover w-full h-full" />
+          </div>
+        )}
         <CardHeader>
             <CardTitle className="flex items-start justify-between">
                 <span className="pr-4">{tournament.tournamentName}</span>

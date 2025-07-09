@@ -35,6 +35,7 @@ import UserManagement from "./user-management";
 import { SheetTitle } from "./ui/sheet";
 import TournamentRules from "./tournament-rules";
 import { calculatePointsTable } from '@/lib/calculate-points-table';
+import Image from "next/image";
 
 interface TournamentHomeProps {
   tournament: Tournament;
@@ -551,7 +552,11 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
             <SidebarHeader>
                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 overflow-hidden">
-                        <Trophy className="w-6 h-6 text-accent flex-shrink-0" />
+                        {tournament.logo ? (
+                          <Image src={tournament.logo} alt={`${tournament.tournamentName} logo`} width={24} height={24} className="w-6 h-6 rounded-md object-cover"/>
+                        ) : (
+                          <Trophy className="w-6 h-6 text-accent flex-shrink-0" />
+                        )}
                         <div className="flex flex-col overflow-hidden group-data-[collapsible=icon]:hidden">
                             <span className="text-base font-semibold text-primary truncate">{tournament.tournamentName}</span>
                             <span className="text-xs text-muted-foreground capitalize truncate">{tournament.tournamentType.replace('-', ' ')}</span>

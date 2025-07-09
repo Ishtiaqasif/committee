@@ -16,6 +16,7 @@ export type TournamentCreationData = {
   tournamentName: string;
   tournamentType: TournamentType;
   numberOfTeams: number;
+  logo: string;
   isEsports: boolean;
   venues?: string;
   roundRobinGrouping?: 'all-play-all' | 'grouped';

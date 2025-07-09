@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { Trophy, Settings, MapPin, Gamepad2, Wand2 } from "lucide-react";
+import { Trophy, Settings, MapPin, Gamepad2, Wand2, Sparkles, Loader, ImageIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,6 +21,8 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { generateTournamentLogo } from "@/ai/flows/generate-tournament-logo";
+import Image from "next/image";
 
 interface TournamentCreatorProps {
   onTournamentCreated: (data: TournamentCreationData) => void;
@@ -28,6 +30,7 @@ interface TournamentCreatorProps {
 
 const formSchema = z.object({
   tournamentName: z.string().min(3, "Tournament name must be at least 3 characters long."),
+  logo: z.string().min(1, "A tournament logo is required."),
   numberOfTeams: z.coerce.number().min(3, "Must have at least 3 teams.").max(32, "Cannot have more than 32 teams."),
   tournamentType: z.enum(["round-robin", "single elimination", "hybrid"], {
     required_error: "You need to select a tournament type.",
@@ -64,11 +67,51 @@ const TOURNAMENT_NAMES = [
   "Titan's Clash", "Vortex Invitational", "Quantum Quest Championship", "Inferno League"
 ];
 
+// Helper function to resize and compress the image
+const compressImage = (dataUri: string, maxWidth: number, maxHeight: number): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const img = new window.Image();
+        img.src = dataUri;
+        img.onload = () => {
+            const canvas = document.createElement('canvas');
+            let { width, height } = img;
+
+            if (width > height) {
+                if (width > maxWidth) {
+                    height *= maxWidth / width;
+                    width = maxWidth;
+                }
+            } else {
+                if (height > maxHeight) {
+                    width *= maxHeight / height;
+                    height = maxHeight;
+                }
+            }
+
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                return reject(new Error('Could not get canvas context'));
+            }
+            ctx.drawImage(img, 0, 0, width, height);
+
+            resolve(canvas.toDataURL('image/png'));
+        };
+        img.onerror = (error) => {
+            reject(error);
+        };
+    });
+};
+
 export default function TournamentCreator({ onTournamentCreated }: TournamentCreatorProps) {
+  const [isGeneratingLogo, setIsGeneratingLogo] = useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       tournamentName: "",
+      logo: "",
       numberOfTeams: 8,
       isEsports: false,
       venues: "",
@@ -86,6 +129,7 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
   const isEsports = form.watch("isEsports");
   const roundRobinHomeAndAway = form.watch("roundRobinHomeAndAway");
   const knockoutHomeAndAway = form.watch("knockoutHomeAndAway");
+  const logo = form.watch("logo");
 
 
    useEffect(() => {
@@ -113,6 +157,25 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
   const handleGenerateRandomName = () => {
     const randomName = TOURNAMENT_NAMES[Math.floor(Math.random() * TOURNAMENT_NAMES.length)];
     form.setValue('tournamentName', randomName, { shouldValidate: true });
+  };
+  
+  const handleGenerateLogo = async () => {
+    const tournamentName = form.getValues('tournamentName');
+    if (!tournamentName) {
+        form.setError('tournamentName', { message: 'Please enter a tournament name first.' });
+        return;
+    }
+
+    setIsGeneratingLogo(true);
+    try {
+        const result = await generateTournamentLogo({ tournamentName });
+        const compressedLogo = await compressImage(result.logoDataUri, 256, 256);
+        form.setValue('logo', compressedLogo, { shouldValidate: true });
+    } catch (error) {
+        console.error(error);
+    } finally {
+        setIsGeneratingLogo(false);
+    }
   };
 
 
@@ -152,6 +215,47 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                     </FormItem>
                   )}
                 />
+
+                <div className="space-y-2">
+                    <FormLabel>Tournament Logo</FormLabel>
+                    <div className="flex items-center gap-4">
+                        <div className="relative h-24 w-24 bg-muted rounded-md flex items-center justify-center border-2 border-dashed">
+                            {logo ? (
+                                <Image src={logo} alt="Tournament Logo" layout="fill" className="rounded-md object-cover" />
+                            ) : (
+                                <ImageIcon className="h-10 w-10 text-muted-foreground" />
+                            )}
+                            {isGeneratingLogo && (
+                                <div className="absolute inset-0 bg-black/50 rounded-md flex items-center justify-center">
+                                    <Loader className="animate-spin text-white" />
+                                </div>
+                            )}
+                        </div>
+                        <div className="flex-1">
+                            <Button 
+                                type="button" 
+                                variant="outline"
+                                onClick={handleGenerateLogo}
+                                disabled={isGeneratingLogo || !form.watch('tournamentName')}
+                            >
+                                {isGeneratingLogo ? <Loader className="animate-spin mr-2" /> : <Sparkles className="mr-2" />}
+                                Generate Logo
+                            </Button>
+                            <FormDescription className="mt-2">
+                                Generate an AI-powered logo for your tournament. A logo is required.
+                            </FormDescription>
+                        </div>
+                    </div>
+                    <FormField control={form.control} name="logo" render={({ field }) => (
+                        <FormItem>
+                            <FormControl>
+                                <Input type="hidden" {...field} />
+                            </FormControl>
+                            <FormMessage />
+                        </FormItem>
+                    )} />
+                </div>
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}

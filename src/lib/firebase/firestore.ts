@@ -8,6 +8,19 @@ import { User } from "firebase/auth";
 export async function createTournament(tournamentData: TournamentCreationData, userId: string): Promise<string> {
     const dataToSave: Partial<TournamentCreationData> = { ...tournamentData };
 
+    // Upload logo if it's a data URI
+    if (dataToSave.logo && dataToSave.logo.startsWith('data:image')) {
+        const storageRef = ref(storage, `tournament-logos/${userId}/${dataToSave.tournamentName?.replace(/\s+/g, '_')}_${Date.now()}.png`);
+        try {
+            await uploadString(storageRef, dataToSave.logo, 'data_url');
+            dataToSave.logo = await getDownloadURL(storageRef); // update to URL
+        } catch (error) {
+            console.error("Error uploading tournament logo:", error);
+            dataToSave.logo = ''; // set to empty if upload fails
+        }
+    }
+
+
     (Object.keys(dataToSave) as Array<keyof TournamentCreationData>).forEach(key => {
         if (dataToSave[key] === undefined) {
             delete dataToSave[key];
