@@ -16,6 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import AuthButton from "@/components/auth-button";
 import FixtureSettings from "@/components/fixture-settings";
 import { FootballLoader } from "@/components/football-loader";
+import isEqual from 'lodash.isequal';
+
 
 type AppState = "configuring" | "inviting" | "fixture-settings" | "fixture";
 
@@ -107,40 +109,27 @@ function CreatePageComponent() {
   
   const handleTournamentUpdate = async (data: Partial<Tournament>) => {
     if (!tournament) return;
-
-    // Check if any of the provided settings values are different from the current tournament state.
-    const hasChanged = Object.keys(data).some(
-      (key) => data[key as keyof typeof data] !== tournament[key as keyof typeof tournament]
-    );
-
-    // If we're coming from the fixture settings page and nothing has changed,
-    // just move to the next state without making a database call.
-    if (appState === 'fixture-settings' && !hasChanged) {
-      setAppState("fixture");
-      return;
-    }
-
     try {
-      // Only call the database if there are actual changes to save.
-      if (hasChanged) {
+      const updatedTournament = { ...tournament, ...data };
+      
+      const currentSettings: Partial<Tournament> = {};
+      Object.keys(data).forEach(key => {
+        currentSettings[key as keyof Tournament] = tournament[key as keyof Tournament];
+      });
+
+      if (!isEqual(currentSettings, data)) {
         await updateTournament(tournament.id, data);
+        toast({ title: 'Success', description: 'Tournament settings updated.' });
       }
 
-      const updatedTournament = { ...tournament, ...data };
       setTournament(updatedTournament);
       
       const isScoreOrStateUpdate = ('scores' in data) || ('activeRound' in data) || ('hybridStage' in data);
       
       if (appState === 'fixture-settings') {
           setAppState("fixture");
-          if (hasChanged) {
-            toast({ title: 'Success', description: 'Fixture settings updated.' });
-          }
       } else if (!isScoreOrStateUpdate) {
-        // For other updates, only show toast if something was saved.
-        if (hasChanged) {
-          toast({ title: 'Success', description: 'Tournament settings updated.' });
-        }
+        // toast already shown if data was updated
       }
 
       // Check if we finalized registration and should move to fixture settings

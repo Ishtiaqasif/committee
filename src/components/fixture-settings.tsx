@@ -4,15 +4,15 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { Tournament, TournamentType } from "@/types";
+import { Tournament } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Settings, ArrowLeft } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Switch } from "./ui/switch";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { Switch } from "@/components/ui/switch";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useEffect } from "react";
 
 interface FixtureSettingsProps {
@@ -151,7 +151,7 @@ export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivil
                                 <FormControl>
                                     <RadioGroup
                                     onValueChange={field.onChange}
-                                    defaultValue={field.value}
+                                    value={field.value}
                                     className="space-y-2"
                                     >
                                     <FormItem className="flex items-center space-x-3 space-y-0">
@@ -292,7 +292,7 @@ export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivil
                         <FormControl>
                         <RadioGroup
                             onValueChange={field.onChange}
-                            defaultValue={field.value}
+                            value={field.value}
                             className="space-y-2"
                         >
                             <FormItem className="flex items-center space-x-3 space-y-0">
