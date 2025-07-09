@@ -34,10 +34,8 @@ const createFormSchema = (tournament: Tournament) => z.object({
   awayGoalsRule: z.boolean().default(false),
   fixtureGeneration: z.enum(['random', 'predefined']).default('predefined'),
 }).superRefine((data, ctx) => {
-    if (data.tournamentType === 'hybrid') {
-        if (!data.teamsAdvancing) {
-            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Number of advancing teams is required.", path: ["teamsAdvancing"] });
-        } else if (data.teamsAdvancing < 2) {
+    if (data.tournamentType === 'hybrid' && data.teamsAdvancing) {
+        if (data.teamsAdvancing < 2) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: "At least 2 teams must advance.", path: ["teamsAdvancing"] });
         } else if (tournament.numberOfTeams && data.teamsAdvancing >= tournament.numberOfTeams) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Must be less than total teams.", path: ["teamsAdvancing"] });
@@ -81,7 +79,6 @@ export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivil
 
   const watchedTournamentType = form.watch("tournamentType");
   const roundRobinGrouping = form.watch("roundRobinGrouping");
-  const roundRobinHomeAndAway = form.watch("roundRobinHomeAndAway");
   const knockoutHomeAndAway = form.watch("knockoutHomeAndAway");
 
   function onSubmit(values: z.infer<typeof formSchema>) {
@@ -211,12 +208,12 @@ export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivil
                         name="teamsAdvancing"
                         render={({ field }) => (
                         <FormItem>
-                            <FormLabel>Teams Advancing to Knockout</FormLabel>
+                            <FormLabel>Teams Advancing to Knockout (Optional)</FormLabel>
                             <FormControl>
                             <Input type="number" placeholder="e.g., 4" {...field} value={field.value ?? ''} disabled={isPending}/>
                             </FormControl>
                             <FormDescription>
-                            Must be a power of two (2, 4, 8...).
+                            Must be a power of two (2, 4, 8...). Leave blank for AI to decide.
                             </FormDescription>
                             <FormMessage />
                         </FormItem>
@@ -249,50 +246,51 @@ export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivil
                 )}
 
                 {(watchedTournamentType === 'single elimination' || watchedTournamentType === 'hybrid') && (
-                <FormField
-                    control={form.control}
-                    name="knockoutHomeAndAway"
-                    render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                        <div className="space-y-0.5">
-                        <FormLabel>{watchedTournamentType === 'hybrid' ? 'Knockout Stage Home & Away' : 'Home & Away'}</FormLabel>
-                        <FormDescription>
-                            Play two-legged (home & away) ties.
-                        </FormDescription>
-                        </div>
-                        <FormControl>
-                        <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            disabled={isPending}
-                        />
-                        </FormControl>
-                    </FormItem>
-                    )}
-                />
+                  <>
+                    <FormField
+                        control={form.control}
+                        name="knockoutHomeAndAway"
+                        render={({ field }) => (
+                        <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                            <div className="space-y-0.5">
+                            <FormLabel>{watchedTournamentType === 'hybrid' ? 'Knockout Stage Home & Away' : 'Home & Away'}</FormLabel>
+                            <FormDescription>
+                                Play two-legged (home & away) ties.
+                            </FormDescription>
+                            </div>
+                            <FormControl>
+                            <Switch
+                                checked={field.value}
+                                onCheckedChange={field.onChange}
+                                disabled={isPending}
+                            />
+                            </FormControl>
+                        </FormItem>
+                        )}
+                    />
+                    <FormField
+                      control={form.control}
+                      name="awayGoalsRule"
+                      render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                          <div className="space-y-0.5">
+                          <FormLabel>Away Goals Rule</FormLabel>
+                          <FormDescription>
+                              Apply away goals rule in two-legged ties.
+                          </FormDescription>
+                          </div>
+                          <FormControl>
+                          <Switch
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                              disabled={!knockoutHomeAndAway || isPending}
+                          />
+                          </FormControl>
+                      </FormItem>
+                      )}
+                  />
+                  </>
                 )}
-                
-                <FormField
-                    control={form.control}
-                    name="awayGoalsRule"
-                    render={({ field }) => (
-                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                        <div className="space-y-0.5">
-                        <FormLabel>Away Goals Rule</FormLabel>
-                        <FormDescription>
-                            Apply away goals rule in two-legged ties.
-                        </FormDescription>
-                        </div>
-                        <FormControl>
-                        <Switch
-                            checked={field.value}
-                            onCheckedChange={field.onChange}
-                            disabled={!roundRobinHomeAndAway && !knockoutHomeAndAway || isPending}
-                        />
-                        </FormControl>
-                    </FormItem>
-                    )}
-                />
                 
                 <FormField
                     control={form.control}
