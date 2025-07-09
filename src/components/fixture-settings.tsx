@@ -13,7 +13,7 @@ import { Settings, ArrowLeft } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 interface FixtureSettingsProps {
   tournament: Tournament;
@@ -60,7 +60,8 @@ const createFormSchema = (tournament: Tournament) => z.object({
 
 export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivilegedUser }: FixtureSettingsProps) {
   
-  const formSchema = createFormSchema(tournament);
+  const formSchema = useMemo(() => createFormSchema(tournament), [tournament]);
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
   });
@@ -76,7 +77,7 @@ export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivil
       awayGoalsRule: tournament.awayGoalsRule ?? false,
       fixtureGeneration: tournament.fixtureGeneration ?? 'predefined',
     });
-  }, [tournament, form]);
+  }, [tournament, form.reset]);
 
   const watchedTournamentType = form.watch("tournamentType");
   const roundRobinGrouping = form.watch("roundRobinGrouping");

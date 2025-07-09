@@ -195,10 +195,10 @@ export default function ProfilePage() {
       // An archived tournament is one explicitly set to inactive. This takes precedence.
       if (t.isActive === false) {
         archived.push(t);
-      } else if (t.winner) {
-        finished.push(t);
       } else if (!t.fixture) {
         unconfigured.push(t);
+      } else if (t.winner) {
+        finished.push(t);
       } else { // `isActive` is true or undefined, and it's not finished or unconfigured
         ongoing.push(t);
       }

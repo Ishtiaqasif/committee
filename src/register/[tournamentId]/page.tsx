@@ -20,6 +20,7 @@ import { generateTeamLogo } from '@/ai/flows/generate-team-logo';
 import ChampionView from '@/components/champion-view';
 import { useAuth } from '@/context/auth-context';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { FootballLoader } from '@/components/football-loader';
 import { query, where, getDocs, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 
@@ -181,11 +182,7 @@ export default function RegisterTeamPage() {
   const isTournamentFull = tournament?.isTeamCountFixed ? teams.filter(t => t.status === 'approved').length >= (tournament.numberOfTeams ?? 0) : false;
 
   if (authLoading || (user && loading)) {
-    return (
-      <div className="flex min-h-screen w-full items-center justify-center">
-        <Loader className="h-8 w-8 animate-spin" />
-      </div>
-    );
+    return <FootballLoader className="min-h-screen w-full" />;
   }
 
   if (!user) {
