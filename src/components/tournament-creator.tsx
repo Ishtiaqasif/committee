@@ -31,7 +31,8 @@ interface TournamentCreatorProps {
 const formSchema = z.object({
   tournamentName: z.string().min(3, "Tournament name must be at least 3 characters long."),
   logo: z.string().min(1, "A tournament logo is required."),
-  numberOfTeams: z.coerce.number().min(3, "Must have at least 3 teams.").max(32, "Cannot have more than 32 teams."),
+  isTeamCountFixed: z.boolean().default(true),
+  numberOfTeams: z.coerce.number().min(3, "Must have at least 3 teams.").max(32, "Cannot have more than 32 teams.").optional(),
   tournamentType: z.enum(["round-robin", "single elimination", "hybrid"], {
     required_error: "You need to select a tournament type.",
   }),
@@ -44,23 +45,36 @@ const formSchema = z.object({
   awayGoalsRule: z.boolean().default(false),
   teamsAdvancing: z.coerce.number().optional(),
   fixtureGeneration: z.enum(['random', 'predefined']).default('predefined'),
-}).refine(data => {
-    if (data.tournamentType !== 'hybrid') return true;
-    if (data.teamsAdvancing === undefined || data.teamsAdvancing < 2) return false;
-    // Check if it's a power of two
-    return data.teamsAdvancing < data.numberOfTeams && (data.teamsAdvancing & (data.teamsAdvancing - 1)) === 0;
-}, {
-    message: "Must be a power of two and less than total teams.",
-    path: ["teamsAdvancing"],
-}).refine(data => {
-    if (data.tournamentType !== 'round-robin' && data.tournamentType !== 'hybrid') return true;
-    if (data.roundRobinGrouping !== 'grouped') return true;
-    if (!data.teamsPerGroup || data.teamsPerGroup <= 1) return false;
-    return data.numberOfTeams % data.teamsPerGroup === 0;
-}, {
-    message: "Must be a divisor of total teams and > 1.",
-    path: ["teamsPerGroup"],
+}).superRefine((data, ctx) => {
+    if (data.isTeamCountFixed) {
+        if (!data.numberOfTeams) {
+            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Number of teams is required for a fixed-size tournament.", path: ["numberOfTeams"] });
+        }
+        
+        if (data.tournamentType === 'hybrid') {
+            if (!data.teamsAdvancing) {
+                ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Number of advancing teams is required.", path: ["teamsAdvancing"] });
+            } else if (data.teamsAdvancing < 2) {
+                ctx.addIssue({ code: z.ZodIssueCode.custom, message: "At least 2 teams must advance.", path: ["teamsAdvancing"] });
+            } else if (data.numberOfTeams && data.teamsAdvancing >= data.numberOfTeams) {
+                ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Must be less than total teams.", path: ["teamsAdvancing"] });
+            } else if ((data.teamsAdvancing & (data.teamsAdvancing - 1)) !== 0) {
+                 ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Must be a power of two (2, 4, 8...).", path: ["teamsAdvancing"] });
+            }
+        }
+        
+        if ((data.tournamentType === 'round-robin' || data.tournamentType === 'hybrid') && data.roundRobinGrouping === 'grouped') {
+             if (!data.teamsPerGroup) {
+                ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Teams per group is required.", path: ["teamsPerGroup"] });
+            } else if (data.teamsPerGroup <= 1) {
+                ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Must be greater than 1.", path: ["teamsPerGroup"] });
+            } else if (data.numberOfTeams && data.numberOfTeams % data.teamsPerGroup !== 0) {
+                ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Must be a divisor of total teams.", path: ["teamsPerGroup"] });
+            }
+        }
+    }
 });
+
 
 const TOURNAMENT_NAMES = [
   "Cosmic Cup", "Galactic Games", "The Phoenix Fire Tournament", "Emerald Challenge", 
@@ -112,6 +126,7 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
     defaultValues: {
       tournamentName: "",
       logo: "",
+      isTeamCountFixed: true,
       numberOfTeams: 8,
       isEsports: false,
       venues: "",
@@ -123,6 +138,7 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
     },
   });
 
+  const isTeamCountFixed = form.watch("isTeamCountFixed");
   const numberOfTeams = form.watch("numberOfTeams");
   const tournamentType = form.watch("tournamentType");
   const roundRobinGrouping = form.watch("roundRobinGrouping");
@@ -133,13 +149,13 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
 
 
    useEffect(() => {
-    if (tournamentType === 'hybrid') {
+    if (isTeamCountFixed && numberOfTeams && tournamentType === 'hybrid') {
       const defaultAdvancing = Math.pow(2, Math.floor(Math.log2(numberOfTeams / 2)));
       form.setValue('teamsAdvancing', defaultAdvancing >= 2 ? defaultAdvancing : 2, { shouldValidate: true });
     } else {
       form.setValue('teamsAdvancing', undefined);
     }
-  }, [tournamentType, numberOfTeams, form]);
+  }, [isTeamCountFixed, tournamentType, numberOfTeams, form]);
 
 
   useEffect(() => {
@@ -180,7 +196,13 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
 
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    onTournamentCreated(values);
+    const dataToSubmit: TournamentCreationData = { ...values };
+    if (!values.isTeamCountFixed) {
+        delete dataToSubmit.numberOfTeams;
+        delete dataToSubmit.teamsPerGroup;
+        delete dataToSubmit.teamsAdvancing;
+    }
+    onTournamentCreated(dataToSubmit);
   }
 
   return (
@@ -259,17 +281,39 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <FormField
                     control={form.control}
-                    name="numberOfTeams"
+                    name="isTeamCountFixed"
                     render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Number of Teams</FormLabel>
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm sm:col-span-2">
+                        <div className="space-y-0.5">
+                            <FormLabel>Fixed Number of Teams</FormLabel>
+                            <FormDescription>
+                                Specify the number of teams now, or leave it open for admin approval.
+                            </FormDescription>
+                        </div>
                         <FormControl>
-                          <Input type="number" min="3" max="32" {...field} />
+                        <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                        />
                         </FormControl>
-                        <FormMessage />
-                      </FormItem>
+                    </FormItem>
                     )}
                   />
+                  {isTeamCountFixed && (
+                    <FormField
+                      control={form.control}
+                      name="numberOfTeams"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Number of Teams</FormLabel>
+                          <FormControl>
+                            <Input type="number" min="3" max="32" {...field} value={field.value ?? ''} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                   <FormField
                     control={form.control}
                     name="tournamentType"
@@ -343,7 +387,7 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                           )}
                       />
 
-                      {(tournamentType === 'round-robin' || tournamentType === 'hybrid') && (
+                      {(tournamentType === 'round-robin' || tournamentType === 'hybrid') && isTeamCountFixed && (
                           <div className="space-y-6">
                               <FormField
                                   control={form.control}
@@ -468,7 +512,7 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                           )}
                       />
 
-                      {tournamentType === 'hybrid' && (
+                      {tournamentType === 'hybrid' && isTeamCountFixed && (
                       <FormField
                           control={form.control}
                           name="teamsAdvancing"

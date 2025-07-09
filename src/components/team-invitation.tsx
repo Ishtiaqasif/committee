@@ -4,11 +4,11 @@
 import { useEffect, useState } from 'react';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { Team, Tournament } from '@/types';
+import { Team, Tournament, TeamStatus } from '@/types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Clipboard, Check, Users, Shield, Link as LinkIcon, ArrowRight, Loader, User, Sparkles, UserPlus, Image as ImageIcon } from 'lucide-react';
+import { Clipboard, Check, Users, Shield, Link as LinkIcon, ArrowRight, Loader, User, Sparkles, UserPlus, ImageIcon, ThumbsUp, ThumbsDown, CheckCircle, XCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import Image from 'next/image';
 import { useAuth } from '@/context/auth-context';
@@ -18,12 +18,26 @@ import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { generateTeamLogo } from '@/ai/flows/generate-team-logo';
-import { addTeamToTournament } from '@/lib/firebase/firestore';
+import { addTeamToTournament, updateTeam, removeTeam } from '@/lib/firebase/firestore';
 import { Separator } from './ui/separator';
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Badge } from './ui/badge';
 
 interface TeamInvitationProps {
     tournament: Tournament;
     onTeamsFinalized: (teams: Team[]) => void;
+    onTournamentUpdate: (data: Partial<Tournament>) => void;
 }
 
 const formSchema = z.object({
@@ -65,7 +79,7 @@ const compressImage = (dataUri: string, maxWidth: number, maxHeight: number): Pr
 };
 
 
-export default function TeamInvitation({ tournament, onTeamsFinalized }: TeamInvitationProps) {
+export default function TeamInvitation({ tournament, onTeamsFinalized, onTournamentUpdate }: TeamInvitationProps) {
     const [teams, setTeams] = useState<Team[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [copied, setCopied] = useState(false);
@@ -83,6 +97,9 @@ export default function TeamInvitation({ tournament, onTeamsFinalized }: TeamInv
         defaultValues: { teamName: '' },
     });
 
+    const approvedTeams = teams.filter(t => t.status === 'approved');
+    const pendingTeams = teams.filter(t => t.status === 'pending');
+
     useEffect(() => {
         setRegistrationLink(`${window.location.origin}/register/${tournament.id}`);
     }, [tournament.id]);
@@ -98,7 +115,7 @@ export default function TeamInvitation({ tournament, onTeamsFinalized }: TeamInv
             querySnapshot.forEach((doc) => {
                 fetchedTeams.push({ id: doc.id, ...doc.data() } as Team);
             });
-            setTeams(fetchedTeams.sort((a, b) => a.name.localeCompare(b.name)));
+            setTeams(fetchedTeams);
             setIsLoading(false);
         }, (error) => {
             console.error("Error fetching teams: ", error);
@@ -113,6 +130,26 @@ export default function TeamInvitation({ tournament, onTeamsFinalized }: TeamInv
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
     };
+
+    const handleApproveTeam = async (teamId: string) => {
+        try {
+            await updateTeam(tournament.id, teamId, { status: 'approved' });
+            toast({ title: 'Team Approved' });
+        } catch (error) {
+            console.error("Failed to approve team:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to approve team.' });
+        }
+    }
+    
+    const handleRejectTeam = async (teamId: string) => {
+        try {
+            await removeTeam(tournament.id, teamId);
+            toast({ title: 'Team Rejected', description: 'The registration has been removed.' });
+        } catch (error) {
+            console.error("Failed to reject team:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to reject team.' });
+        }
+    }
     
     const handleGenerateLogo = async () => {
         const teamName = ownerForm.getValues('teamName');
@@ -151,7 +188,7 @@ export default function TeamInvitation({ tournament, onTeamsFinalized }: TeamInv
             ownerName: user.displayName || 'Participant',
             logo: logo
           });
-          toast({ title: 'Success!', description: 'Your team has been registered.' });
+          toast({ title: 'Success!', description: tournament.isTeamCountFixed ? 'Your team has been registered.' : 'Your team registration is pending approval.' });
           ownerForm.reset();
           setLogo('');
         } catch (error: any) {
@@ -162,16 +199,94 @@ export default function TeamInvitation({ tournament, onTeamsFinalized }: TeamInv
         }
     };
 
-    const isReadyToProceed = teams.length === tournament.numberOfTeams;
-    const isOwner = user?.uid === tournament.creatorId;
+    const handleFinalize = () => {
+        if (approvedTeams.length < 3) {
+            toast({
+                variant: "destructive",
+                title: "Not Enough Teams",
+                description: "You must approve at least 3 teams to finalize registration."
+            });
+            return;
+        }
+        onTournamentUpdate({ numberOfTeams: approvedTeams.length });
+        onTeamsFinalized(approvedTeams);
+    }
+
+    const isPrivilegedUser = user?.uid === tournament.creatorId || tournament.admins?.includes(user?.uid ?? '');
+    const isReadyToProceed = tournament.isTeamCountFixed && approvedTeams.length === tournament.numberOfTeams;
     const ownerHasRegistered = teams.some(t => t.ownerId === user?.uid);
-    const isTournamentFull = teams.length >= tournament.numberOfTeams;
+    const isTournamentFull = tournament.isTeamCountFixed && approvedTeams.length >= (tournament.numberOfTeams ?? 0);
+
+    const TeamList = ({ teamList, title, showStatus, children }: { teamList: Team[], title: string, showStatus?: boolean, children?: React.ReactNode }) => (
+        <div>
+            <h3 className="font-semibold text-lg flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2">{children}{title}</div>
+                <Badge variant="outline">{teamList.length}</Badge>
+            </h3>
+            {isLoading ? (
+                <div className="flex justify-center items-center h-24">
+                    <Loader className="animate-spin text-primary"/>
+                </div>
+            ) : (
+                teamList.length > 0 ? (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-1">
+                        {teamList.map(team => (
+                            <div key={team.id} className="flex items-center gap-3 p-2 bg-secondary/50 rounded-md">
+                                {team.logo ? (
+                                    <Image src={team.logo} alt={`${team.name} logo`} width={32} height={32} className="rounded-full bg-background object-cover" />
+                                ) : (
+                                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
+                                        <Shield className="h-4 w-4 text-muted-foreground" />
+                                    </div>
+                                )}
+                                <div className="flex flex-col overflow-hidden flex-grow">
+                                    <span className="font-medium truncate">{team.name}</span>
+                                    {team.ownerName && (
+                                        <span className="text-xs text-muted-foreground flex items-center gap-1.5 truncate">
+                                            <User className="h-3 w-3 flex-shrink-0" />
+                                            {team.ownerName}
+                                        </span>
+                                    )}
+                                </div>
+                                {isPrivilegedUser && team.status === 'pending' && (
+                                  <div className="flex gap-1">
+                                    <Button size="icon" variant="ghost" className="h-7 w-7 text-green-600 hover:text-green-600 hover:bg-green-100" onClick={() => handleApproveTeam(team.id)}><CheckCircle className="w-4 h-4" /></Button>
+                                    <AlertDialog>
+                                        <AlertDialogTrigger asChild>
+                                            <Button size="icon" variant="ghost" className="h-7 w-7 text-red-600 hover:text-red-600 hover:bg-red-100"><XCircle className="w-4 h-4" /></Button>
+                                        </AlertDialogTrigger>
+                                        <AlertDialogContent>
+                                            <AlertDialogHeader>
+                                                <AlertDialogTitle>Reject Team Registration?</AlertDialogTitle>
+                                                <AlertDialogDescription>
+                                                    Are you sure you want to reject and remove the registration for "{team.name}"? This action cannot be undone.
+                                                </AlertDialogDescription>
+                                            </AlertDialogHeader>
+                                            <AlertDialogFooter>
+                                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                                <AlertDialogAction onClick={() => handleRejectTeam(team.id)}>Yes, Reject Team</AlertDialogAction>
+                                            </AlertDialogFooter>
+                                        </AlertDialogContent>
+                                    </AlertDialog>
+                                  </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                     <div className="text-center text-muted-foreground py-8">
+                        No teams in this category.
+                    </div>
+                )
+             )}
+        </div>
+    );
     
     const OwnerRegistration = () => (
       <Card className="mt-8 border-primary/50">
         <CardHeader>
           <CardTitle>Register Your Team</CardTitle>
-          <CardDescription>As the tournament owner, you can register your own team here.</CardDescription>
+          <CardDescription>As a tournament admin, you can register your own team here.</CardDescription>
         </CardHeader>
         <CardContent>
           <Form {...ownerForm}>
@@ -214,8 +329,8 @@ export default function TeamInvitation({ tournament, onTeamsFinalized }: TeamInv
                 <div className="mx-auto bg-primary text-primary-foreground rounded-full p-3 w-fit mb-4">
                     <LinkIcon className="h-8 w-8" />
                 </div>
-                <CardTitle>Invite Teams to Register</CardTitle>
-                <CardDescription>Share the unique link below with participants to let them register their own teams.</CardDescription>
+                <CardTitle>Invite Teams & Manage Registration</CardTitle>
+                <CardDescription>Share the link to let participants register. You can approve or reject teams below.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-8">
                 <div className="space-y-2">
@@ -228,53 +343,39 @@ export default function TeamInvitation({ tournament, onTeamsFinalized }: TeamInv
                     </div>
                 </div>
 
-                <div className="space-y-4">
-                     <div className="flex justify-between items-baseline">
-                        <h3 className="font-semibold text-lg flex items-center gap-2">
-                           <Users className="h-5 w-5 text-primary" /> Registered Teams
-                        </h3>
-                        <span className="text-sm text-muted-foreground font-mono">
-                            {teams.length}/{tournament.numberOfTeams}
-                        </span>
-                    </div>
-                    <Progress value={(teams.length / tournament.numberOfTeams) * 100} />
-                     {isLoading ? (
-                        <div className="flex justify-center items-center h-24">
-                            <Loader className="animate-spin text-primary"/>
+                {tournament.isTeamCountFixed && (
+                    <div className="space-y-2">
+                        <div className="flex justify-between items-baseline">
+                            <h3 className="font-semibold">Registered Teams</h3>
+                            <span className="text-sm text-muted-foreground font-mono">
+                                {approvedTeams.length}/{tournament.numberOfTeams}
+                            </span>
                         </div>
-                     ) : (
-                        teams.length > 0 ? (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-1">
-                                {teams.map(team => (
-                                    <div key={team.id} className="flex items-center gap-3 p-2 bg-secondary/50 rounded-md">
-                                        {team.logo ? (
-                                            <Image src={team.logo} alt={`${team.name} logo`} width={32} height={32} className="rounded-full bg-background object-cover" />
-                                        ) : (
-                                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
-                                                <Shield className="h-4 w-4 text-muted-foreground" />
-                                            </div>
-                                        )}
-                                        <div className="flex flex-col overflow-hidden">
-                                            <span className="font-medium truncate">{team.name}</span>
-                                            {team.ownerName && (
-                                                <span className="text-xs text-muted-foreground flex items-center gap-1.5 truncate">
-                                                    <User className="h-3 w-3 flex-shrink-0" />
-                                                    {team.ownerName}
-                                                </span>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        ) : (
-                             <div className="text-center text-muted-foreground py-8">
-                                No teams have registered yet.
-                            </div>
-                        )
-                     )}
+                        <Progress value={(approvedTeams.length / (tournament.numberOfTeams ?? 1)) * 100} />
+                    </div>
+                )}
+                
+                {!tournament.isTeamCountFixed && isPrivilegedUser && (
+                   <Alert>
+                        <AlertTitle>Registration Approval</AlertTitle>
+                        <AlertDescription>
+                            This tournament has an open number of spots. You must manually approve teams below. When you are ready, click "Finalize Registration" to lock the team list and proceed.
+                        </AlertDescription>
+                   </Alert>
+                )}
+
+                <div className="space-y-6">
+                    {!tournament.isTeamCountFixed && isPrivilegedUser && (
+                        <TeamList title="Pending Approval" teamList={pendingTeams}>
+                            <ThumbsUp className="h-5 w-5 text-primary" />
+                        </TeamList>
+                    )}
+                    <TeamList title="Approved Teams" teamList={approvedTeams}>
+                        <CheckCircle className="h-5 w-5 text-green-600" />
+                    </TeamList>
                 </div>
                 
-                {isOwner && !ownerHasRegistered && !isTournamentFull && (
+                {isPrivilegedUser && !ownerHasRegistered && !isTournamentFull && (
                     <>
                         <Separator />
                         <OwnerRegistration />
@@ -283,11 +384,18 @@ export default function TeamInvitation({ tournament, onTeamsFinalized }: TeamInv
 
             </CardContent>
             <CardFooter className="flex-col gap-3 pt-6">
-                <Button size="lg" disabled={!isReadyToProceed} onClick={() => onTeamsFinalized(teams)}>
-                    {isReadyToProceed ? "All Teams Registered! Proceed" : "Waiting for all teams..."}
-                    <ArrowRight className="ml-2 h-4 w-4"/>
-                </Button>
-                {!isReadyToProceed && <p className="text-sm text-muted-foreground">The button will be enabled once all {tournament.numberOfTeams} teams have registered.</p>}
+                 {isPrivilegedUser && !tournament.isTeamCountFixed && (
+                    <Button size="lg" onClick={handleFinalize}>
+                        Finalize Registration & Proceed <ArrowRight className="ml-2 h-4 w-4"/>
+                    </Button>
+                 )}
+                 {tournament.isTeamCountFixed && (
+                    <Button size="lg" disabled={!isReadyToProceed} onClick={() => onTeamsFinalized(approvedTeams)}>
+                        {isReadyToProceed ? "All Teams Registered! Proceed" : "Waiting for all teams..."}
+                        <ArrowRight className="ml-2 h-4 w-4"/>
+                    </Button>
+                 )}
+                {!isReadyToProceed && tournament.isTeamCountFixed && <p className="text-sm text-muted-foreground">The button will be enabled once all {tournament.numberOfTeams} teams have registered.</p>}
             </CardFooter>
         </Card>
     );

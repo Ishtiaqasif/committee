@@ -27,7 +27,7 @@ export async function createTournament(tournamentData: TournamentCreationData, u
         }
     });
 
-    const newTournament: Omit<Tournament, 'id' | 'fixture' | 'scores'> = {
+    const newTournament: Omit<Tournament, 'id' | 'fixture' | 'scores' | 'numberOfTeams'> & { numberOfTeams?: number } = {
         ...(dataToSave as TournamentCreationData),
         creatorId: userId,
         createdAt: serverTimestamp(),
@@ -53,13 +53,16 @@ export async function getTournament(tournamentId: string): Promise<Tournament | 
     }
 }
 
-export async function addTeamToTournament(tournamentId: string, teamData: Omit<Team, 'id'>): Promise<string> {
+export async function addTeamToTournament(tournamentId: string, teamData: Omit<Team, 'id' | 'status'>): Promise<string> {
     const tournament = await getTournament(tournamentId);
     if (!tournament) throw new Error("Tournament not found");
 
-    const teamsSnapshot = await getDocs(collection(db, "tournaments", tournamentId, "teams"));
-    if (teamsSnapshot.size >= tournament.numberOfTeams) {
-        throw new Error("Tournament is already full.");
+    if (tournament.isTeamCountFixed) {
+      const q = query(collection(db, "tournaments", tournamentId, "teams"), where("status", "==", "approved"));
+      const teamsSnapshot = await getDocs(q);
+      if (teamsSnapshot.size >= (tournament.numberOfTeams ?? 0)) {
+          throw new Error("Tournament is already full.");
+      }
     }
 
     let logoUrl = '';
@@ -75,11 +78,12 @@ export async function addTeamToTournament(tournamentId: string, teamData: Omit<T
         }
     }
 
-    const teamToSave = {
+    const teamToSave: Omit<Team, 'id'> = {
         name: teamData.name,
         ownerName: teamData.ownerName,
         logo: logoUrl, // This will be the public URL from Storage or an empty string
         ownerId: teamData.ownerId,
+        status: tournament.isTeamCountFixed ? 'approved' : 'pending',
     };
 
     const teamDocRef = await addDoc(collection(db, "tournaments", tournamentId, "teams"), teamToSave);
@@ -204,4 +208,14 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
 
     const userDoc = querySnapshot.docs[0];
     return { uid: userDoc.id, ...userDoc.data() } as UserProfile;
+}
+
+export async function updateTeam(tournamentId: string, teamId: string, data: Partial<Omit<Team, 'id'>>): Promise<void> {
+    const teamRef = doc(db, "tournaments", tournamentId, "teams", teamId);
+    await updateDoc(teamRef, data);
+}
+
+export async function removeTeam(tournamentId: string, teamId: string): Promise<void> {
+    const teamRef = doc(db, "tournaments", tournamentId, "teams", teamId);
+    await deleteDoc(teamRef);
 }

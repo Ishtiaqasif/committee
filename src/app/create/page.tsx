@@ -49,7 +49,13 @@ function CreatePageComponent() {
             const teamsData = await getTeamsForTournament(tournamentId);
             setTournament(tournamentData);
             setTeams(teamsData);
-            if (teamsData.length === tournamentData.numberOfTeams && tournamentData.fixture) {
+            
+            const approvedTeamsCount = teamsData.filter(t => t.status === 'approved').length;
+            const isReadyForFixture = tournamentData.isTeamCountFixed 
+              ? approvedTeamsCount === tournamentData.numberOfTeams
+              : tournamentData.numberOfTeams; // For non-fixed, it's ready once numberOfTeams is set
+
+            if (isReadyForFixture && tournamentData.fixture) {
               setAppState("fixture");
             } else {
               setAppState("inviting");
@@ -100,12 +106,20 @@ function CreatePageComponent() {
     try {
       await updateTournament(tournament.id, data);
       // Optimistically update local state
-      setTournament(prev => prev ? { ...prev, ...data } : null);
+      const updatedTournament = { ...tournament, ...data };
+      setTournament(updatedTournament);
       
       const isScoreOrStateUpdate = ('scores' in data) || ('activeRound' in data) || ('hybridStage' in data);
       if (!isScoreOrStateUpdate) {
         toast({ title: 'Success', description: 'Tournament settings updated.' });
       }
+
+      // Check if we finalized registration and should move to fixture view
+      if ('numberOfTeams' in data && !data.fixture) {
+          const approvedTeams = teams.filter(t => t.status === 'approved');
+          handleTeamsFinalized(approvedTeams);
+      }
+
     } catch (error) {
       console.error("Failed to update tournament:", error);
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to update tournament settings.' });
@@ -131,6 +145,7 @@ function CreatePageComponent() {
           <TeamInvitation
             tournament={tournament}
             onTeamsFinalized={handleTeamsFinalized}
+            onTournamentUpdate={handleTournamentUpdate}
           />
         );
       case "fixture":

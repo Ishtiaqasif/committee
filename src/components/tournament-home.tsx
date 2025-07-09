@@ -36,6 +36,7 @@ import { SheetTitle } from "./ui/sheet";
 import TournamentRules from "./tournament-rules";
 import { calculatePointsTable } from '@/lib/calculate-points-table';
 import Image from "next/image";
+import FixtureSettings from "./fixture-settings";
 
 interface TournamentHomeProps {
   tournament: Tournament;
@@ -89,10 +90,22 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     }
   }, [tournament.id, tournament.fixture, activeView]);
 
+  const settingsAreComplete = () => {
+    if (!tournament) return false;
+    const { tournamentType, roundRobinGrouping, teamsPerGroup, teamsAdvancing } = tournament;
+    if (tournamentType === 'hybrid' && !teamsAdvancing) return false;
+    if ((tournamentType === 'hybrid' || tournamentType === 'round-robin') && roundRobinGrouping === 'grouped' && !teamsPerGroup) return false;
+    return true;
+  }
 
   const handleGenerateFixture = () => {
     startTransition(async () => {
       try {
+        if (!tournament.numberOfTeams) {
+            toast({ variant: "destructive", title: "Error", description: "Number of teams is not finalized." });
+            return;
+        }
+
         const result = await generateTournamentFixture({
           tournamentType: tournament.tournamentType,
           numberOfTeams: tournament.numberOfTeams,
@@ -111,8 +124,9 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
         
         const parsedFixture = JSON.parse(result.fixture);
         
-        // Create a shuffled copy of the teams array to ensure random grouping
-        const shuffledTeams = [...teams].sort(() => Math.random() - 0.5);
+        // Use only approved teams for the fixture
+        const approvedTeams = teams.filter(t => t.status === 'approved');
+        const shuffledTeams = [...approvedTeams].sort(() => Math.random() - 0.5);
 
         const teamMap = shuffledTeams.reduce((acc, team, index) => {
             // The AI might use "Team 1", "Team 2", etc. as placeholders.
@@ -298,8 +312,10 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     }
 
     const groupStandings: Record<string, PointsTableEntry[]> = {};
+    const approvedTeams = teams.filter(t => t.status === 'approved');
+
     fixture.groupStage.groups.forEach(group => {
-      const groupTeams = group.teams.map(name => teams.find(t => t.name === name)!).filter(Boolean) as Team[];
+      const groupTeams = group.teams.map(name => approvedTeams.find(t => t.name === name)!).filter(Boolean) as Team[];
       const table = calculatePointsTable(groupTeams, group.rounds, scores, tournament.awayGoalsRule ?? false, group.groupName, undefined, tournament.tiebreakerRules);
       groupStandings[group.groupName] = table;
     });
@@ -329,7 +345,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
           }
 
           if (index !== -1 && table[index]) {
-            return teams.find(t => t.name === table[index].teamName);
+            return approvedTeams.find(t => t.name === table[index].teamName);
           }
         }
       }
@@ -388,9 +404,27 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     });
   };
 
+  const renderPreFixtureContent = () => {
+    if (settingsAreComplete()) {
+      return (
+        <TournamentOverview 
+            tournament={tournament} 
+            fixture={fixture} 
+            scores={scores} 
+            teams={teams}
+            onGenerateFixture={handleGenerateFixture}
+            isGeneratingFixture={isPending}
+            isPrivilegedUser={isPrivilegedUser}
+        />
+      );
+    }
+    return <FixtureSettings tournament={tournament} onUpdate={onTournamentUpdate} isPrivilegedUser={isPrivilegedUser} />;
+  }
+
   const renderFixtureView = () => {
-    if (!fixture) return null;
+    if (!fixture) return renderPreFixtureContent();
     const readOnly = !isPrivilegedUser;
+    const approvedTeams = teams.filter(t => t.status === 'approved');
 
     if (tournament.tournamentType === 'hybrid' && fixture.groupStage && fixture.knockoutStage) {
       if (tournament.hybridStage === 'group' || !tournament.hybridStage) {
@@ -399,7 +433,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
             <h3 className="text-2xl font-bold mb-4 text-primary">Group Stage</h3>
             <RoundRobinView 
               fixture={fixture.groupStage} 
-              teams={teams} 
+              teams={approvedTeams} 
               scores={scores} 
               onScoreUpdate={handleScoreUpdate}
               onTournamentUpdate={onTournamentUpdate}
@@ -417,7 +451,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
          return (
           <QualificationSummaryView
             groupStage={fixture.groupStage}
-            teams={teams}
+            teams={approvedTeams}
             scores={scores}
             tournament={tournament}
             onProceed={handleProceedToKnockout}
@@ -447,7 +481,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     }
     
     if (tournament.tournamentType === 'round-robin' && (fixture.rounds || fixture.groups)) {
-      return <RoundRobinView fixture={{rounds: fixture.rounds, groups: fixture.groups}} teams={teams} scores={scores} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} currentUserId={user?.uid} tournament={tournament} />;
+      return <RoundRobinView fixture={{rounds: fixture.rounds, groups: fixture.groups}} teams={approvedTeams} scores={scores} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} currentUserId={user?.uid} tournament={tournament} />;
     }
 
     if (tournament.tournamentType === 'single elimination' && fixture.rounds) {
@@ -458,17 +492,20 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
   }
 
   const renderContent = () => {
+    const approvedTeams = teams.filter(t => t.status === 'approved');
     switch (activeView) {
       case 'overview':
-        return <TournamentOverview 
-            tournament={tournament} 
-            fixture={fixture} 
-            scores={scores} 
-            teams={teams}
-            onGenerateFixture={handleGenerateFixture}
-            isGeneratingFixture={isPending}
-            isPrivilegedUser={isPrivilegedUser}
-         />;
+        return fixture 
+          ? <TournamentOverview 
+              tournament={tournament} 
+              fixture={fixture} 
+              scores={scores} 
+              teams={teams}
+              onGenerateFixture={handleGenerateFixture}
+              isGeneratingFixture={isPending}
+              isPrivilegedUser={isPrivilegedUser}
+           />
+          : renderPreFixtureContent();
       case 'fixtures':
         return (
             <div>
@@ -504,9 +541,9 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
             </div>
         );
       case 'teams':
-        return <TeamsList teams={teams} fixture={fixture} scores={scores} currentUserId={user?.uid} />;
+        return <TeamsList teams={approvedTeams} fixture={fixture} scores={scores} currentUserId={user?.uid} />;
       case 'points-table':
-        return <PointsTableView fixture={fixture!} teams={teams} scores={scores} tournament={tournament} currentUserId={user?.uid} />;
+        return <PointsTableView fixture={fixture!} teams={approvedTeams} scores={scores} tournament={tournament} currentUserId={user?.uid} />;
       case 'knockout':
         const knockoutFixture = tournament.tournamentType === 'hybrid'
             ? fixture?.knockoutStage
