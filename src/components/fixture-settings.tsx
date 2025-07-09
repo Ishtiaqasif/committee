@@ -83,10 +83,11 @@ export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivil
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     startTransition(() => {
-        const dataToUpdate = { ...values };
+        const dataToUpdate: Partial<Tournament> = { ...values };
         if (dataToUpdate.tournamentType === 'round-robin') {
             dataToUpdate.roundRobinGrouping = 'all-play-all';
             dataToUpdate.teamsPerGroup = tournament.numberOfTeams;
+            dataToUpdate.teamsAdvancing = undefined;
         }
         onUpdate(dataToUpdate);
     });
@@ -328,8 +329,8 @@ export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivil
                     )}
                 />
                  
-                 { (watchedTournamentType === 'single elimination') && (
-                    <p className="text-center text-muted-foreground p-4">No additional settings are required for a Single Elimination tournament.</p>
+                 { (watchedTournamentType === 'single elimination' || watchedTournamentType === 'round-robin') && (
+                    <p className="text-center text-muted-foreground p-4">No additional settings are required for this tournament type.</p>
                  )}
             </CardContent>
             <CardFooter className="flex justify-center pt-6 gap-4">
@@ -347,3 +348,5 @@ export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivil
       </Card>
   );
 }
+
+    
