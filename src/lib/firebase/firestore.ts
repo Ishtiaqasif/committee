@@ -54,7 +54,7 @@ export async function getTournament(tournamentId: string): Promise<Tournament | 
     }
 }
 
-export async function addTeamToTournament(tournamentId: string, teamData: Omit<Team, 'id' | 'status'>, isManualAdd = false): Promise<string> {
+export async function addTeamToTournament(tournamentId: string, teamData: Omit<Team, 'id' | 'status'>, isManualAdd = false): Promise<Team> {
     const tournament = await getTournament(tournamentId);
     if (!tournament) throw new Error("Tournament not found");
 
@@ -95,7 +95,7 @@ export async function addTeamToTournament(tournamentId: string, teamData: Omit<T
         participants: arrayUnion(teamData.ownerId)
     });
 
-    return teamDocRef.id;
+    return { ...teamToSave, id: teamDocRef.id };
 }
 
 

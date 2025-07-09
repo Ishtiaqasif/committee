@@ -91,6 +91,15 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
     const { toast } = useToast();
     const [isPending, startTransition] = useTransition();
 
+    const handleTeamAdded = (newTeam: Team) => {
+        setTeams(currentTeams => {
+            if (currentTeams.some(t => t.id === newTeam.id)) {
+                return currentTeams;
+            }
+            return [...currentTeams, newTeam];
+        });
+    };
+
     const approvedTeams = teams.filter(t => t.status === 'approved');
     const pendingTeams = teams.filter(t => t.status === 'pending');
 
@@ -238,7 +247,7 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
         </div>
     );
     
-    const OwnerTeamRegistration = ({ onTeamAdded }: { onTeamAdded: () => void }) => {
+    const OwnerTeamRegistration = ({ onTeamAdded }: { onTeamAdded: (team: Team) => void }) => {
         const { toast } = useToast();
         const [isOwnerPending, startOwnerTransition] = useTransition();
         const [ownerLogo, setOwnerLogo] = useState('');
@@ -284,14 +293,14 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
 
             startOwnerTransition(async () => {
                 try {
-                    await addTeamToTournament(tournament.id, {
+                    const newTeam = await addTeamToTournament(tournament.id, {
                         name: values.teamName,
                         ownerId: user.uid,
                         ownerName: user.displayName || 'Participant',
                         logo: ownerLogo
                     }, true);
                     toast({ title: 'Your Team is Registered!', description: `${values.teamName} has been approved and added to the tournament.` });
-                    onTeamAdded();
+                    onTeamAdded(newTeam);
                     ownerForm.reset();
                     setOwnerLogo('');
                 } catch (error: any) {
@@ -343,7 +352,7 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
         );
     };
 
-    const ManualTeamRegistration = () => {
+    const ManualTeamRegistration = ({ onTeamAdded }: { onTeamAdded: (team: Team) => void }) => {
         const [manualLogo, setManualLogo] = useState('');
         const [isGeneratingManualLogo, setIsGeneratingManualLogo] = useState(false);
 
@@ -389,13 +398,14 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
                         manualRegForm.setError('ownerEmail', { message: 'This user has already registered a team for this tournament.'});
                         return;
                     }
-                    await addTeamToTournament(tournament.id, {
+                    const newTeam = await addTeamToTournament(tournament.id, {
                         name: values.teamName,
                         ownerId: owner.uid,
                         ownerName: owner.displayName || 'Participant',
                         logo: manualLogo
                     }, true);
                     toast({ title: 'Team Added', description: `${values.teamName} has been approved and registered.` });
+                    onTeamAdded(newTeam);
                     manualRegForm.reset();
                     setManualLogo('');
                 } catch (error: any) {
@@ -521,11 +531,11 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
                 {isPrivilegedUser && !isTournamentFull && <Separator />}
                 
                 {isOwner && !ownerHasRegistered && !isTournamentFull && (
-                    <OwnerTeamRegistration onTeamAdded={() => {}} />
+                    <OwnerTeamRegistration onTeamAdded={handleTeamAdded} />
                 )}
                 
                 {isPrivilegedUser && !isTournamentFull && (
-                    <ManualTeamRegistration />
+                    <ManualTeamRegistration onTeamAdded={handleTeamAdded} />
                 )}
 
             </CardContent>
