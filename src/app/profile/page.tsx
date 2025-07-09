@@ -293,14 +293,25 @@ export default function ProfilePage() {
                         </section>
                     )}
                      {finishedTournaments.length > 0 && (
-                         <section>
-                            <h2 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2 text-accent"><Trophy className="h-6 w-6"/> Finished</h2>
-                            <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                                {finishedTournaments.map((t) => (
-                                    <TournamentCard key={t.id} tournament={t} status="finished" onArchive={handleArchiveTournament} />
-                                ))}
-                            </div>
-                        </section>
+                        <section>
+                           <Collapsible defaultOpen={true}>
+                               <CollapsibleTrigger asChild>
+                                   <div className="flex w-full cursor-pointer items-center justify-between rounded-md p-2 hover:bg-muted">
+                                       <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2 text-accent">
+                                           <Trophy className="h-6 w-6"/> Finished ({finishedTournaments.length})
+                                       </h2>
+                                       <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform data-[state=open]:rotate-180"/>
+                                   </div>
+                               </CollapsibleTrigger>
+                               <CollapsibleContent className="data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up overflow-hidden">
+                                   <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 pt-4">
+                                       {finishedTournaments.map((t) => (
+                                           <TournamentCard key={t.id} tournament={t} status="finished" onArchive={handleArchiveTournament} />
+                                       ))}
+                                   </div>
+                               </CollapsibleContent>
+                           </Collapsible>
+                       </section>
                     )}
                     {archivedTournaments.length > 0 && (
                         <section>
