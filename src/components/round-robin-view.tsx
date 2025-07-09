@@ -4,7 +4,7 @@
 import { useMemo, useState, useEffect, useTransition } from 'react';
 import { Team, Match, Round, Group, Score, Tournament, TiebreakerRule } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dices, MapPin, Lock, ArrowRight, Shield, ArrowLeft, Trophy, Loader } from 'lucide-react';
+import { Dices, MapPin, Lock, ArrowRight, Shield, ArrowLeft, Trophy, Loader, Bot } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
 import ScoreEntryDialog from './score-entry-dialog';
@@ -14,6 +14,17 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { calculatePointsTable } from '@/lib/calculate-points-table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface RoundRobinViewProps {
   fixture: { rounds?: Round[], groups?: Group[] };
@@ -28,6 +39,8 @@ interface RoundRobinViewProps {
   readOnly: boolean;
   currentUserId?: string;
   tournament: Tournament;
+  onSimulateRound: () => void;
+  isSimulating: boolean;
 }
 
 const GroupedRoundRobinView = ({ group, viewedRound, activeRound, scores, onScoreUpdate, teams, viewMode, readOnly, currentUserId, userTeam, tiebreakerRules, awayGoalsRule }: { group: Group, viewedRound: number, activeRound: number, scores: RoundRobinViewProps['scores'], onScoreUpdate: RoundRobinViewProps['onScoreUpdate'], teams: Team[], viewMode: 'full' | 'short', readOnly: boolean, currentUserId?: string, userTeam?: Team | null, tiebreakerRules: TiebreakerRule[], awayGoalsRule: boolean }) => {
@@ -116,7 +129,7 @@ const GroupedRoundRobinView = ({ group, viewedRound, activeRound, scores, onScor
 }
 
 
-export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, onTournamentUpdate, isHybrid, onProceedToKnockout, activeRound, onActiveRoundChange, readOnly, currentUserId, tournament }: RoundRobinViewProps) {
+export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, onTournamentUpdate, isHybrid, onProceedToKnockout, activeRound, onActiveRoundChange, readOnly, currentUserId, tournament, onSimulateRound, isSimulating }: RoundRobinViewProps) {
   const [viewMode, setViewMode] = useState<'short' | 'full'>('short');
   const [viewedRound, setViewedRound] = useState(activeRound);
   const [isProceeding, startProceeding] = useTransition();
@@ -241,7 +254,7 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
       </div>
       
       {!readOnly && !tournament.winner && (
-        <div className="text-center space-y-2 border-t pt-4 mt-4 w-full max-w-md">
+        <div className="text-center space-y-2 border-t pt-4 mt-4 w-full max-w-lg">
             {hasNextRound && isRoundComplete && !isRoundLocked && (
                 <>
                     <p className="text-sm text-muted-foreground">All matches in the current round are complete.</p>
@@ -281,6 +294,31 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
                         </p>
                     )}
                  </>
+            )}
+             {process.env.NODE_ENV !== 'production' && (
+                <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                        <Button variant="outline" disabled={isSimulating} className="mt-2">
+                            <Bot className="mr-2 h-4 w-4" />
+                            Simulate Round
+                        </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                        <AlertDialogHeader>
+                        <AlertDialogTitle>Simulate Current Round?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will generate random scores for all unplayed matches in the current round. This is for testing purposes and can be undone by manually editing scores.
+                        </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction onClick={onSimulateRound} disabled={isSimulating}>
+                            {isSimulating && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                            Continue
+                        </AlertDialogAction>
+                        </AlertDialogFooter>
+                    </AlertDialogContent>
+                </AlertDialog>
             )}
         </div>
       )}

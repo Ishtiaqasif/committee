@@ -4,11 +4,22 @@
 import { Match, Round, Score, Tournament, MatchTeam } from '@/types';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { useMemo, useState, useEffect, useTransition } from 'react';
-import { MapPin, Lock, ArrowRight, Shield, ArrowLeft, Trophy, Loader } from 'lucide-react';
+import { MapPin, Lock, ArrowRight, Shield, ArrowLeft, Trophy, Loader, Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ScoreEntryDialog from './score-entry-dialog';
 import { cn } from '@/lib/utils';
 import Image from 'next/image';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 interface SingleEliminationBracketProps {
   fixture: { rounds: Round[] };
@@ -22,6 +33,8 @@ interface SingleEliminationBracketProps {
   readOnly: boolean;
   currentUserId?: string;
   tournament: Tournament;
+  onSimulateRound: () => void;
+  isSimulating: boolean;
 }
 
 const MatchComponent = ({ match, round, onScoreUpdate, currentScores, isActive, readOnly, currentUserId }: { match: Match, round: number, onScoreUpdate: SingleEliminationBracketProps['onScoreUpdate'], currentScores: any, isActive: boolean, readOnly: boolean, currentUserId?: string }) => {
@@ -99,7 +112,7 @@ const MatchComponent = ({ match, round, onScoreUpdate, currentScores, isActive, 
   )
 }
 
-export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTournamentUpdate, scores, knockoutHomeAndAway, awayGoalsRule, activeRound, onActiveRoundChange, readOnly, currentUserId, tournament }: SingleEliminationBracketProps) {
+export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTournamentUpdate, scores, knockoutHomeAndAway, awayGoalsRule, activeRound, onActiveRoundChange, readOnly, currentUserId, tournament, onSimulateRound, isSimulating }: SingleEliminationBracketProps) {
     const [isProceeding, startProceeding] = useTransition();
 
     const { isRoundComplete, hasNextRound, isRoundLocked } = useMemo(() => {
@@ -383,7 +396,7 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTou
             </div>
             
             {!readOnly && !tournament.winner && (
-                <div className="text-center space-y-2 border-t pt-4 mt-4 w-full max-w-md">
+                <div className="text-center space-y-2 border-t pt-4 mt-4 w-full max-w-lg">
                     {isRoundComplete && hasNextRound && !isRoundLocked && (
                         <>
                             <p className="text-sm text-muted-foreground">
@@ -418,6 +431,32 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTou
                     <div className="mt-8 text-center text-lg font-semibold text-primary">
                         Enter final match score to determine the winner!
                     </div>
+                    )}
+
+                    {process.env.NODE_ENV !== 'production' && (
+                        <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                                <Button variant="outline" disabled={isSimulating} className="mt-2">
+                                    <Bot className="mr-2 h-4 w-4" />
+                                    Simulate Round
+                                </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                                <AlertDialogHeader>
+                                <AlertDialogTitle>Simulate Current Round?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will generate random scores for all unplayed matches in the current round. This is for testing purposes and can be undone by manually editing scores.
+                                </AlertDialogDescription>
+                                </AlertDialogHeader>
+                                <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={onSimulateRound} disabled={isSimulating}>
+                                    {isSimulating && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                                    Continue
+                                </AlertDialogAction>
+                                </AlertDialogFooter>
+                            </AlertDialogContent>
+                        </AlertDialog>
                     )}
                 </div>
             )}

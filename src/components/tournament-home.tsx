@@ -430,6 +430,8 @@ export default function TournamentHome({ tournament, teams, onTournamentUpdate }
               readOnly={readOnly}
               currentUserId={user?.uid}
               tournament={tournament}
+              onSimulateRound={handleSimulateRound}
+              isSimulating={isSimulating}
             />
           </div>
         )
@@ -460,6 +462,8 @@ export default function TournamentHome({ tournament, teams, onTournamentUpdate }
               readOnly={readOnly}
               currentUserId={user?.uid}
               tournament={tournament}
+              onSimulateRound={handleSimulateRound}
+              isSimulating={isSimulating}
             />
           </div>
         )
@@ -467,11 +471,11 @@ export default function TournamentHome({ tournament, teams, onTournamentUpdate }
     }
     
     if (tournament.tournamentType === 'round-robin' && (fixture.rounds || fixture.groups)) {
-      return <RoundRobinView fixture={{rounds: fixture.rounds, groups: fixture.groups}} teams={approvedTeams} scores={scores} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} currentUserId={user?.uid} tournament={tournament} />;
+      return <RoundRobinView fixture={{rounds: fixture.rounds, groups: fixture.groups}} teams={approvedTeams} scores={scores} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} currentUserId={user?.uid} tournament={tournament} onSimulateRound={handleSimulateRound} isSimulating={isSimulating} />;
     }
 
     if (tournament.tournamentType === 'single elimination' && fixture.rounds) {
-      return <SingleEliminationBracket fixture={{rounds: fixture.rounds}} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} scores={scores} knockoutHomeAndAway={tournament.knockoutHomeAndAway!} awayGoalsRule={tournament.awayGoalsRule ?? false} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} currentUserId={user?.uid} tournament={tournament} />;
+      return <SingleEliminationBracket fixture={{rounds: fixture.rounds}} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} scores={scores} knockoutHomeAndAway={tournament.knockoutHomeAndAway!} awayGoalsRule={tournament.awayGoalsRule ?? false} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} currentUserId={user?.uid} tournament={tournament} onSimulateRound={handleSimulateRound} isSimulating={isSimulating}/>;
     }
 
     return <p>Could not display fixture.</p>;
@@ -479,6 +483,15 @@ export default function TournamentHome({ tournament, teams, onTournamentUpdate }
 
   const renderContent = () => {
     const approvedTeams = teams.filter(t => t.status === 'approved');
+
+    if (tournament.winner) {
+        return (
+            <div className="flex flex-col items-center">
+                <ChampionView winner={tournament.winner} />
+            </div>
+        )
+    }
+
     switch (activeView) {
       case 'overview':
         return (
@@ -501,31 +514,6 @@ export default function TournamentHome({ tournament, teams, onTournamentUpdate }
                       <h2 className="text-3xl font-bold text-primary">Fixtures & Scores</h2>
                       <p className="text-muted-foreground capitalize">View matches and enter scores. { !isPrivilegedUser && '(View only)'}</p>
                     </div>
-                    {isPrivilegedUser && !tournament.winner && fixture && process.env.NODE_ENV !== 'production' && (
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant="outline" disabled={isSimulating}>
-                              <Bot className="mr-2 h-4 w-4" />
-                              Simulate Round
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                            <AlertDialogTitle>Simulate Current Round?</AlertDialogTitle>
-                            <AlertDialogDescription>
-                                This will generate random scores for all unplayed matches in the current round. This is for testing purposes and can be undone by manually editing scores.
-                            </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleSimulateRound} disabled={isSimulating}>
-                                {isSimulating && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-                                Continue
-                            </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    )}
                  </div>
                  {renderFixtureView()}
             </div>
