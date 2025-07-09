@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -17,7 +17,7 @@ import { generateTournamentLogo } from "@/ai/flows/generate-tournament-logo";
 import Image from "next/image";
 
 interface TournamentCreatorProps {
-  onTournamentCreated: (data: TournamentCreationData) => void;
+  onTournamentCreated: (data: TournamentCreationData) => Promise<void>;
 }
 
 const formSchema = z.object({
@@ -78,7 +78,7 @@ const compressImage = (dataUri: string, maxWidth: number, maxHeight: number): Pr
 
 export default function TournamentCreator({ onTournamentCreated }: TournamentCreatorProps) {
   const [isGeneratingLogo, setIsGeneratingLogo] = useState(false);
-  const [isPending, startTransition] = useTransition();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -121,14 +121,21 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
   };
 
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     const dataToSubmit: TournamentCreationData = { ...values };
     if (!values.isTeamCountFixed) {
         delete dataToSubmit.numberOfTeams;
     }
-    startTransition(() => {
-        onTournamentCreated(dataToSubmit);
-    });
+    
+    setIsSubmitting(true);
+    try {
+      await onTournamentCreated(dataToSubmit);
+    } catch (error) {
+      // Error is handled in parent component, but we still want to stop loading
+      setIsSubmitting(false);
+    }
+    // If successful, the component will unmount, no need to set submitting to false.
+    // If there's an error, the finally block will run.
   }
 
   return (
@@ -143,7 +150,7 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)}>
             <CardContent className="space-y-6">
-              <div className="space-y-4">
+              <fieldset disabled={isSubmitting} className="space-y-6">
                 <FormField
                   control={form.control}
                   name="tournamentName"
@@ -152,9 +159,9 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                       <FormLabel>Tournament Name</FormLabel>
                       <div className="flex gap-2">
                           <FormControl>
-                            <Input placeholder="e.g., Summer Cup 2024" {...field} disabled={isPending}/>
+                            <Input placeholder="e.g., Summer Cup 2024" {...field} />
                           </FormControl>
-                          <Button type="button" variant="outline" size="icon" onClick={handleGenerateRandomName} disabled={isPending}>
+                          <Button type="button" variant="outline" size="icon" onClick={handleGenerateRandomName}>
                               <Wand2 className="h-4 w-4" />
                               <span className="sr-only">Generate Random Name</span>
                           </Button>
@@ -184,7 +191,7 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                                 type="button" 
                                 variant="outline"
                                 onClick={handleGenerateLogo}
-                                disabled={isGeneratingLogo || !form.watch('tournamentName') || isPending}
+                                disabled={isGeneratingLogo || !form.watch('tournamentName') || isSubmitting}
                             >
                                 {isGeneratingLogo ? <Loader className="animate-spin mr-2" /> : <Sparkles className="mr-2" />}
                                 Generate Logo
@@ -220,7 +227,6 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                         <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
-                            disabled={isPending}
                         />
                         </FormControl>
                     </FormItem>
@@ -234,7 +240,7 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                         <FormItem>
                           <FormLabel>Number of Teams</FormLabel>
                           <FormControl>
-                            <Input type="number" min="3" max="32" {...field} value={field.value ?? ''} disabled={isPending}/>
+                            <Input type="number" min="3" max="32" {...field} value={field.value ?? ''} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>
@@ -257,7 +263,6 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                         <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
-                            disabled={isPending}
                         />
                         </FormControl>
                     </FormItem>
@@ -271,7 +276,7 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                     <FormItem>
                         <FormLabel className="flex items-center gap-2"><MapPin className="h-4 w-4"/> Venues</FormLabel>
                         <FormControl>
-                            <Textarea placeholder="e.g., Main Stadium, Arena 1, Court 2" {...field} disabled={isEsports || isPending} />
+                            <Textarea placeholder="e.g., Main Stadium, Arena 1, Court 2" {...field} disabled={isEsports} />
                         </FormControl>
                         <FormDescription>
                             Enter a comma-separated list of venues. Disabled for esports.
@@ -280,12 +285,11 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                     </FormItem>
                     )}
                 />
-              </div>
-
+              </fieldset>
             </CardContent>
             <CardFooter className="flex justify-center pt-6">
-              <Button type="submit" size="lg" disabled={isPending || isGeneratingLogo}>
-                {isPending && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+              <Button type="submit" size="lg" disabled={isSubmitting || isGeneratingLogo}>
+                {isSubmitting && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                 Create Tournament
               </Button>
             </CardFooter>

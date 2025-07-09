@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
 import { Tournament, Team, TournamentCreationData } from "@/types";
 import TournamentCreator from "@/components/tournament-creator";
@@ -104,6 +104,8 @@ function CreatePageComponent() {
     } catch(error) {
        console.error(error);
        toast({ variant: 'destructive', title: 'Error', description: 'Failed to create tournament.' });
+       // Re-throw the error so the calling component's finally block can execute
+       throw error;
     }
   };
   
