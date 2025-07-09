@@ -58,8 +58,6 @@ export default function TournamentHome({ tournament, teams, onTournamentUpdate }
   const { user } = useAuth();
   
   const [userRole, setUserRole] = useState<UserRole>('guest');
-  const [championLink, setChampionLink] = useState('');
-  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (user && tournament) {
@@ -86,18 +84,6 @@ export default function TournamentHome({ tournament, teams, onTournamentUpdate }
     setFixture(tournament.fixture || null);
     setScores(tournament.scores || {});
   }, [tournament.fixture, tournament.scores]);
-  
-  useEffect(() => {
-    if (tournament.winner) {
-        setChampionLink(`${window.location.origin}/register/${tournament.id}`);
-    }
-  }, [tournament.winner, tournament.id]);
-
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(championLink);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
 
   const handleGenerateFixture = () => {
     startGenerateFixture(async () => {
@@ -585,28 +571,6 @@ export default function TournamentHome({ tournament, teams, onTournamentUpdate }
         return null;
     }
   };
-
-  if (tournament.winner) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center p-4">
-        <div className="absolute top-4 right-4 z-20 flex items-center gap-4">
-          <AuthButton />
-          <ThemeToggle />
-        </div>
-        <ChampionView winner={tournament.winner} />
-        <div className="mt-12 w-full max-w-md text-center">
-            <Label htmlFor="champion-link" className="text-sm font-medium">Share The Victory</Label>
-            <div className="flex gap-2 mt-2">
-                <Input id="champion-link" readOnly value={championLink} />
-                <Button variant="outline" size="icon" onClick={handleCopyLink} disabled={!championLink}>
-                    {copied ? <Check className="text-green-500" /> : <Clipboard />}
-                </Button>
-            </div>
-            <p className="text-xs text-muted-foreground mt-2">Share this link to show off the champion.</p>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <SidebarProvider>

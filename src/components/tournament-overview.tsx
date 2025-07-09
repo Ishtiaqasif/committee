@@ -56,16 +56,20 @@ const getAllMatches = (fixture: Fixture | null): { id: string, roundName: string
 export default function TournamentOverview({ tournament, fixture, scores, teams, onGenerateFixture, onTournamentUpdate, isGeneratingFixture, isPrivilegedUser }: TournamentOverviewProps) {
   const [copied, setCopied] = useState(false);
   const [registrationLink, setRegistrationLink] = useState('');
+  const [championLink, setChampionLink] = useState('');
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
         setRegistrationLink(`${window.location.origin}/register/${tournament.id}`);
+        if(tournament.winner) {
+            setChampionLink(`${window.location.origin}/champion/${tournament.id}`);
+        }
     }
-  }, [tournament.id]);
+  }, [tournament.id, tournament.winner]);
 
-  const handleCopyLink = () => {
-      if (!registrationLink) return;
-      navigator.clipboard.writeText(registrationLink);
+  const handleCopyLink = (link: string) => {
+      if (!link) return;
+      navigator.clipboard.writeText(link);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
   };
@@ -83,10 +87,10 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
         </CardHeader>
         <CardContent className="space-y-4">
              <div>
-                <Label className="text-xs text-muted-foreground">Registration / Champion Link</Label>
+                <Label className="text-xs text-muted-foreground">Registration Link</Label>
                 <div className="flex gap-2">
                     <Input readOnly value={registrationLink} placeholder="Loading link..." />
-                    <Button variant="outline" size="icon" onClick={handleCopyLink} disabled={!registrationLink}>
+                    <Button variant="outline" size="icon" onClick={() => handleCopyLink(registrationLink)} disabled={!registrationLink}>
                         {copied ? <Check className="text-green-500" /> : <Clipboard />}
                     </Button>
                 </div>
@@ -95,11 +99,7 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
                 <Label className="text-xs text-muted-foreground">Public Knockout Bracket Link</Label>
                 <div className="flex gap-2">
                     <Input readOnly value={`${window.location.origin}/knockout/${tournament.id}`} placeholder="Loading link..." />
-                     <Button variant="outline" size="icon" onClick={() => {
-                        navigator.clipboard.writeText(`${window.location.origin}/knockout/${tournament.id}`);
-                        setCopied(true);
-                        setTimeout(() => setCopied(false), 2000);
-                    }}>
+                     <Button variant="outline" size="icon" onClick={() => handleCopyLink(`${window.location.origin}/knockout/${tournament.id}`)}>
                         {copied ? <Check className="text-green-500" /> : <Clipboard />}
                     </Button>
                 </div>
@@ -153,6 +153,39 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
       'Ongoing': <Flame className="w-8 h-8 text-orange-500" />,
       'Completed': <CheckCircle className="w-8 h-8 text-green-500" />,
   }[stats.status];
+
+  if (tournament.winner) {
+    return (
+        <div className="flex flex-col items-center justify-center text-center">
+            <h2 className="text-3xl font-bold text-primary">Tournament Complete</h2>
+            <p className="text-muted-foreground mb-8">Congratulations to the champion! You can review the tournament details using the sidebar.</p>
+            <ChampionView winner={tournament.winner} />
+            
+            <Card className="mt-8 w-full max-w-lg">
+                <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <LinkIcon className="w-5 h-5 text-primary" />
+                        Share Victory
+                    </CardTitle>
+                    <CardDescription>
+                        Share this public link to show off the champion.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div>
+                        <Label htmlFor="champion-link" className="text-xs text-muted-foreground">Champion Page Link</Label>
+                        <div className="flex gap-2">
+                            <Input id="champion-link" readOnly value={championLink} placeholder="Loading link..." />
+                            <Button variant="outline" size="icon" onClick={() => handleCopyLink(championLink)} disabled={!championLink}>
+                                {copied ? <Check className="text-green-500" /> : <Clipboard />}
+                            </Button>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    );
+  }
 
   if (!fixture) {
     if (!tournament.tournamentType) {

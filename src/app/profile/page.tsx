@@ -104,14 +104,23 @@ const TournamentCard = ({ tournament, status, onArchive, isArchiving }: { tourna
             </div>
         </CardContent>
         <CardFooter className="pt-4">
-            <div className={cn("grid w-full gap-2", (isOwner && canBeArchived) ? "grid-cols-2" : "grid-cols-1")}>
+            <div className="grid w-full gap-2">
                 <Button asChild className="w-full" variant="outline">
-                    <Link href={`/create?id=${tournament.id}`}>View Dashboard</Link>
+                    <Link href={`/create?id=${tournament.id}`}>
+                        {status === 'finished' ? 'View Results' : 'View Dashboard'}
+                    </Link>
                 </Button>
+                {status === 'finished' && (
+                    <Button asChild className="w-full">
+                        <Link href={`/champion/${tournament.id}`}>
+                            <Crown className="mr-2 h-4 w-4" /> View Champion Page
+                        </Link>
+                    </Button>
+                )}
                 {isOwner && canBeArchived && (
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="outline" className="w-full" disabled={isArchiving}>
+                            <Button variant="ghost" className="w-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive" disabled={isArchiving}>
                                 <Archive className="mr-2 h-4 w-4" /> Archive
                             </Button>
                         </AlertDialogTrigger>
@@ -119,7 +128,7 @@ const TournamentCard = ({ tournament, status, onArchive, isArchiving }: { tourna
                             <AlertDialogHeader>
                                 <AlertDialogTitle>Archive Tournament?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This will move the tournament to your archived list. You can still view its details, but it won't appear in the ongoing list.
+                                    This will move the tournament to your archived list. You can still view its details, but it won't appear in the active lists.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
