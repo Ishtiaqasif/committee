@@ -82,15 +82,6 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     setScores(tournament.scores || {});
   }, [tournament.fixture, tournament.scores]);
 
-  useEffect(() => {
-    // This effect handles setting the default view if the fixture is missing.
-    if (!tournament.id) return; // Guard against running on initial empty state
-    
-    if (!tournament.fixture && activeView !== 'overview') {
-        setActiveView('overview');
-    }
-  }, [tournament.id, tournament.fixture, activeView]);
-
   const handleGenerateFixture = () => {
     startGenerateFixture(async () => {
       try {
@@ -100,18 +91,18 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
         }
 
         const result = await generateTournamentFixture({
-          tournamentType: tournament.tournamentType,
+          tournamentType: tournament.tournamentType!,
           numberOfTeams: tournament.numberOfTeams,
           tournamentName: tournament.tournamentName,
           isEsports: tournament.isEsports,
           venues: tournament.venues,
           roundRobinGrouping: tournament.roundRobinGrouping,
           teamsPerGroup: tournament.teamsPerGroup,
-          roundRobinHomeAndAway: tournament.roundRobinHomeAndAway,
-          knockoutHomeAndAway: tournament.knockoutHomeAndAway,
-          awayGoalsRule: tournament.awayGoalsRule,
+          roundRobinHomeAndAway: tournament.roundRobinHomeAndAway!,
+          knockoutHomeAndAway: tournament.knockoutHomeAndAway!,
+          awayGoalsRule: tournament.awayGoalsRule!,
           teamsAdvancing: tournament.teamsAdvancing,
-          fixtureGeneration: tournament.fixtureGeneration,
+          fixtureGeneration: tournament.fixtureGeneration!,
           language: tournament.language || 'en',
         });
         
@@ -399,25 +390,25 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     });
   };
 
-  const renderPreFixtureContent = () => {
-    return (
-      <TournamentOverview 
-          tournament={tournament} 
-          fixture={fixture} 
-          scores={scores} 
-          teams={teams}
-          onGenerateFixture={handleGenerateFixture}
-          isGeneratingFixture={isGeneratingFixture}
-          isPrivilegedUser={isPrivilegedUser}
-      />
-    );
-  }
-
   const renderFixtureView = () => {
-    if (!fixture) return renderPreFixtureContent();
     const readOnly = !isPrivilegedUser;
     const approvedTeams = teams.filter(t => t.status === 'approved');
 
+    if (!fixture) {
+      return (
+        <TournamentOverview 
+            tournament={tournament} 
+            fixture={fixture} 
+            scores={scores} 
+            teams={teams}
+            onGenerateFixture={handleGenerateFixture}
+            onTournamentUpdate={onTournamentUpdate}
+            isGeneratingFixture={isGeneratingFixture}
+            isPrivilegedUser={isPrivilegedUser}
+        />
+      );
+    }
+    
     if (tournament.tournamentType === 'hybrid' && fixture.groupStage && fixture.knockoutStage) {
       if (tournament.hybridStage === 'group' || !tournament.hybridStage) {
         return (
@@ -459,7 +450,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
               onScoreUpdate={handleScoreUpdate} 
               onTournamentUpdate={onTournamentUpdate}
               scores={scores} 
-              knockoutHomeAndAway={tournament.knockoutHomeAndAway}
+              knockoutHomeAndAway={tournament.knockoutHomeAndAway!}
               awayGoalsRule={tournament.awayGoalsRule ?? false}
               activeRound={tournament.activeRound || 1}
               onActiveRoundChange={handleActiveRoundChange}
@@ -477,7 +468,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     }
 
     if (tournament.tournamentType === 'single elimination' && fixture.rounds) {
-      return <SingleEliminationBracket fixture={{rounds: fixture.rounds}} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} scores={scores} knockoutHomeAndAway={tournament.knockoutHomeAndAway} awayGoalsRule={tournament.awayGoalsRule ?? false} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} currentUserId={user?.uid} tournament={tournament} />;
+      return <SingleEliminationBracket fixture={{rounds: fixture.rounds}} onScoreUpdate={handleScoreUpdate} onTournamentUpdate={onTournamentUpdate} scores={scores} knockoutHomeAndAway={tournament.knockoutHomeAndAway!} awayGoalsRule={tournament.awayGoalsRule ?? false} activeRound={tournament.activeRound || 1} onActiveRoundChange={handleActiveRoundChange} readOnly={readOnly} currentUserId={user?.uid} tournament={tournament} />;
     }
 
     return <p>Could not display fixture.</p>;
@@ -487,17 +478,18 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     const approvedTeams = teams.filter(t => t.status === 'approved');
     switch (activeView) {
       case 'overview':
-        return fixture 
-          ? <TournamentOverview 
+        return (
+          <TournamentOverview 
               tournament={tournament} 
               fixture={fixture} 
               scores={scores} 
               teams={teams}
               onGenerateFixture={handleGenerateFixture}
+              onTournamentUpdate={onTournamentUpdate}
               isGeneratingFixture={isGeneratingFixture}
               isPrivilegedUser={isPrivilegedUser}
            />
-          : renderPreFixtureContent();
+        );
       case 'fixtures':
         return (
             <div>
@@ -561,7 +553,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
                 <KnockoutBracketView
                     fixture={knockoutFixture}
                     scores={scores}
-                    knockoutHomeAndAway={tournament.knockoutHomeAndAway}
+                    knockoutHomeAndAway={tournament.knockoutHomeAndAway!}
                     awayGoalsRule={tournament.awayGoalsRule ?? false}
                 />
             </div>
@@ -591,7 +583,7 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
                         )}
                         <div className="flex flex-col overflow-hidden group-data-[collapsible=icon]:hidden">
                             <span className="text-base font-semibold text-primary truncate">{tournament.tournamentName}</span>
-                            <span className="text-xs text-muted-foreground capitalize truncate">{tournament.tournamentType.replace('-', ' ')}</span>
+                            <span className="text-xs text-muted-foreground capitalize truncate">{tournament.tournamentType?.replace('-', ' ') ?? 'Unconfigured'}</span>
                         </div>
                     </div>
                 </div>

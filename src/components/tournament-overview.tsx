@@ -11,6 +11,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import ChampionView from './champion-view';
 import Link from 'next/link';
+import FixtureSettings from './fixture-settings';
 
 interface TournamentOverviewProps {
   tournament: Tournament;
@@ -18,6 +19,7 @@ interface TournamentOverviewProps {
   scores: Record<string, Score>;
   teams: Team[];
   onGenerateFixture: () => void;
+  onTournamentUpdate: (data: Partial<Tournament>) => void;
   isGeneratingFixture: boolean;
   isPrivilegedUser: boolean;
 }
@@ -51,7 +53,7 @@ const getAllMatches = (fixture: Fixture | null): { id: string, roundName: string
     return allMatches;
 };
 
-export default function TournamentOverview({ tournament, fixture, scores, teams, onGenerateFixture, isGeneratingFixture, isPrivilegedUser }: TournamentOverviewProps) {
+export default function TournamentOverview({ tournament, fixture, scores, teams, onGenerateFixture, onTournamentUpdate, isGeneratingFixture, isPrivilegedUser }: TournamentOverviewProps) {
   const [copied, setCopied] = useState(false);
   const [registrationLink, setRegistrationLink] = useState('');
 
@@ -85,6 +87,19 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
                 <div className="flex gap-2">
                     <Input readOnly value={registrationLink} placeholder="Loading link..." />
                     <Button variant="outline" size="icon" onClick={handleCopyLink} disabled={!registrationLink}>
+                        {copied ? <Check className="text-green-500" /> : <Clipboard />}
+                    </Button>
+                </div>
+            </div>
+             <div>
+                <Label className="text-xs text-muted-foreground">Public Knockout Bracket Link</Label>
+                <div className="flex gap-2">
+                    <Input readOnly value={`${window.location.origin}/knockout/${tournament.id}`} placeholder="Loading link..." />
+                     <Button variant="outline" size="icon" onClick={() => {
+                        navigator.clipboard.writeText(`${window.location.origin}/knockout/${tournament.id}`);
+                        setCopied(true);
+                        setTimeout(() => setCopied(false), 2000);
+                    }}>
                         {copied ? <Check className="text-green-500" /> : <Clipboard />}
                     </Button>
                 </div>
@@ -189,12 +204,21 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
   }
   
   if (!fixture) {
-      return (
+    if (!tournament.tournamentType) {
+        return (
+             <FixtureSettings 
+                tournament={tournament}
+                onUpdate={onTournamentUpdate}
+                isPrivilegedUser={isPrivilegedUser}
+            />
+        )
+    }
+    return (
         <div className="flex flex-col items-center justify-center text-center">
-            <h2 className="text-3xl font-bold text-primary">Tournament Overview</h2>
+            <h2 className="text-3xl font-bold text-primary">Tournament Setup</h2>
             <div className="mt-6 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border py-24 text-center w-full">
                 <Trophy className="mx-auto h-12 w-12 text-accent" />
-                <h3 className="mt-4 text-2xl font-semibold">All Teams Registered!</h3>
+                <h3 className="mt-4 text-2xl font-semibold">Settings Confirmed!</h3>
                 {isPrivilegedUser ? (
                     <>
                         <p className="mt-2 text-muted-foreground">
@@ -213,7 +237,7 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
             </div>
             {shareLinkCard}
         </div>
-      );
+    );
   }
 
   return (

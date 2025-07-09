@@ -18,7 +18,6 @@ import { useEffect, useMemo, useTransition } from "react";
 interface FixtureSettingsProps {
   tournament: Tournament;
   onUpdate: (data: Partial<Tournament>) => void;
-  onBack: () => void;
   isPrivilegedUser: boolean;
 }
 
@@ -56,7 +55,7 @@ const createFormSchema = (tournament: Tournament) => z.object({
 });
 
 
-export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivilegedUser }: FixtureSettingsProps) {
+export default function FixtureSettings({ tournament, onUpdate, isPrivilegedUser }: FixtureSettingsProps) {
   const [isPending, startTransition] = useTransition();
   const formSchema = useMemo(() => createFormSchema(tournament), [tournament]);
   
@@ -334,10 +333,6 @@ export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivil
                  )}
             </CardContent>
             <CardFooter className="flex justify-center pt-6 gap-4">
-              <Button type="button" variant="outline" onClick={onBack} disabled={isPending}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Registration
-              </Button>
               <Button type="submit" size="lg" disabled={isPending}>
                 {isPending && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                 Save Settings & Continue

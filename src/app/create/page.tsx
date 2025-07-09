@@ -14,12 +14,11 @@ import { useRouter } from "next/navigation";
 import { createTournament, getTournament, getTeamsForTournament, updateTournament } from "@/lib/firebase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import AuthButton from "@/components/auth-button";
-import FixtureSettings from "@/components/fixture-settings";
 import { FootballLoader } from "@/components/football-loader";
 import isEqual from 'lodash.isequal';
 
 
-type AppState = "configuring" | "inviting" | "fixture-settings" | "fixture";
+type AppState = "configuring" | "inviting" | "fixture";
 
 function CreatePageComponent() {
   const { user, loading: authLoading } = useAuth();
@@ -55,14 +54,12 @@ function CreatePageComponent() {
             setTeams(teamsData);
             
             const approvedTeamsCount = teamsData.filter(t => t.status === 'approved').length;
-            const isReadyForFixture = tournamentData.isTeamCountFixed 
+            const isReadyForDashboard = tournamentData.isTeamCountFixed 
               ? approvedTeamsCount === tournamentData.numberOfTeams
               : !!tournamentData.numberOfTeams; 
 
-            if (isReadyForFixture && tournamentData.fixture) {
+            if (isReadyForDashboard) {
               setAppState("fixture");
-            } else if (isReadyForFixture && !tournamentData.fixture) {
-                setAppState("fixture-settings");
             } else {
               setAppState("inviting");
             }
@@ -126,15 +123,7 @@ function CreatePageComponent() {
 
       setTournament(updatedTournament);
       
-      const isScoreOrStateUpdate = ('scores' in data) || ('activeRound' in data) || ('hybridStage' in data);
-      
-      if (appState === 'fixture-settings') {
-          setAppState("fixture");
-      } else if (!isScoreOrStateUpdate) {
-        // toast already shown if data was updated
-      }
-
-      // Check if we finalized registration and should move to fixture settings
+      // Check if we finalized registration and should move to the next step
       if ('numberOfTeams' in data && !data.fixture) {
           const approvedTeams = teams.filter(t => t.status === 'approved');
           handleTeamsFinalized(approvedTeams);
@@ -148,11 +137,7 @@ function CreatePageComponent() {
 
   const handleTeamsFinalized = (finalizedTeams: Team[]) => {
     setTeams(finalizedTeams);
-    setAppState("fixture-settings");
-  };
-
-  const handleBackToInviting = () => {
-    setAppState("inviting");
+    setAppState("fixture");
   };
 
   const handleReset = () => {
@@ -170,17 +155,6 @@ function CreatePageComponent() {
             tournament={tournament}
             onTeamsFinalized={handleTeamsFinalized}
             onTournamentUpdate={handleTournamentUpdate}
-          />
-        );
-      case "fixture-settings":
-        if (!tournament) return null;
-        const isPrivilegedUser = user?.uid === tournament.creatorId || tournament.admins?.includes(user?.uid ?? '');
-        return (
-          <FixtureSettings
-            tournament={tournament}
-            onUpdate={handleTournamentUpdate}
-            onBack={handleBackToInviting}
-            isPrivilegedUser={isPrivilegedUser}
           />
         );
       case "fixture":
