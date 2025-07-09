@@ -134,9 +134,13 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
     };
 
     const handleApproveTeam = async (teamId: string) => {
+        const teamToApprove = teams.find(t => t.id === teamId);
         try {
             await updateTeam(tournament.id, teamId, { status: 'approved' });
-            toast({ title: 'Team Approved' });
+            toast({
+                title: 'Team Approved',
+                description: teamToApprove ? `"${teamToApprove.name}" has been approved.` : 'Team has been approved.'
+            });
         } catch (error) {
             console.error("Failed to approve team:", error);
             toast({ variant: 'destructive', title: 'Error', description: 'Failed to approve team.' });
