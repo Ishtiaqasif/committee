@@ -90,14 +90,6 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     }
   }, [tournament.id, tournament.fixture, activeView]);
 
-  const settingsAreComplete = () => {
-    if (!tournament) return false;
-    const { tournamentType, roundRobinGrouping, teamsPerGroup, teamsAdvancing } = tournament;
-    if (tournamentType === 'hybrid' && !teamsAdvancing) return false;
-    if ((tournamentType === 'hybrid' || tournamentType === 'round-robin') && roundRobinGrouping === 'grouped' && !teamsPerGroup) return false;
-    return true;
-  }
-
   const handleGenerateFixture = () => {
     startTransition(async () => {
       try {
@@ -405,20 +397,17 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
   };
 
   const renderPreFixtureContent = () => {
-    if (settingsAreComplete()) {
-      return (
-        <TournamentOverview 
-            tournament={tournament} 
-            fixture={fixture} 
-            scores={scores} 
-            teams={teams}
-            onGenerateFixture={handleGenerateFixture}
-            isGeneratingFixture={isPending}
-            isPrivilegedUser={isPrivilegedUser}
-        />
-      );
-    }
-    return <FixtureSettings tournament={tournament} onUpdate={onTournamentUpdate} isPrivilegedUser={isPrivilegedUser} />;
+    return (
+      <TournamentOverview 
+          tournament={tournament} 
+          fixture={fixture} 
+          scores={scores} 
+          teams={teams}
+          onGenerateFixture={handleGenerateFixture}
+          isGeneratingFixture={isPending}
+          isPrivilegedUser={isPrivilegedUser}
+      />
+    );
   }
 
   const renderFixtureView = () => {

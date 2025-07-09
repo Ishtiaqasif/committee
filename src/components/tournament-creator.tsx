@@ -13,14 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDes
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Trophy, Settings, MapPin, Gamepad2, Wand2, Sparkles, Loader, ImageIcon } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Textarea } from "@/components/ui/textarea";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { generateTournamentLogo } from "@/ai/flows/generate-tournament-logo";
 import Image from "next/image";
 
@@ -38,40 +31,13 @@ const formSchema = z.object({
   }),
   isEsports: z.boolean().default(false),
   venues: z.string().optional(),
-  roundRobinGrouping: z.enum(['all-play-all', 'grouped']).default('all-play-all'),
-  teamsPerGroup: z.coerce.number().optional(),
   roundRobinHomeAndAway: z.boolean().default(false),
   knockoutHomeAndAway: z.boolean().default(false),
   awayGoalsRule: z.boolean().default(false),
-  teamsAdvancing: z.coerce.number().optional(),
   fixtureGeneration: z.enum(['random', 'predefined']).default('predefined'),
 }).superRefine((data, ctx) => {
-    if (data.isTeamCountFixed) {
-        if (!data.numberOfTeams) {
-            ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Number of teams is required for a fixed-size tournament.", path: ["numberOfTeams"] });
-        }
-        
-        if (data.tournamentType === 'hybrid') {
-            if (!data.teamsAdvancing) {
-                ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Number of advancing teams is required.", path: ["teamsAdvancing"] });
-            } else if (data.teamsAdvancing < 2) {
-                ctx.addIssue({ code: z.ZodIssueCode.custom, message: "At least 2 teams must advance.", path: ["teamsAdvancing"] });
-            } else if (data.numberOfTeams && data.teamsAdvancing >= data.numberOfTeams) {
-                ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Must be less than total teams.", path: ["teamsAdvancing"] });
-            } else if ((data.teamsAdvancing & (data.teamsAdvancing - 1)) !== 0) {
-                 ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Must be a power of two (2, 4, 8...).", path: ["teamsAdvancing"] });
-            }
-        }
-        
-        if ((data.tournamentType === 'round-robin' || data.tournamentType === 'hybrid') && data.roundRobinGrouping === 'grouped') {
-             if (!data.teamsPerGroup) {
-                ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Teams per group is required.", path: ["teamsPerGroup"] });
-            } else if (data.teamsPerGroup <= 1) {
-                ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Must be greater than 1.", path: ["teamsPerGroup"] });
-            } else if (data.numberOfTeams && data.numberOfTeams % data.teamsPerGroup !== 0) {
-                ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Must be a divisor of total teams.", path: ["teamsPerGroup"] });
-            }
-        }
+    if (data.isTeamCountFixed && !data.numberOfTeams) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Number of teams is required for a fixed-size tournament.", path: ["numberOfTeams"] });
     }
 });
 
@@ -130,39 +96,16 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
       numberOfTeams: 8,
       isEsports: false,
       venues: "",
+      fixtureGeneration: 'predefined',
       roundRobinHomeAndAway: false,
       knockoutHomeAndAway: false,
       awayGoalsRule: false,
-      fixtureGeneration: 'predefined',
-      roundRobinGrouping: 'all-play-all',
     },
   });
 
   const isTeamCountFixed = form.watch("isTeamCountFixed");
-  const numberOfTeams = form.watch("numberOfTeams");
-  const tournamentType = form.watch("tournamentType");
-  const roundRobinGrouping = form.watch("roundRobinGrouping");
   const isEsports = form.watch("isEsports");
-  const roundRobinHomeAndAway = form.watch("roundRobinHomeAndAway");
-  const knockoutHomeAndAway = form.watch("knockoutHomeAndAway");
   const logo = form.watch("logo");
-
-
-   useEffect(() => {
-    if (isTeamCountFixed && numberOfTeams && tournamentType === 'hybrid') {
-      const defaultAdvancing = Math.pow(2, Math.floor(Math.log2(numberOfTeams / 2)));
-      form.setValue('teamsAdvancing', defaultAdvancing >= 2 ? defaultAdvancing : 2, { shouldValidate: true });
-    } else {
-      form.setValue('teamsAdvancing', undefined);
-    }
-  }, [isTeamCountFixed, tournamentType, numberOfTeams, form]);
-
-
-  useEffect(() => {
-    if (roundRobinGrouping !== 'grouped') {
-        form.setValue('teamsPerGroup', undefined, { shouldValidate: true });
-    }
-  }, [roundRobinGrouping, form]);
 
   useEffect(() => {
     if (isEsports) {
@@ -199,8 +142,6 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
     const dataToSubmit: TournamentCreationData = { ...values };
     if (!values.isTeamCountFixed) {
         delete dataToSubmit.numberOfTeams;
-        delete dataToSubmit.teamsPerGroup;
-        delete dataToSubmit.teamsAdvancing;
     }
     onTournamentCreated(dataToSubmit);
   }
@@ -339,235 +280,45 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
                     )}
                   />
                 </div>
+                 <FormField
+                    control={form.control}
+                    name="isEsports"
+                    render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                        <div className="space-y-0.5">
+                            <FormLabel className="flex items-center gap-2"><Gamepad2 className="h-4 w-4"/> Esports Tournament</FormLabel>
+                            <FormDescription>
+                                If enabled, venues will be disabled.
+                            </FormDescription>
+                        </div>
+                        <FormControl>
+                        <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                        />
+                        </FormControl>
+                    </FormItem>
+                    )}
+                />
+
+                <FormField
+                    control={form.control}
+                    name="venues"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel className="flex items-center gap-2"><MapPin className="h-4 w-4"/> Venues</FormLabel>
+                        <FormControl>
+                            <Textarea placeholder="e.g., Main Stadium, Arena 1, Court 2" {...field} disabled={isEsports} />
+                        </FormControl>
+                        <FormDescription>
+                            Enter a comma-separated list of venues. Disabled for esports.
+                        </FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
               </div>
 
-              <Accordion type="single" collapsible className="w-full pt-6 border-t">
-                <AccordionItem value="advanced-options">
-                  <AccordionTrigger className="text-lg font-semibold hover:no-underline">
-                      <div className="flex items-center gap-2">
-                          <Settings className="h-5 w-5" /> Advanced Options
-                      </div>
-                  </AccordionTrigger>
-                  <AccordionContent className="pt-6 space-y-6">
-                      <FormField
-                          control={form.control}
-                          name="isEsports"
-                          render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                              <div className="space-y-0.5">
-                                  <FormLabel className="flex items-center gap-2"><Gamepad2 className="h-4 w-4"/> Esports Tournament</FormLabel>
-                                  <FormDescription>
-                                      If enabled, venues will be disabled.
-                                  </FormDescription>
-                              </div>
-                              <FormControl>
-                              <Switch
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                              />
-                              </FormControl>
-                          </FormItem>
-                          )}
-                      />
-
-                      <FormField
-                          control={form.control}
-                          name="venues"
-                          render={({ field }) => (
-                          <FormItem>
-                              <FormLabel className="flex items-center gap-2"><MapPin className="h-4 w-4"/> Venues</FormLabel>
-                              <FormControl>
-                                  <Textarea placeholder="e.g., Main Stadium, Arena 1, Court 2" {...field} disabled={isEsports} />
-                              </FormControl>
-                              <FormDescription>
-                                  Enter a comma-separated list of venues. Disabled for esports.
-                              </FormDescription>
-                              <FormMessage />
-                          </FormItem>
-                          )}
-                      />
-
-                      {(tournamentType === 'round-robin' || tournamentType === 'hybrid') && isTeamCountFixed && (
-                          <div className="space-y-6">
-                              <FormField
-                                  control={form.control}
-                                  name="roundRobinGrouping"
-                                  render={({ field }) => (
-                                      <FormItem className="space-y-3 rounded-lg border p-3 shadow-sm">
-                                      <FormLabel>Round-Robin Format</FormLabel>
-                                      <FormControl>
-                                          <RadioGroup
-                                          onValueChange={field.onChange}
-                                          defaultValue={field.value}
-                                          className="space-y-2"
-                                          >
-                                          <FormItem className="flex items-center space-x-3 space-y-0">
-                                              <FormControl>
-                                              <RadioGroupItem value="all-play-all" />
-                                              </FormControl>
-                                              <FormLabel className="font-normal">
-                                              All-Play-All
-                                              </FormLabel>
-                                          </FormItem>
-                                          <FormItem className="flex items-center space-x-3 space-y-0">
-                                              <FormControl>
-                                              <RadioGroupItem value="grouped" />
-                                              </FormControl>
-                                              <FormLabel className="font-normal">
-                                              Grouped
-                                              </FormLabel>
-                                          </FormItem>
-                                          </RadioGroup>
-                                      </FormControl>
-                                      <FormMessage />
-                                      </FormItem>
-                                  )}
-                              />
-                              {roundRobinGrouping === 'grouped' && (
-                                  <FormField
-                                      control={form.control}
-                                      name="teamsPerGroup"
-                                      render={({ field }) => (
-                                      <FormItem>
-                                          <FormLabel>Teams Per Group</FormLabel>
-                                          <FormControl>
-                                          <Input type="number" placeholder="e.g., 4" {...field} value={field.value ?? ''} />
-                                          </FormControl>
-                                          <FormDescription>
-                                          Must be a divisor of the total number of teams.
-                                          </FormDescription>
-                                          <FormMessage />
-                                      </FormItem>
-                                      )}
-                                  />
-                              )}
-                          </div>
-                      )}
-
-                      {(tournamentType === 'round-robin' || tournamentType === 'hybrid') && (
-                      <FormField
-                          control={form.control}
-                          name="roundRobinHomeAndAway"
-                          render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                              <div className="space-y-0.5">
-                              <FormLabel>{tournamentType === 'hybrid' ? 'Group Stage Home & Away' : 'Home & Away'}</FormLabel>
-                              <FormDescription>
-                                  Play each opponent twice.
-                              </FormDescription>
-                              </div>
-                              <FormControl>
-                              <Switch
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                              />
-                              </FormControl>
-                          </FormItem>
-                          )}
-                      />
-                      )}
-
-                      {(tournamentType === 'single elimination' || tournamentType === 'hybrid') && (
-                      <FormField
-                          control={form.control}
-                          name="knockoutHomeAndAway"
-                          render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                              <div className="space-y-0.5">
-                              <FormLabel>{tournamentType === 'hybrid' ? 'Knockout Stage Home & Away' : 'Home & Away'}</FormLabel>
-                              <FormDescription>
-                                  Play two-legged (home & away) ties.
-                              </FormDescription>
-                              </div>
-                              <FormControl>
-                              <Switch
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                              />
-                              </FormControl>
-                          </FormItem>
-                          )}
-                      />
-                      )}
-                      
-                      <FormField
-                          control={form.control}
-                          name="awayGoalsRule"
-                          render={({ field }) => (
-                          <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
-                              <div className="space-y-0.5">
-                              <FormLabel>Away Goals Rule</FormLabel>
-                              <FormDescription>
-                                  Apply away goals rule in two-legged ties.
-                              </FormDescription>
-                              </div>
-                              <FormControl>
-                              <Switch
-                                  checked={field.value}
-                                  onCheckedChange={field.onChange}
-                                  disabled={!roundRobinHomeAndAway && !knockoutHomeAndAway}
-                              />
-                              </FormControl>
-                          </FormItem>
-                          )}
-                      />
-
-                      {tournamentType === 'hybrid' && isTeamCountFixed && (
-                      <FormField
-                          control={form.control}
-                          name="teamsAdvancing"
-                          render={({ field }) => (
-                          <FormItem>
-                              <FormLabel>Teams Advancing to Knockout</FormLabel>
-                              <FormControl>
-                              <Input type="number" placeholder="e.g., 4" {...field} value={field.value ?? ''} />
-                              </FormControl>
-                              <FormDescription>
-                              Must be a power of two (2, 4, 8...).
-                              </FormDescription>
-                              <FormMessage />
-                          </FormItem>
-                          )}
-                      />
-                      )}
-
-                      <FormField
-                          control={form.control}
-                          name="fixtureGeneration"
-                          render={({ field }) => (
-                          <FormItem className="space-y-3 rounded-lg border p-3 shadow-sm">
-                              <FormLabel>Fixture Generation</FormLabel>
-                              <FormControl>
-                              <RadioGroup
-                                  onValueChange={field.onChange}
-                                  defaultValue={field.value}
-                                  className="space-y-2"
-                              >
-                                  <FormItem className="flex items-center space-x-3 space-y-0">
-                                  <FormControl>
-                                      <RadioGroupItem value="predefined" />
-                                  </FormControl>
-                                  <FormLabel className="font-normal">
-                                      Predefined Path (Seeded)
-                                  </FormLabel>
-                                  </FormItem>
-                                  <FormItem className="flex items-center space-x-3 space-y-0">
-                                  <FormControl>
-                                      <RadioGroupItem value="random" />
-                                  </FormControl>
-                                  <FormLabel className="font-normal">
-                                      Randomly Seeded Bracket
-                                  </FormLabel>
-                                  </FormItem>
-                              </RadioGroup>
-                              </FormControl>
-                              <FormMessage />
-                          </FormItem>
-                          )}
-                      />
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
             </CardContent>
             <CardFooter className="flex justify-center pt-6">
               <Button type="submit" size="lg">Create Tournament</Button>

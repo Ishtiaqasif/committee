@@ -20,9 +20,9 @@ export type TournamentCreationData = {
   logo: string;
   isEsports: boolean;
   venues?: string;
-  fixtureGeneration: 'random' | 'predefined';
-  roundRobinHomeAndAway: boolean;
-  knockoutHomeAndAway: boolean;
+  fixtureGeneration?: 'random' | 'predefined';
+  roundRobinHomeAndAway?: boolean;
+  knockoutHomeAndAway?: boolean;
   awayGoalsRule?: boolean;
   tiebreakerRules?: TiebreakerRule[];
   language?: string;
@@ -49,7 +49,6 @@ export type Tournament = TournamentCreationData & {
   isActive?: boolean;
   // Client-side property
   roles?: UserRole[];
-  needsApproval?: boolean;
 };
 
 export interface Team {
