@@ -78,7 +78,7 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
                 Share Tournament
             </CardTitle>
             <CardDescription>
-                Use this link to invite participants or share the champion page.
+                Use this link to invite participants or share public views.
             </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -154,55 +154,6 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
       'Completed': <CheckCircle className="w-8 h-8 text-green-500" />,
   }[stats.status];
 
-  if (tournament.winner) {
-    return (
-      <div>
-        <h2 className="text-3xl font-bold text-primary">Tournament Complete</h2>
-        <p className="text-muted-foreground">The champion has been crowned!</p>
-        <div className="mt-6 flex items-center justify-center">
-            <ChampionView winner={tournament.winner} />
-        </div>
-        
-        <div className="my-8 border-t pt-8">
-            <h3 className="text-2xl font-bold text-primary text-center mb-6">Final Summary</h3>
-            <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Status</CardTitle>
-                    {StatusIcon}
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{stats.status}</div>
-                    <p className="text-xs text-muted-foreground">The tournament has concluded.</p>
-                </CardContent>
-                </Card>
-                <Card>
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Final Round</CardTitle>
-                    <Swords className="w-8 h-8 text-accent" />
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold capitalize">{stats.currentRoundName}</div>
-                    <p className="text-xs text-muted-foreground">The competition has finished.</p>
-                </CardContent>
-                </Card>
-                <Card className="md:col-span-2 lg:col-span-1">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                    <CardTitle className="text-sm font-medium">Match Progress</CardTitle>
-                </CardHeader>
-                <CardContent>
-                    <div className="text-2xl font-bold">{stats.playedMatches} / {stats.totalMatches}</div>
-                    <p className="text-xs text-muted-foreground mb-2">Total matches played.</p>
-                    <Progress value={stats.progress} />
-                </CardContent>
-                </Card>
-            </div>
-        </div>
-        {shareLinkCard}
-      </div>
-    );
-  }
-  
   if (!fixture) {
     if (!tournament.tournamentType) {
         return (

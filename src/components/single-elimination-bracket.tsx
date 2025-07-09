@@ -295,13 +295,17 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTou
       const finalMatch = finalRound.matches[0];
       const finalMatchId = `r${finalRound.round}m${finalMatch.match}`;
       const finalScores = scores[finalMatchId];
+      let winner: MatchTeam | null = null;
       if (finalScores && finalScores.score1 !== null && finalScores.score2 !== null) {
-          if (finalScores.score1 > finalScores.score2) return finalMatch.team1;
-          if (finalScores.score2 > finalScores.score1) return finalMatch.team2;
-          if (finalScores.score1_tiebreak != null && finalScores.score2_tiebreak != null) {
-            if (finalScores.score1_tiebreak > finalScores.score2_tiebreak) return finalMatch.team1;
-            if (finalScores.score2_tiebreak > finalScores.score1_tiebreak) return finalMatch.team2;
+          if (finalScores.score1 > finalScores.score2) winner = finalMatch.team1;
+          else if (finalScores.score2 > finalScores.score1) winner = finalMatch.team2;
+          else if (finalScores.score1_tiebreak != null && finalScores.score2_tiebreak != null) {
+            if (finalScores.score1_tiebreak > finalScores.score2_tiebreak) winner = finalMatch.team1;
+            else if (finalScores.score2_tiebreak > finalScores.score1_tiebreak) winner = finalMatch.team2;
           }
+      }
+      if (winner) {
+          return { name: winner.name, logo: winner.logo, ownerName: winner.ownerName };
       }
     }
     return null;

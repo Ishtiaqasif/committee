@@ -569,6 +569,40 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
     }
   };
 
+  if (tournament.winner) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center p-4">
+        <div className="absolute top-4 right-4 z-20 flex items-center gap-4">
+          <AuthButton />
+          <ThemeToggle />
+        </div>
+        <ChampionView winner={tournament.winner} />
+        {isPrivilegedUser && (
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" className="mt-8">
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Reset Tournament
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will reset the entire
+                  tournament, including teams and fixtures.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={onReset}>Continue</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        )}
+      </div>
+    );
+  }
 
   return (
     <SidebarProvider>

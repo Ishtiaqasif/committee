@@ -212,14 +212,20 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
   }, [scores, teams, allRounds, awayGoalsRule, tiebreakerRules, fixture.rounds]);
 
   const finalWinner = useMemo(() => {
-    const allRoundsPlayed = activeRound > maxRound && maxRound > 0;
-    if (allRoundsPlayed && !isHybrid && fixture.rounds && !fixture.groups && pointsTable.length > 0) {
+    const isFinished = !hasNextRound && isRoundComplete;
+    if (isFinished && !isHybrid && fixture.rounds && !fixture.groups && pointsTable.length > 0) {
         const winnerEntry = pointsTable[0];
         const winnerTeam = teams.find(t => t.name === winnerEntry.teamName);
-        return winnerTeam;
+        if (winnerTeam) {
+            return {
+                name: winnerTeam.name,
+                logo: winnerTeam.logo,
+                ownerName: winnerTeam.ownerName,
+            };
+        }
     }
     return null;
-  }, [activeRound, maxRound, isHybrid, pointsTable, fixture, teams]);
+  }, [hasNextRound, isRoundComplete, isHybrid, pointsTable, fixture, teams]);
   
   const isViewingActiveRound = viewedRound === activeRound;
   
