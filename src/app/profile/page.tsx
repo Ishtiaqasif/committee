@@ -192,22 +192,23 @@ export default function ProfilePage() {
     const archived: Tournament[] = [];
 
     tournaments.forEach(t => {
-      if (t.winner) {
+      // An archived tournament is one explicitly set to inactive. This takes precedence.
+      if (t.isActive === false) {
+        archived.push(t);
+      } else if (t.winner) {
         finished.push(t);
       } else if (!t.fixture) {
         unconfigured.push(t);
-      } else if (t.isActive) {
+      } else { // `isActive` is true or undefined, and it's not finished or unconfigured
         ongoing.push(t);
-      } else {
-        archived.push(t);
       }
     });
 
-    return { 
-      ongoingTournaments: ongoing, 
+    return {
+      ongoingTournaments: ongoing,
       finishedTournaments: finished,
       unconfiguredTournaments: unconfigured,
-      archivedTournaments: archived 
+      archivedTournaments: archived,
     };
   }, [tournaments]);
 

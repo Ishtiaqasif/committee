@@ -23,7 +23,7 @@ interface TournamentSettingsProps {
 const formSchema = z.object({
   tournamentName: z.string().min(3, 'Tournament name must be at least 3 characters long.'),
   language: z.string(),
-  isActive: z.boolean().default(false),
+  isActive: z.boolean().default(true),
 });
 
 export default function TournamentSettings({ tournament, onUpdate, isPrivilegedUser }: TournamentSettingsProps) {
@@ -34,7 +34,7 @@ export default function TournamentSettings({ tournament, onUpdate, isPrivilegedU
     defaultValues: {
       tournamentName: tournament.tournamentName,
       language: tournament.language || 'en',
-      isActive: tournament.isActive || false,
+      isActive: tournament.isActive ?? true,
     },
   });
 

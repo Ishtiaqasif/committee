@@ -33,7 +33,7 @@ export async function createTournament(tournamentData: TournamentCreationData, u
         createdAt: serverTimestamp(),
         admins: [],
         participants: [],
-        isActive: false,
+        isActive: true,
         // Set defaults for settings that will be confirmed later
         language: 'en',
         tiebreakerRules: ['goalDifference', 'goalsFor', 'headToHead'],
