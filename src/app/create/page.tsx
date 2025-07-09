@@ -54,10 +54,12 @@ function CreatePageComponent() {
             const approvedTeamsCount = teamsData.filter(t => t.status === 'approved').length;
             const isReadyForFixture = tournamentData.isTeamCountFixed 
               ? approvedTeamsCount === tournamentData.numberOfTeams
-              : tournamentData.numberOfTeams; 
+              : !!tournamentData.numberOfTeams; 
 
             if (isReadyForFixture && tournamentData.fixture) {
               setAppState("fixture");
+            } else if (isReadyForFixture && !tournamentData.fixture) {
+                setAppState("fixture-settings");
             } else {
               setAppState("inviting");
             }
@@ -104,8 +106,25 @@ function CreatePageComponent() {
   
   const handleTournamentUpdate = async (data: Partial<Tournament>) => {
     if (!tournament) return;
+
+    // Check if any of the provided settings values are different from the current tournament state.
+    const hasChanged = Object.keys(data).some(
+      (key) => data[key as keyof typeof data] !== tournament[key as keyof typeof tournament]
+    );
+
+    // If we're coming from the fixture settings page and nothing has changed,
+    // just move to the next state without making a database call.
+    if (appState === 'fixture-settings' && !hasChanged) {
+      setAppState("fixture");
+      return;
+    }
+
     try {
-      await updateTournament(tournament.id, data);
+      // Only call the database if there are actual changes to save.
+      if (hasChanged) {
+        await updateTournament(tournament.id, data);
+      }
+
       const updatedTournament = { ...tournament, ...data };
       setTournament(updatedTournament);
       
@@ -113,9 +132,14 @@ function CreatePageComponent() {
       
       if (appState === 'fixture-settings') {
           setAppState("fixture");
-          toast({ title: 'Success', description: 'Fixture settings updated.' });
+          if (hasChanged) {
+            toast({ title: 'Success', description: 'Fixture settings updated.' });
+          }
       } else if (!isScoreOrStateUpdate) {
-        toast({ title: 'Success', description: 'Tournament settings updated.' });
+        // For other updates, only show toast if something was saved.
+        if (hasChanged) {
+          toast({ title: 'Success', description: 'Tournament settings updated.' });
+        }
       }
 
       // Check if we finalized registration and should move to fixture settings
