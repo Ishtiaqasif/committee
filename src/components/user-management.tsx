@@ -14,6 +14,7 @@ import { Loader, UserPlus, UserMinus, KeyRound, Shield, Crown, Mail } from 'luci
 import { getUserProfiles, getUserByEmail } from '@/lib/firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UserSearchCombobox } from './user-search-combobox';
+import { FootballLoader } from './football-loader';
 
 
 interface UserManagementProps {
@@ -121,9 +122,7 @@ export default function UserManagement({ tournament, onUpdate }: UserManagementP
         <div>
             <h2 className="text-3xl font-bold text-primary">User Management</h2>
             <p className="text-muted-foreground">Add or remove tournament administrators.</p>
-            <div className="mt-6 flex justify-center items-center h-64">
-                <Loader className="h-8 w-8 animate-spin" />
-            </div>
+            <FootballLoader className="mt-6 h-64" />
         </div>
     );
   }

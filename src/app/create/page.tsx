@@ -15,6 +15,7 @@ import { createTournament, getTournament, getTeamsForTournament, updateTournamen
 import { useToast } from "@/hooks/use-toast";
 import AuthButton from "@/components/auth-button";
 import FixtureSettings from "@/components/fixture-settings";
+import { FootballLoader } from "@/components/football-loader";
 
 type AppState = "configuring" | "inviting" | "fixture-settings" | "fixture";
 
@@ -207,11 +208,7 @@ function CreatePageComponent() {
   };
   
   if (authLoading || pageLoading) {
-    return (
-      <div className="flex h-screen w-screen items-center justify-center">
-        <Loader className="h-8 w-8 animate-spin" />
-      </div>
-    );
+    return <FootballLoader className="h-screen w-screen" />;
   }
 
   return (
@@ -235,11 +232,7 @@ function CreatePageComponent() {
 
 export default function CreatePage() {
   return (
-    <Suspense fallback={
-      <div className="flex h-screen w-screen items-center justify-center">
-        <Loader className="h-8 w-8 animate-spin" />
-      </div>
-    }>
+    <Suspense fallback={<FootballLoader className="h-screen w-screen" />}>
       <CreatePageComponent />
     </Suspense>
   );

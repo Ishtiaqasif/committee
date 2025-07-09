@@ -5,12 +5,13 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { getTournament, getTeamsForTournament } from '@/lib/firebase/firestore';
 import { Tournament, Team, Fixture } from '@/types';
-import { Loader, ClipboardList, Home } from 'lucide-react';
+import { ClipboardList, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import KnockoutBracketView from '@/components/knockout-bracket-view';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { useAuth } from '@/context/auth-context';
+import { FootballLoader } from '@/components/football-loader';
 
 export default function KnockoutPage() {
   const params = useParams();
@@ -78,11 +79,7 @@ export default function KnockoutPage() {
   const fixture = getFixture();
   
   if (authLoading || (user && loading)) {
-    return (
-      <div className="flex h-screen w-full items-center justify-center">
-        <Loader className="h-8 w-8 animate-spin" />
-      </div>
-    );
+    return <FootballLoader className="h-screen w-full" />;
   }
 
   if (!user) {
@@ -112,9 +109,7 @@ export default function KnockoutPage() {
         </div>
         
         {loading && (
-             <div className="flex h-64 w-full items-center justify-center">
-                <Loader className="h-8 w-8 animate-spin" />
-            </div>
+            <FootballLoader className="h-64 w-full" />
         )}
 
         {error && (

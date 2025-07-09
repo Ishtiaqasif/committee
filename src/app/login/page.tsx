@@ -15,6 +15,7 @@ import { signInWithGoogle, signUpWithEmailPassword, signInWithEmailPassword } fr
 import { useAuth } from "@/context/auth-context";
 import { ClipboardList, Loader } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { FootballLoader } from "@/components/football-loader";
 
 const signUpSchema = z.object({
   displayName: z.string().min(2, { message: "Name must be at least 2 characters." }),
@@ -84,9 +85,7 @@ function LoginContent() {
 
     if (loading || user) {
         return (
-             <div className="flex h-screen w-screen items-center justify-center">
-                <Loader className="h-8 w-8 animate-spin" />
-            </div>
+             <FootballLoader className="h-screen w-screen" />
         );
     }
 
@@ -165,11 +164,7 @@ function LoginContent() {
 
 export default function LoginPage() {
     return (
-        <Suspense fallback={
-            <div className="flex h-screen w-screen items-center justify-center">
-                <Loader className="h-8 w-8 animate-spin" />
-            </div>
-        }>
+        <Suspense fallback={<FootballLoader className="h-screen w-screen" />}>
             <LoginContent />
         </Suspense>
     );

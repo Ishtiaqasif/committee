@@ -20,6 +20,9 @@ import { generateTeamLogo } from '@/ai/flows/generate-team-logo';
 import ChampionView from '@/components/champion-view';
 import { useAuth } from '@/context/auth-context';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { FootballLoader } from '@/components/football-loader';
+import { query, where, getDocs, collection } from 'firebase/firestore';
+import { db } from '@/lib/firebase/config';
 
 const formSchema = z.object({
   teamName: z.string().min(1, 'Team name is required.'),
@@ -78,6 +81,7 @@ export default function RegisterTeamPage() {
   const [isRegistered, setIsRegistered] = useState(false);
   const [logo, setLogo] = useState('');
   const [isGeneratingLogo, setIsGeneratingLogo] = useState(false);
+  const [userHasRegistered, setUserHasRegistered] = useState(false);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -104,8 +108,16 @@ export default function RegisterTeamPage() {
         if (tournamentData) {
           setTournament(tournamentData);
           if (!tournamentData.winner) {
-            const teamsData = await getTeamsForTournament(tournamentId);
-            setTeams(teamsData);
+            const teamsRef = collection(db, 'tournaments', tournamentId, 'teams');
+            const q = query(teamsRef, where("ownerId", "==", user.uid));
+            const userTeamsSnapshot = await getDocs(q);
+
+            if (!userTeamsSnapshot.empty) {
+                setUserHasRegistered(true);
+            }
+            
+            const allTeamsData = await getTeamsForTournament(tournamentId);
+            setTeams(allTeamsData);
           }
         } else {
           toast({ variant: 'destructive', title: 'Error', description: 'Tournament not found.' });
@@ -158,7 +170,7 @@ export default function RegisterTeamPage() {
         logo: logo
       });
       setIsRegistered(true);
-      toast({ title: 'Success!', description: 'Your team has been registered.' });
+      toast({ title: 'Success!', description: tournament?.isTeamCountFixed ? 'Your team has been registered.' : 'Your registration is pending approval.' });
     } catch (error: any) {
       console.error(error);
       toast({ variant: 'destructive', title: 'Registration Failed', description: error.message || 'Could not register your team.' });
@@ -167,14 +179,10 @@ export default function RegisterTeamPage() {
     }
   };
   
-  const isTournamentFull = tournament ? teams.length >= tournament.numberOfTeams : false;
+  const isTournamentFull = tournament?.isTeamCountFixed ? teams.filter(t => t.status === 'approved').length >= (tournament.numberOfTeams ?? 0) : false;
 
   if (authLoading || (user && loading)) {
-    return (
-      <div className="flex min-h-screen w-full items-center justify-center">
-        <Loader className="h-8 w-8 animate-spin" />
-      </div>
-    );
+    return <FootballLoader className="min-h-screen w-full" />;
   }
 
   if (!user) {
@@ -208,12 +216,17 @@ export default function RegisterTeamPage() {
     )
   }
   
-  if (isRegistered) {
+  if (isRegistered || userHasRegistered) {
       return (
         <div className="flex min-h-screen flex-col items-center justify-center bg-background p-4 text-center">
             <CheckCircle className="h-24 w-24 text-green-500" />
-            <h1 className="mt-6 text-4xl font-bold">Registration Successful!</h1>
-            <p className="mt-2 text-muted-foreground">Your team, <span className="font-bold text-primary">{form.getValues('teamName')}</span>, is now registered for the tournament.</p>
+            <h1 className="mt-6 text-4xl font-bold">Registration Submitted!</h1>
+            <p className="mt-2 text-muted-foreground">
+                {tournament.isTeamCountFixed
+                    ? <>Your team, <span className="font-bold text-primary">{form.getValues('teamName') || 'Your Team'}</span>, is now registered for the tournament.</>
+                    : <>Your team registration is pending approval by the tournament admin.</>
+                }
+            </p>
             <p className="mt-1 text-muted-foreground">The tournament organizer will take it from here.</p>
              <Button asChild className="mt-8">
                 <Link href="/">Back to Committee Home</Link>
@@ -234,9 +247,11 @@ export default function RegisterTeamPage() {
           <CardDescription>
             You have been invited to join this tournament. Please enter your team's name and generate a logo.
           </CardDescription>
-          <div className="text-sm text-muted-foreground pt-2">
-            Registered Teams: {teams.length} / {tournament.numberOfTeams}
-          </div>
+          {tournament.isTeamCountFixed && (
+            <div className="text-sm text-muted-foreground pt-2">
+                Approved Teams: {teams.filter(t => t.status === 'approved').length} / {tournament.numberOfTeams}
+            </div>
+          )}
         </CardHeader>
         <CardContent>
           {isTournamentFull ? (

@@ -34,6 +34,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Badge } from './ui/badge';
 import { UserSearchCombobox } from './user-search-combobox';
+import { FootballLoader } from './football-loader';
 
 interface TeamInvitationProps {
     tournament: Tournament;
@@ -243,9 +244,7 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
                 <Badge variant="outline">{teamList.length}</Badge>
             </h3>
             {isLoading ? (
-                <div className="flex justify-center items-center h-24">
-                    <Loader className="animate-spin text-primary"/>
-                </div>
+                <FootballLoader className="h-24" withText={false} />
             ) : (
                 teamList.length > 0 ? (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-60 overflow-y-auto p-1">

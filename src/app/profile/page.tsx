@@ -6,7 +6,7 @@ import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Loader, KeyRound, Mail, PlusCircle, LayoutGrid, Calendar, Users, Trophy, Crown, Shield, Activity, Archive, ChevronDown } from "lucide-react";
+import { KeyRound, Mail, PlusCircle, LayoutGrid, Calendar, Users, Trophy, Crown, Shield, Activity, Archive, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getTournamentsForUserWithRoles, updateTournament } from "@/lib/firebase/firestore";
@@ -33,6 +33,7 @@ import {
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 import Image from "next/image";
+import { FootballLoader } from "@/components/football-loader";
 
 
 const RoleBadge = ({ role }: { role: string }) => {
@@ -200,11 +201,7 @@ export default function ProfilePage() {
   }, [tournaments]);
 
   if (authLoading || !user) {
-    return (
-      <div className="flex h-screen w-screen items-center justify-center">
-        <Loader className="h-8 w-8 animate-spin" />
-      </div>
-    );
+    return <FootballLoader className="h-screen w-screen" />;
   }
 
   return (
@@ -250,9 +247,7 @@ export default function ProfilePage() {
             </div>
        
             {loadingTournaments ? (
-                <div className="flex h-64 w-full items-center justify-center">
-                    <Loader className="h-8 w-8 animate-spin" />
-                </div>
+                <FootballLoader className="h-64 w-full" />
             ) : tournaments.length > 0 ? (
                 <div className="space-y-12">
                      {ongoingTournaments.length > 0 && (

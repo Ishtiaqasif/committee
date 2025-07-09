@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { auth } from '@/lib/firebase/config';
-import { Loader } from 'lucide-react';
+import { FootballLoader } from '@/components/football-loader';
 
 interface AuthContextType {
   user: User | null;
@@ -30,9 +30,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   if (loading) {
     return (
-      <div className="flex h-screen w-screen items-center justify-center">
-        <Loader className="h-8 w-8 animate-spin" />
-      </div>
+      <FootballLoader className="h-screen w-screen" />
     );
   }
 
