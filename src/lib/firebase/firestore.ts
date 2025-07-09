@@ -147,8 +147,17 @@ export async function getTournamentsForUserWithRoles(userId: string): Promise<To
 
 
 export async function updateTournament(tournamentId: string, data: Partial<Tournament>): Promise<void> {
+    const dataToSave = { ...data };
+    
+    // Remove undefined fields before sending to Firestore
+    (Object.keys(dataToSave) as Array<keyof typeof dataToSave>).forEach(key => {
+        if (dataToSave[key] === undefined) {
+            delete dataToSave[key];
+        }
+    });
+
     const tournamentRef = doc(db, "tournaments", tournamentId);
-    await updateDoc(tournamentRef, data);
+    await updateDoc(tournamentRef, dataToSave);
 }
 
 export async function deleteTournament(tournamentId: string): Promise<void> {
