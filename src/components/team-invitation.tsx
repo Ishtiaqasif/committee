@@ -15,10 +15,10 @@ import { useAuth } from '@/context/auth-context';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { generateTeamLogo } from '@/ai/flows/generate-team-logo';
-import { addTeamToTournament, updateTeam, removeTeam } from '@/lib/firebase/firestore';
+import { addTeamToTournament, updateTeam, removeTeam, getUserByEmail } from '@/lib/firebase/firestore';
 import { Separator } from './ui/separator';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
@@ -42,6 +42,7 @@ interface TeamInvitationProps {
 
 const formSchema = z.object({
   teamName: z.string().min(1, 'Team name is required.'),
+  ownerEmail: z.string().email('A valid email address is required.'),
 });
 
 // Helper function to resize and compress the image
@@ -94,7 +95,7 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
     
     const manualRegForm = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
-        defaultValues: { teamName: '' },
+        defaultValues: { teamName: '', ownerEmail: '' },
     });
 
     const approvedTeams = teams.filter(t => t.status === 'approved');
@@ -182,20 +183,33 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
 
         setIsSubmitting(true);
         try {
-          await addTeamToTournament(tournament.id, {
-            name: values.teamName,
-            ownerId: user.uid,
-            ownerName: user.displayName || 'Participant',
-            logo: logo
-          });
-          toast({ title: 'Team Added', description: `${values.teamName} has been submitted for registration.` });
-          manualRegForm.reset();
-          setLogo('');
+            const owner = await getUserByEmail(values.ownerEmail);
+            if (!owner) {
+                manualRegForm.setError('ownerEmail', { message: 'No registered user found with this email.' });
+                setIsSubmitting(false);
+                return;
+            }
+
+            if (teams.some(t => t.ownerId === owner.uid)) {
+                manualRegForm.setError('ownerEmail', { message: 'This user has already registered a team for this tournament.'});
+                setIsSubmitting(false);
+                return;
+            }
+
+            await addTeamToTournament(tournament.id, {
+                name: values.teamName,
+                ownerId: owner.uid,
+                ownerName: owner.displayName || 'Participant',
+                logo: logo
+            });
+            toast({ title: 'Team Added', description: `${values.teamName} has been submitted for registration.` });
+            manualRegForm.reset();
+            setLogo('');
         } catch (error: any) {
-          console.error(error);
-          toast({ variant: 'destructive', title: 'Registration Failed', description: error.message || 'Could not register team.' });
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Registration Failed', description: error.message || 'Could not register team.' });
         } finally {
-          setIsSubmitting(false);
+            setIsSubmitting(false);
         }
     };
 
@@ -308,6 +322,22 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
                         {isGeneratingLogo ? <Loader className="animate-spin" /> : <Sparkles />}
                       </Button>
                     </div>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={manualRegForm.control}
+                name="ownerEmail"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="flex items-center gap-2"><User className="h-4 w-4" /> Team Owner's Email</FormLabel>
+                    <FormControl>
+                      <Input placeholder="owner@example.com" {...field} />
+                    </FormControl>
+                     <FormDescription>
+                        The owner must be a registered user on Committee.
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
