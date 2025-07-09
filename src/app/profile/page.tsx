@@ -6,7 +6,7 @@ import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Loader, KeyRound, Mail, User as UserIcon, PlusCircle, LayoutGrid, Calendar, Users, Trophy, Crown, Shield } from "lucide-react";
+import { Loader, KeyRound, Mail, User as UserIcon, PlusCircle, LayoutGrid, Calendar, Users, Trophy, Crown, Shield, Activity } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getTournamentsForUserWithRoles } from "@/lib/firebase/firestore";
@@ -126,7 +126,14 @@ export default function ProfilePage() {
                         <CardHeader>
                             <CardTitle className="flex items-start justify-between">
                                 <span className="pr-4">{t.tournamentName}</span>
-                                <Trophy className="h-5 w-5 text-accent flex-shrink-0" />
+                                {t.isActive ? (
+                                    <Badge variant="outline" className="text-accent border-accent gap-1.5 flex-shrink-0">
+                                        <Activity className="h-3 w-3" />
+                                        Active
+                                    </Badge>
+                                ) : (
+                                    <Trophy className="h-5 w-5 text-accent flex-shrink-0" />
+                                )}
                             </CardTitle>
                             <CardDescription className="capitalize">{t.tournamentType.replace('-', ' ')}</CardDescription>
                         </CardHeader>

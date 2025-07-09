@@ -40,6 +40,7 @@ export type Tournament = TournamentCreationData & {
   hybridStage?: 'group' | 'qualification-summary' | 'knockout';
   admins?: string[];
   participants?: string[];
+  isActive?: boolean;
   // Client-side property
   roles?: UserRole[];
 };

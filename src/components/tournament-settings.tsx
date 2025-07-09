@@ -4,24 +4,26 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Tournament, TournamentCreationData } from '@/types';
+import { Tournament } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Languages, Save, FileSignature, Loader } from 'lucide-react';
+import { Languages, Save, FileSignature, Loader, Activity } from 'lucide-react';
 import { useTransition } from 'react';
+import { Switch } from '@/components/ui/switch';
 
 interface TournamentSettingsProps {
   tournament: Tournament;
-  onUpdate: (data: Partial<TournamentCreationData>) => Promise<void> | void;
+  onUpdate: (data: Partial<Tournament>) => Promise<void> | void;
   isPrivilegedUser: boolean;
 }
 
 const formSchema = z.object({
   tournamentName: z.string().min(3, 'Tournament name must be at least 3 characters long.'),
   language: z.string(),
+  isActive: z.boolean().default(false),
 });
 
 export default function TournamentSettings({ tournament, onUpdate, isPrivilegedUser }: TournamentSettingsProps) {
@@ -32,6 +34,7 @@ export default function TournamentSettings({ tournament, onUpdate, isPrivilegedU
     defaultValues: {
       tournamentName: tournament.tournamentName,
       language: tournament.language || 'en',
+      isActive: tournament.isActive || false,
     },
   });
 
@@ -96,6 +99,26 @@ export default function TournamentSettings({ tournament, onUpdate, isPrivilegedU
                       <FormMessage />
                     </FormItem>
                   )}
+                />
+                <FormField
+                    control={form.control}
+                    name="isActive"
+                    render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4 shadow-sm">
+                        <div className="space-y-0.5">
+                            <FormLabel className="flex items-center gap-2"><Activity className="h-4 w-4"/> Active Tournament</FormLabel>
+                            <FormDescription>
+                                Mark this tournament as active. Active tournaments may be featured or highlighted.
+                            </FormDescription>
+                        </div>
+                        <FormControl>
+                        <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                        />
+                        </FormControl>
+                    </FormItem>
+                    )}
                 />
                 {isPrivilegedUser && (
                   <div className="flex justify-end">

@@ -23,6 +23,7 @@ export async function createTournament(tournamentData: TournamentCreationData, u
         awayGoalsRule: tournamentData.awayGoalsRule ?? false,
         admins: [],
         participants: [],
+        isActive: false,
     };
     const docRef = await addDoc(collection(db, "tournaments"), newTournament);
     return docRef.id;
