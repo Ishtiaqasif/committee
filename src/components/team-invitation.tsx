@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useEffect, useState } from 'react';
@@ -417,7 +416,7 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
             </CardContent>
             <CardFooter className="flex-col gap-3 pt-6">
                  {isPrivilegedUser && !tournament.isTeamCountFixed && (
-                    <Button size="lg" onClick={handleFinalize}>
+                    <Button size="lg" onClick={handleFinalize} disabled={approvedTeams.length < 3}>
                         Finalize Registration & Proceed <ArrowRight className="ml-2 h-4 w-4"/>
                     </Button>
                  )}
