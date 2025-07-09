@@ -317,6 +317,8 @@ export default function TeamsList({ teams, fixture, scores, tournament, currentU
                                             const opponent = match.team1.name === team.name ? match.team2 : match.team1;
                                             const teamScore = match.team1.name === team.name ? scoreData?.score1 : scoreData?.score2;
                                             const opponentScore = match.team1.name === team.name ? scoreData?.score2 : scoreData?.score1;
+                                            const teamTiebreakScore = match.team1.name === team.name ? scoreData?.score1_tiebreak : scoreData?.score2_tiebreak;
+                                            const opponentTiebreakScore = match.team1.name === team.name ? scoreData?.score2_tiebreak : scoreData?.score1_tiebreak;
                                             
                                             let resultIndicator;
                                             if (teamScore !== null && teamScore !== undefined && opponentScore !== null && opponentScore !== undefined) {
@@ -324,8 +326,26 @@ export default function TeamsList({ teams, fixture, scores, tournament, currentU
                                                     resultIndicator = <span className="font-bold text-accent">W</span>;
                                                 } else if (teamScore < opponentScore) {
                                                     resultIndicator = <span className="font-bold text-destructive">L</span>;
-                                                } else {
-                                                    resultIndicator = <span className="font-bold text-muted-foreground">D</span>;
+                                                } else { // Draw
+                                                    if (teamTiebreakScore != null && opponentTiebreakScore != null) {
+                                                        if (teamTiebreakScore > opponentTiebreakScore) {
+                                                            resultIndicator = <span className="font-bold text-accent">W</span>;
+                                                        } else if (teamTiebreakScore < opponentTiebreakScore) {
+                                                            resultIndicator = <span className="font-bold text-destructive">L</span>;
+                                                        } else {
+                                                            resultIndicator = <span className="font-bold text-muted-foreground">D</span>;
+                                                        }
+                                                    } else {
+                                                        resultIndicator = <span className="font-bold text-muted-foreground">D</span>;
+                                                    }
+                                                }
+                                            }
+
+                                            let scoreString = 'TBD';
+                                            if (scoreData) {
+                                                scoreString = `${teamScore ?? '-'} : ${opponentScore ?? '-'}`;
+                                                if (teamScore !== null && teamScore === opponentScore && teamTiebreakScore != null && opponentTiebreakScore != null) {
+                                                    scoreString += ` (${teamTiebreakScore} - ${opponentTiebreakScore})`;
                                                 }
                                             }
 
@@ -336,7 +356,7 @@ export default function TeamsList({ teams, fixture, scores, tournament, currentU
                                                         <span className="font-medium">{opponent.name}</span>
                                                     </div>
                                                     <div className="flex items-center gap-4">
-                                                        <span className="font-mono text-sm">{scoreData ? `${teamScore ?? '-'} : ${opponentScore ?? '-'}` : 'TBD'}</span>
+                                                        <span className="font-mono text-sm">{scoreString}</span>
                                                         <div className="w-4 text-center">{resultIndicator}</div>
                                                         <span className="text-muted-foreground text-xs w-20 text-right truncate">{roundName}</span>
                                                     </div>
