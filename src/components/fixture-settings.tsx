@@ -9,14 +9,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { Settings } from "lucide-react";
+import { Settings, ArrowLeft } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "./ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { useEffect } from "react";
 
 interface FixtureSettingsProps {
   tournament: Tournament;
   onUpdate: (data: Partial<Tournament>) => void;
+  onBack: () => void;
   isPrivilegedUser: boolean;
 }
 
@@ -56,13 +58,16 @@ const createFormSchema = (tournament: Tournament) => z.object({
 });
 
 
-export default function FixtureSettings({ tournament, onUpdate, isPrivilegedUser }: FixtureSettingsProps) {
+export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivilegedUser }: FixtureSettingsProps) {
   
   const formSchema = createFormSchema(tournament);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      tournamentType: tournament.tournamentType,
+  });
+
+  useEffect(() => {
+    form.reset({
+      tournamentType: tournament.tournamentType || 'single elimination',
       roundRobinGrouping: tournament.roundRobinGrouping || 'all-play-all',
       teamsPerGroup: tournament.teamsPerGroup,
       teamsAdvancing: tournament.teamsAdvancing,
@@ -70,8 +75,8 @@ export default function FixtureSettings({ tournament, onUpdate, isPrivilegedUser
       knockoutHomeAndAway: tournament.knockoutHomeAndAway ?? false,
       awayGoalsRule: tournament.awayGoalsRule ?? false,
       fixtureGeneration: tournament.fixtureGeneration ?? 'predefined',
-    },
-  });
+    });
+  }, [tournament, form]);
 
   const watchedTournamentType = form.watch("tournamentType");
   const roundRobinGrouping = form.watch("roundRobinGrouping");
@@ -116,7 +121,7 @@ export default function FixtureSettings({ tournament, onUpdate, isPrivilegedUser
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Tournament Type</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select a type" />
@@ -317,7 +322,11 @@ export default function FixtureSettings({ tournament, onUpdate, isPrivilegedUser
                     <p className="text-center text-muted-foreground p-4">No additional settings are required for a Single Elimination tournament.</p>
                  )}
             </CardContent>
-            <CardFooter className="flex justify-center pt-6">
+            <CardFooter className="flex justify-center pt-6 gap-4">
+              <Button type="button" variant="outline" onClick={onBack}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Registration
+              </Button>
               <Button type="submit" size="lg">Save Settings & Continue</Button>
             </CardFooter>
           </form>

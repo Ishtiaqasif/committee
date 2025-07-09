@@ -135,6 +135,10 @@ function CreatePageComponent() {
     setAppState("fixture-settings");
   };
 
+  const handleBackToInviting = () => {
+    setAppState("inviting");
+  };
+
   const handleReset = () => {
     router.push('/create');
   };
@@ -159,6 +163,7 @@ function CreatePageComponent() {
           <FixtureSettings
             tournament={tournament}
             onUpdate={handleTournamentUpdate}
+            onBack={handleBackToInviting}
             isPrivilegedUser={isPrivilegedUser}
           />
         );
