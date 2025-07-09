@@ -4,7 +4,7 @@
 import { useEffect, useState, useTransition } from 'react';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
-import { Team, Tournament, TeamStatus } from '@/types';
+import { Team, Tournament, TeamStatus, UserProfile } from '@/types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -35,19 +35,9 @@ import {
 import { Badge } from './ui/badge';
 import { UserSearchCombobox } from './user-search-combobox';
 import { FootballLoader } from './football-loader';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 
-interface TeamInvitationProps {
-    tournament: Tournament;
-    onTeamsFinalized: (teams: Team[]) => void;
-    onTournamentUpdate: (data: Partial<Tournament>) => void;
-}
-
-const formSchema = z.object({
-  teamName: z.string().min(1, 'Team name is required.'),
-  ownerEmail: z.string().email('A valid email address is required.'),
-});
-
-// Helper function to resize and compress the image
+// Helper function to resize and compress the image, moved to top-level
 const compressImage = (dataUri: string, maxWidth: number, maxHeight: number): Promise<string> => {
     return new Promise((resolve, reject) => {
         const img = new window.Image();
@@ -81,7 +71,237 @@ const compressImage = (dataUri: string, maxWidth: number, maxHeight: number): Pr
     });
 };
 
+// --- Refactored OwnerTeamRegistration Component ---
+const ownerFormSchema = z.object({
+    teamName: z.string().min(1, 'Team name is required.'),
+});
 
+function OwnerTeamRegistration({ onTeamAdded, teams, tournamentId, user }: { onTeamAdded: (team: Team) => void; teams: Team[]; tournamentId: string; user: UserProfile }) {
+    const { toast } = useToast();
+    const [isOwnerPending, startOwnerTransition] = useTransition();
+    const [ownerLogo, setOwnerLogo] = useState('');
+    const [isGeneratingOwnerLogo, setIsGeneratingOwnerLogo] = useState(false);
+
+    const ownerForm = useForm<z.infer<typeof ownerFormSchema>>({
+        resolver: zodResolver(ownerFormSchema),
+        defaultValues: { teamName: '' },
+    });
+
+    const handleGenerateOwnerLogo = async () => {
+        const teamName = ownerForm.getValues('teamName');
+        if (!teamName) {
+            ownerForm.setError('teamName', { message: 'Please enter a team name first.' });
+            return;
+        }
+
+        setIsGeneratingOwnerLogo(true);
+        try {
+            const result = await generateTeamLogo({ teamName });
+            const compressedLogo = await compressImage(result.logoDataUri, 128, 128);
+            setOwnerLogo(compressedLogo);
+            toast({ title: 'Logo Generated!', description: 'A unique logo for your team has been created.' });
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate logo.' });
+        } finally {
+            setIsGeneratingOwnerLogo(false);
+        }
+    };
+
+    const onOwnerSubmit = async (values: z.infer<typeof ownerFormSchema>) => {
+        if (teams.some(team => team.name.toLowerCase() === values.teamName.toLowerCase())) {
+            ownerForm.setError('teamName', { message: 'This team name is already taken.'});
+            return;
+        }
+
+        startOwnerTransition(async () => {
+            try {
+                const newTeam = await addTeamToTournament(tournamentId, {
+                    name: values.teamName,
+                    ownerId: user.uid,
+                    ownerName: user.displayName || 'Participant',
+                    logo: ownerLogo
+                }, true);
+                toast({ title: 'Your Team is Registered!', description: `${values.teamName} has been approved and added to the tournament.` });
+                onTeamAdded(newTeam);
+                ownerForm.reset();
+                setOwnerLogo('');
+            } catch (error: any) {
+                console.error(error);
+                toast({ variant: 'destructive', title: 'Registration Failed', description: error.message || 'Could not register your team.' });
+            }
+        });
+    };
+
+    return (
+        <Card className="mt-4 border-accent/50 shadow-none">
+            <CardContent className="pt-6">
+                <Form {...ownerForm}>
+                    <form onSubmit={ownerForm.handleSubmit(onOwnerSubmit)} className="space-y-6">
+                        <div className="flex justify-center">
+                            <div className="relative h-24 w-24 bg-muted rounded-full flex items-center justify-center border-2 border-dashed">
+                            {ownerLogo ? <Image src={ownerLogo} alt="Team Logo" layout="fill" className="rounded-full object-cover" /> : <ImageIcon className="h-10 w-10 text-muted-foreground" />}
+                            {isGeneratingOwnerLogo && <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center"><Loader className="animate-spin text-white" /></div>}
+                            </div>
+                        </div>
+                        <FormField
+                            control={ownerForm.control}
+                            name="teamName"
+                            render={({ field }) => (
+                            <FormItem>
+                                <FormLabel className="flex items-center gap-2"><Shield className="h-4 w-4" /> Your Team Name</FormLabel>
+                                <div className="flex items-center gap-2">
+                                <FormControl><Input placeholder="Enter your team name" {...field} /></FormControl>
+                                <Button type="button" variant="outline" size="icon" onClick={handleGenerateOwnerLogo} disabled={isGeneratingOwnerLogo || isOwnerPending} title="Generate Logo">
+                                    {isGeneratingOwnerLogo ? <Loader className="animate-spin" /> : <Sparkles />}
+                                </Button>
+                                </div>
+                                <FormMessage />
+                            </FormItem>
+                            )}
+                        />
+                        <Button type="submit" disabled={isOwnerPending || isGeneratingOwnerLogo} className="w-full">
+                            {isOwnerPending ? <Loader className="animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
+                            Register My Team
+                        </Button>
+                    </form>
+                </Form>
+            </CardContent>
+        </Card>
+    );
+}
+
+// --- Refactored ManualTeamRegistration Component ---
+const manualFormSchema = z.object({
+  teamName: z.string().min(1, 'Team name is required.'),
+  ownerEmail: z.string().email('A valid email address is required.'),
+});
+
+function ManualTeamRegistration({ onTeamAdded, teams, tournamentId }: { onTeamAdded: (team: Team) => void; teams: Team[]; tournamentId: string; }) {
+    const { toast } = useToast();
+    const [isPending, startTransition] = useTransition();
+    const [manualLogo, setManualLogo] = useState('');
+    const [isGeneratingManualLogo, setIsGeneratingManualLogo] = useState(false);
+
+    const manualRegForm = useForm<z.infer<typeof manualFormSchema>>({
+        resolver: zodResolver(manualFormSchema),
+        defaultValues: { teamName: '', ownerEmail: '' },
+    });
+
+    const handleGenerateManualLogo = async () => {
+        const teamName = manualRegForm.getValues('teamName');
+        if (!teamName) {
+            manualRegForm.setError('teamName', { message: 'Please enter a team name first.' });
+            return;
+        }
+        setIsGeneratingManualLogo(true);
+        try {
+            const result = await generateTeamLogo({ teamName });
+            const compressedLogo = await compressImage(result.logoDataUri, 128, 128);
+            setManualLogo(compressedLogo);
+            toast({ title: 'Logo Generated!', description: 'A unique logo for a team has been created.' });
+        } catch (error) {
+            console.error(error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate logo.' });
+        } finally {
+            setIsGeneratingManualLogo(false);
+        }
+    };
+
+    const onManualSubmit = async (values: z.infer<typeof manualFormSchema>) => {
+        if (teams.some(team => team.name.toLowerCase() === values.teamName.toLowerCase())) {
+            manualRegForm.setError('teamName', { message: 'This team name is already taken.'});
+            return;
+        }
+        startTransition(async () => {
+            try {
+                const owner = await getUserByEmail(values.ownerEmail);
+                if (!owner) {
+                    manualRegForm.setError('ownerEmail', { message: 'No registered user found with this email.' });
+                    return;
+                }
+                if (teams.some(t => t.ownerId === owner.uid)) {
+                    manualRegForm.setError('ownerEmail', { message: 'This user has already registered a team for this tournament.'});
+                    return;
+                }
+                const newTeam = await addTeamToTournament(tournamentId, {
+                    name: values.teamName,
+                    ownerId: owner.uid,
+                    ownerName: owner.displayName || 'Participant',
+                    logo: manualLogo
+                }, true);
+                toast({ title: 'Team Added', description: `${values.teamName} has been approved and registered.` });
+                onTeamAdded(newTeam);
+                manualRegForm.reset();
+                setManualLogo('');
+            } catch (error: any) {
+                console.error(error);
+                toast({ variant: 'destructive', title: 'Registration Failed', description: error.message || 'Could not register team.' });
+            }
+        });
+    };
+
+    return (
+        <Card className="mt-4 border-primary/50 shadow-none">
+            <CardHeader>
+                <CardTitle>Manually Add a Team</CardTitle>
+                <CardDescription>Add a team directly. Manually added teams are automatically approved.</CardDescription>
+            </CardHeader>
+            <CardContent>
+            <Form {...manualRegForm}>
+                <form onSubmit={manualRegForm.handleSubmit(onManualSubmit)} className="space-y-6">
+                <div className="flex justify-center">
+                    <div className="relative h-24 w-24 bg-muted rounded-full flex items-center justify-center border-2 border-dashed">
+                    {manualLogo ? <Image src={manualLogo} alt="Team Logo" layout="fill" className="rounded-full object-cover" /> : <ImageIcon className="h-10 w-10 text-muted-foreground" />}
+                    {isGeneratingManualLogo && <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center"><Loader className="animate-spin text-white" /></div>}
+                    </div>
+                </div>
+                <FormField
+                    control={manualRegForm.control}
+                    name="teamName"
+                    render={({ field }) => (
+                    <FormItem>
+                        <FormLabel className="flex items-center gap-2"><Shield className="h-4 w-4" /> Team Name</FormLabel>
+                        <div className="flex items-center gap-2">
+                        <FormControl><Input placeholder="Enter team name" {...field} /></FormControl>
+                        <Button type="button" variant="outline" size="icon" onClick={handleGenerateManualLogo} disabled={isGeneratingManualLogo || isPending} title="Generate Logo">
+                            {isGeneratingManualLogo ? <Loader className="animate-spin" /> : <Sparkles />}
+                        </Button>
+                        </div>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <FormField
+                    control={manualRegForm.control}
+                    name="ownerEmail"
+                    render={({ field }) => (
+                    <FormItem className="flex flex-col">
+                        <FormLabel className="flex items-center gap-2"><User className="h-4 w-4" /> Team Owner</FormLabel>
+                        <UserSearchCombobox
+                        value={field.value}
+                        onChange={field.onChange}
+                        disabled={isPending || isGeneratingManualLogo}
+                        />
+                        <FormDescription>
+                            Search for a registered user by name or email.
+                        </FormDescription>
+                        <FormMessage />
+                    </FormItem>
+                    )}
+                />
+                <Button type="submit" disabled={isPending || isGeneratingManualLogo} className="w-full">
+                    {isPending ? <Loader className="animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
+                    Add Team
+                </Button>
+                </form>
+            </Form>
+            </CardContent>
+        </Card>
+    );
+}
+
+// --- Main TeamInvitation Component ---
 export default function TeamInvitation({ tournament, onTeamsFinalized, onTournamentUpdate }: TeamInvitationProps) {
     const [teams, setTeams] = useState<Team[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -247,235 +467,6 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
         </div>
     );
     
-    const OwnerTeamRegistration = ({ onTeamAdded }: { onTeamAdded: (team: Team) => void }) => {
-        const { toast } = useToast();
-        const [isOwnerPending, startOwnerTransition] = useTransition();
-        const [ownerLogo, setOwnerLogo] = useState('');
-        const [isGeneratingOwnerLogo, setIsGeneratingOwnerLogo] = useState(false);
-
-        const ownerFormSchema = z.object({
-            teamName: z.string().min(1, 'Team name is required.'),
-        });
-
-        const ownerForm = useForm<z.infer<typeof ownerFormSchema>>({
-            resolver: zodResolver(ownerFormSchema),
-            defaultValues: { teamName: '' },
-        });
-
-        const handleGenerateOwnerLogo = async () => {
-            const teamName = ownerForm.getValues('teamName');
-            if (!teamName) {
-                ownerForm.setError('teamName', { message: 'Please enter a team name first.' });
-                return;
-            }
-
-            setIsGeneratingOwnerLogo(true);
-            try {
-                const result = await generateTeamLogo({ teamName });
-                const compressedLogo = await compressImage(result.logoDataUri, 128, 128);
-                setOwnerLogo(compressedLogo);
-                toast({ title: 'Logo Generated!', description: 'A unique logo for your team has been created.' });
-            } catch (error) {
-                console.error(error);
-                toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate logo.' });
-            } finally {
-                setIsGeneratingOwnerLogo(false);
-            }
-        };
-        
-        const onOwnerSubmit = async (values: z.infer<typeof ownerFormSchema>) => {
-            if (!tournament.id || !user) return;
-            
-            if (teams.some(team => team.name.toLowerCase() === values.teamName.toLowerCase())) {
-                ownerForm.setError('teamName', { message: 'This team name is already taken.'});
-                return;
-            }
-
-            startOwnerTransition(async () => {
-                try {
-                    const newTeam = await addTeamToTournament(tournament.id, {
-                        name: values.teamName,
-                        ownerId: user.uid,
-                        ownerName: user.displayName || 'Participant',
-                        logo: ownerLogo
-                    }, true);
-                    toast({ title: 'Your Team is Registered!', description: `${values.teamName} has been approved and added to the tournament.` });
-                    onTeamAdded(newTeam);
-                    ownerForm.reset();
-                    setOwnerLogo('');
-                } catch (error: any) {
-                    console.error(error);
-                    toast({ variant: 'destructive', title: 'Registration Failed', description: error.message || 'Could not register your team.' });
-                }
-            });
-        };
-
-        return (
-            <Card className="mt-8 border-accent/50">
-                <CardHeader>
-                    <CardTitle>Register Your Own Team</CardTitle>
-                    <CardDescription>As the tournament owner, you can register your team here.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <Form {...ownerForm}>
-                        <form onSubmit={ownerForm.handleSubmit(onOwnerSubmit)} className="space-y-6">
-                            <div className="flex justify-center">
-                                <div className="relative h-24 w-24 bg-muted rounded-full flex items-center justify-center border-2 border-dashed">
-                                {ownerLogo ? <Image src={ownerLogo} alt="Team Logo" layout="fill" className="rounded-full object-cover" /> : <ImageIcon className="h-10 w-10 text-muted-foreground" />}
-                                {isGeneratingOwnerLogo && <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center"><Loader className="animate-spin text-white" /></div>}
-                                </div>
-                            </div>
-                            <FormField
-                                control={ownerForm.control}
-                                name="teamName"
-                                render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel className="flex items-center gap-2"><Shield className="h-4 w-4" /> Your Team Name</FormLabel>
-                                    <div className="flex items-center gap-2">
-                                    <FormControl><Input placeholder="Enter your team name" {...field} /></FormControl>
-                                    <Button type="button" variant="outline" size="icon" onClick={handleGenerateOwnerLogo} disabled={isGeneratingOwnerLogo || isOwnerPending} title="Generate Logo">
-                                        {isGeneratingOwnerLogo ? <Loader className="animate-spin" /> : <Sparkles />}
-                                    </Button>
-                                    </div>
-                                    <FormMessage />
-                                </FormItem>
-                                )}
-                            />
-                            <Button type="submit" disabled={isOwnerPending || isGeneratingOwnerLogo} className="w-full">
-                                {isOwnerPending ? <Loader className="animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
-                                Register My Team
-                            </Button>
-                        </form>
-                    </Form>
-                </CardContent>
-            </Card>
-        );
-    };
-
-    const ManualTeamRegistration = ({ onTeamAdded }: { onTeamAdded: (team: Team) => void }) => {
-        const [manualLogo, setManualLogo] = useState('');
-        const [isGeneratingManualLogo, setIsGeneratingManualLogo] = useState(false);
-
-        const manualRegForm = useForm<z.infer<typeof formSchema>>({
-            resolver: zodResolver(formSchema),
-            defaultValues: { teamName: '', ownerEmail: '' },
-        });
-
-        const handleGenerateManualLogo = async () => {
-            const teamName = manualRegForm.getValues('teamName');
-            if (!teamName) {
-                manualRegForm.setError('teamName', { message: 'Please enter a team name first.' });
-                return;
-            }
-            setIsGeneratingManualLogo(true);
-            try {
-                const result = await generateTeamLogo({ teamName });
-                const compressedLogo = await compressImage(result.logoDataUri, 128, 128);
-                setManualLogo(compressedLogo);
-                toast({ title: 'Logo Generated!', description: 'A unique logo for a team has been created.' });
-            } catch (error) {
-                console.error(error);
-                toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate logo.' });
-            } finally {
-                setIsGeneratingManualLogo(false);
-            }
-        };
-
-        const onManualSubmit = async (values: z.infer<typeof formSchema>) => {
-            if (!tournament.id || !user) return;
-            if (teams.some(team => team.name.toLowerCase() === values.teamName.toLowerCase())) {
-                manualRegForm.setError('teamName', { message: 'This team name is already taken.'});
-                return;
-            }
-            startTransition(async () => {
-                try {
-                    const owner = await getUserByEmail(values.ownerEmail);
-                    if (!owner) {
-                        manualRegForm.setError('ownerEmail', { message: 'No registered user found with this email.' });
-                        return;
-                    }
-                    if (teams.some(t => t.ownerId === owner.uid)) {
-                        manualRegForm.setError('ownerEmail', { message: 'This user has already registered a team for this tournament.'});
-                        return;
-                    }
-                    const newTeam = await addTeamToTournament(tournament.id, {
-                        name: values.teamName,
-                        ownerId: owner.uid,
-                        ownerName: owner.displayName || 'Participant',
-                        logo: manualLogo
-                    }, true);
-                    toast({ title: 'Team Added', description: `${values.teamName} has been approved and registered.` });
-                    onTeamAdded(newTeam);
-                    manualRegForm.reset();
-                    setManualLogo('');
-                } catch (error: any) {
-                    console.error(error);
-                    toast({ variant: 'destructive', title: 'Registration Failed', description: error.message || 'Could not register team.' });
-                }
-            });
-        };
-
-        return (
-            <Card className="mt-8 border-primary/50">
-                <CardHeader>
-                <CardTitle>Manually Add a Team</CardTitle>
-                <CardDescription>Add a team directly to the tournament. Manually added teams are automatically approved.</CardDescription>
-                </CardHeader>
-                <CardContent>
-                <Form {...manualRegForm}>
-                    <form onSubmit={manualRegForm.handleSubmit(onManualSubmit)} className="space-y-6">
-                    <div className="flex justify-center">
-                        <div className="relative h-24 w-24 bg-muted rounded-full flex items-center justify-center border-2 border-dashed">
-                        {manualLogo ? <Image src={manualLogo} alt="Team Logo" layout="fill" className="rounded-full object-cover" /> : <ImageIcon className="h-10 w-10 text-muted-foreground" />}
-                        {isGeneratingManualLogo && <div className="absolute inset-0 bg-black/50 rounded-full flex items-center justify-center"><Loader className="animate-spin text-white" /></div>}
-                        </div>
-                    </div>
-                    <FormField
-                        control={manualRegForm.control}
-                        name="teamName"
-                        render={({ field }) => (
-                        <FormItem>
-                            <FormLabel className="flex items-center gap-2"><Shield className="h-4 w-4" /> Team Name</FormLabel>
-                            <div className="flex items-center gap-2">
-                            <FormControl><Input placeholder="Enter team name" {...field} /></FormControl>
-                            <Button type="button" variant="outline" size="icon" onClick={handleGenerateManualLogo} disabled={isGeneratingManualLogo || isPending} title="Generate Logo">
-                                {isGeneratingManualLogo ? <Loader className="animate-spin" /> : <Sparkles />}
-                            </Button>
-                            </div>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    <FormField
-                        control={manualRegForm.control}
-                        name="ownerEmail"
-                        render={({ field }) => (
-                        <FormItem className="flex flex-col">
-                            <FormLabel className="flex items-center gap-2"><User className="h-4 w-4" /> Team Owner</FormLabel>
-                            <UserSearchCombobox
-                            value={field.value}
-                            onChange={field.onChange}
-                            disabled={isPending || isGeneratingManualLogo}
-                            />
-                            <FormDescription>
-                                Search for a registered user by name or email.
-                            </FormDescription>
-                            <FormMessage />
-                        </FormItem>
-                        )}
-                    />
-                    <Button type="submit" disabled={isPending || isGeneratingManualLogo} className="w-full">
-                        {isPending ? <Loader className="animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
-                        Add Team
-                    </Button>
-                    </form>
-                </Form>
-                </CardContent>
-            </Card>
-        );
-    };
-
-
     return (
         <Card className="w-full max-w-2xl mx-auto border-0 shadow-none">
             <CardHeader className="text-center">
@@ -528,16 +519,39 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
                     </TeamList>
                 </div>
                 
-                {isPrivilegedUser && !isTournamentFull && <Separator />}
-                
-                {isOwner && !ownerHasRegistered && !isTournamentFull && (
-                    <OwnerTeamRegistration onTeamAdded={handleTeamAdded} />
-                )}
-                
                 {isPrivilegedUser && !isTournamentFull && (
-                    <ManualTeamRegistration onTeamAdded={handleTeamAdded} />
+                    <div className="pt-6 border-t">
+                        {isOwner && !ownerHasRegistered ? (
+                            <Tabs defaultValue="owner" className="w-full">
+                                <TabsList className="grid w-full grid-cols-2">
+                                    <TabsTrigger value="owner">Register My Team</TabsTrigger>
+                                    <TabsTrigger value="manual">Manually Add Team</TabsTrigger>
+                                </TabsList>
+                                <TabsContent value="owner">
+                                    <OwnerTeamRegistration
+                                        onTeamAdded={handleTeamAdded}
+                                        teams={teams}
+                                        tournamentId={tournament.id}
+                                        user={user!}
+                                    />
+                                </TabsContent>
+                                <TabsContent value="manual">
+                                    <ManualTeamRegistration
+                                        onTeamAdded={handleTeamAdded}
+                                        teams={teams}
+                                        tournamentId={tournament.id}
+                                    />
+                                </TabsContent>
+                            </Tabs>
+                        ) : (
+                             <ManualTeamRegistration
+                                onTeamAdded={handleTeamAdded}
+                                teams={teams}
+                                tournamentId={tournament.id}
+                            />
+                        )}
+                    </div>
                 )}
-
             </CardContent>
             <CardFooter className="flex-col gap-3 pt-6">
                  {isPrivilegedUser && !tournament.isTeamCountFixed && (
