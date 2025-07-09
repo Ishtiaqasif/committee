@@ -5,13 +5,13 @@ import { useMemo, useState, useEffect } from 'react';
 import type { Tournament, Fixture, Score, Team, Round } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { Flame, Swords, CheckCircle, ListTodo, Trophy, Loader, Link as LinkIcon, Clipboard, Check } from 'lucide-react';
+import { Flame, Swords, CheckCircle, ListTodo, Trophy, Loader, Link as LinkIcon, Clipboard, Check, User, Shield } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import ChampionView from './champion-view';
 import Link from 'next/link';
 import FixtureSettings from './fixture-settings';
+import Image from 'next/image';
 
 interface TournamentOverviewProps {
   tournament: Tournament;
@@ -29,7 +29,8 @@ const getAllMatches = (fixture: Fixture | null): { id: string, roundName: string
 
     const allMatches: { id: string, roundName: string }[] = [];
     
-    const processRounds = (rounds: Round[], groupName?: string) => {
+    const processRounds = (rounds: Round[] | undefined, groupName?: string) => {
+        if (!rounds) return;
         rounds.forEach(round => {
             round.matches.forEach(match => {
                 if (match.team1.name.toLowerCase() !== 'bye' && match.team2.name.toLowerCase() !== 'bye') {
@@ -104,6 +105,17 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
                     </Button>
                 </div>
             </div>
+            {tournament.winner && (
+                <div>
+                    <Label className="text-xs text-muted-foreground">Champion Page Link</Label>
+                    <div className="flex gap-2">
+                        <Input id="champion-link" readOnly value={championLink} placeholder="Loading link..." />
+                        <Button variant="outline" size="icon" onClick={() => handleCopyLink(championLink)} disabled={!championLink}>
+                            {copied ? <Check className="text-green-500" /> : <Clipboard />}
+                        </Button>
+                    </div>
+                </div>
+            )}
         </CardContent>
     </Card>
   );
@@ -123,8 +135,8 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
     const playedMatches = allMatches.filter(m => scores[m.id] && scores[m.id].score1 !== null && scores[m.id].score2 !== null).length;
 
     let status: 'Upcoming' | 'Ongoing' | 'Completed' = 'Upcoming';
-    if (playedMatches > 0) {
-        status = playedMatches === totalMatches ? 'Completed' : 'Ongoing';
+    if (playedMatches > 0 || tournament.winner) {
+        status = (playedMatches === totalMatches || !!tournament.winner) ? 'Completed' : 'Ongoing';
     }
     
     let currentRoundName = "Not Started";
@@ -153,39 +165,6 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
       'Ongoing': <Flame className="w-8 h-8 text-orange-500" />,
       'Completed': <CheckCircle className="w-8 h-8 text-green-500" />,
   }[stats.status];
-
-  if (tournament.winner) {
-    return (
-        <div className="flex flex-col items-center justify-center text-center">
-            <h2 className="text-3xl font-bold text-primary">Tournament Complete</h2>
-            <p className="text-muted-foreground mb-8">Congratulations to the champion! You can review the tournament details using the sidebar.</p>
-            <ChampionView winner={tournament.winner} />
-            
-            <Card className="mt-8 w-full max-w-lg">
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                        <LinkIcon className="w-5 h-5 text-primary" />
-                        Share Victory
-                    </CardTitle>
-                    <CardDescription>
-                        Share this public link to show off the champion.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent>
-                    <div>
-                        <Label htmlFor="champion-link" className="text-xs text-muted-foreground">Champion Page Link</Label>
-                        <div className="flex gap-2">
-                            <Input id="champion-link" readOnly value={championLink} placeholder="Loading link..." />
-                            <Button variant="outline" size="icon" onClick={() => handleCopyLink(championLink)} disabled={!championLink}>
-                                {copied ? <Check className="text-green-500" /> : <Clipboard />}
-                            </Button>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
-    );
-  }
 
   if (!fixture) {
     if (!tournament.tournamentType) {
@@ -230,6 +209,29 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
       <p className="text-muted-foreground">A summary of the tournament's progress.</p>
       
       <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        {tournament.winner && (
+            <Card className="md:col-span-2 lg:col-span-3 bg-accent/10 border-accent">
+                <CardHeader className="text-center">
+                    <Trophy className="w-10 h-10 text-accent mx-auto mb-2" />
+                    <CardTitle>Tournament Champion</CardTitle>
+                </CardHeader>
+                <CardContent className="flex flex-col items-center gap-2">
+                    {tournament.winner.logo ? 
+                        <Image src={tournament.winner.logo} alt={`${tournament.winner.name} logo`} width={64} height={64} className="rounded-full ring-2 ring-accent bg-background p-1" /> : 
+                        <div className="w-16 h-16 rounded-full ring-2 ring-accent bg-muted flex items-center justify-center">
+                            <Shield className="w-8 h-8 text-muted-foreground" />
+                        </div>
+                    }
+                    <span className="text-2xl font-bold">{tournament.winner.name}</span>
+                    {tournament.winner.ownerName && (
+                        <span className="text-sm text-muted-foreground flex items-center gap-1.5">
+                            <User className="h-4 w-4" />
+                            {tournament.winner.ownerName}
+                        </span>
+                    )}
+                </CardContent>
+            </Card>
+        )}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Status</CardTitle>
