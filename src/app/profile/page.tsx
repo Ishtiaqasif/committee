@@ -1,12 +1,12 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Loader, KeyRound, Mail, User as UserIcon, PlusCircle, LayoutGrid, Calendar, Users, Trophy, Crown, Shield, Activity } from "lucide-react";
+import { Loader, KeyRound, Mail, PlusCircle, LayoutGrid, Calendar, Users, Trophy, Crown, Shield, Activity, Archive } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getTournamentsForUserWithRoles } from "@/lib/firebase/firestore";
@@ -34,6 +34,46 @@ const RoleBadge = ({ role }: { role: string }) => {
         </Badge>
     );
 };
+
+const TournamentCard = ({ tournament, status }: { tournament: Tournament; status: 'ongoing' | 'finished' | 'inactive' }) => (
+    <Card key={tournament.id} className="flex flex-col">
+        <CardHeader>
+            <CardTitle className="flex items-start justify-between">
+                <span className="pr-4">{tournament.tournamentName}</span>
+                 {status === 'ongoing' && (
+                    <Badge variant="outline" className="text-accent border-accent gap-1.5 flex-shrink-0">
+                        <Activity className="h-3 w-3" />
+                        Active
+                    </Badge>
+                )}
+                {status === 'finished' && (
+                    <Trophy className="h-5 w-5 text-accent flex-shrink-0" />
+                )}
+            </CardTitle>
+            <CardDescription className="capitalize">{tournament.tournamentType.replace('-', ' ')}</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3 text-sm text-muted-foreground flex-grow">
+            <div className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                <span>{tournament.numberOfTeams} Teams</span>
+            </div>
+            <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4" />
+                <span>
+                {tournament.createdAt?.toDate ? format(tournament.createdAt.toDate(), 'PPP') : 'Date not available'}
+                </span>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap pt-2">
+                {tournament.roles?.map(role => <RoleBadge key={role} role={role} />)}
+            </div>
+        </CardContent>
+        <CardFooter>
+            <Button asChild className="w-full" variant="outline">
+                <Link href={`/create?id=${tournament.id}`}>View Dashboard</Link>
+            </Button>
+        </CardFooter>
+    </Card>
+);
 
 
 export default function ProfilePage() {
@@ -64,6 +104,28 @@ export default function ProfilePage() {
       fetchTournaments();
     }
   }, [user]);
+
+  const { ongoingTournaments, finishedTournaments, inactiveTournaments } = useMemo(() => {
+    const ongoing: Tournament[] = [];
+    const finished: Tournament[] = [];
+    const inactive: Tournament[] = [];
+
+    tournaments.forEach(t => {
+      if (t.winner) {
+        finished.push(t);
+      } else if (t.isActive) {
+        ongoing.push(t);
+      } else {
+        inactive.push(t);
+      }
+    });
+
+    return { 
+      ongoingTournaments: ongoing, 
+      finishedTournaments: finished, 
+      inactiveTournaments: inactive 
+    };
+  }, [tournaments]);
 
   if (authLoading || !user) {
     return (
@@ -120,45 +182,37 @@ export default function ProfilePage() {
                     <Loader className="h-8 w-8 animate-spin" />
                 </div>
             ) : tournaments.length > 0 ? (
-                <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                    {tournaments.map((t) => (
-                    <Card key={t.id} className="flex flex-col">
-                        <CardHeader>
-                            <CardTitle className="flex items-start justify-between">
-                                <span className="pr-4">{t.tournamentName}</span>
-                                {t.isActive ? (
-                                    <Badge variant="outline" className="text-accent border-accent gap-1.5 flex-shrink-0">
-                                        <Activity className="h-3 w-3" />
-                                        Active
-                                    </Badge>
-                                ) : (
-                                    <Trophy className="h-5 w-5 text-accent flex-shrink-0" />
-                                )}
-                            </CardTitle>
-                            <CardDescription className="capitalize">{t.tournamentType.replace('-', ' ')}</CardDescription>
-                        </CardHeader>
-                        <CardContent className="space-y-3 text-sm text-muted-foreground flex-grow">
-                            <div className="flex items-center gap-2">
-                                <Users className="h-4 w-4" />
-                                <span>{t.numberOfTeams} Teams</span>
+                <div className="space-y-12">
+                     {ongoingTournaments.length > 0 && (
+                        <section>
+                            <h2 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2 text-primary"><Activity className="h-6 w-6"/> Ongoing</h2>
+                            <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                                {ongoingTournaments.map((t) => (
+                                    <TournamentCard key={t.id} tournament={t} status="ongoing" />
+                                ))}
                             </div>
-                            <div className="flex items-center gap-2">
-                                <Calendar className="h-4 w-4" />
-                                <span>
-                                {t.createdAt?.toDate ? format(t.createdAt.toDate(), 'PPP') : 'Date not available'}
-                                </span>
+                        </section>
+                    )}
+                     {finishedTournaments.length > 0 && (
+                         <section>
+                            <h2 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2 text-accent"><Trophy className="h-6 w-6"/> Finished</h2>
+                            <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                                {finishedTournaments.map((t) => (
+                                    <TournamentCard key={t.id} tournament={t} status="finished" />
+                                ))}
                             </div>
-                            <div className="flex items-center gap-2 flex-wrap pt-2">
-                                {t.roles?.map(role => <RoleBadge key={role} role={role} />)}
+                        </section>
+                    )}
+                    {inactiveTournaments.length > 0 && (
+                         <section>
+                            <h2 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2 text-muted-foreground"><Archive className="h-6 w-6"/> Inactive</h2>
+                            <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                                {inactiveTournaments.map((t) => (
+                                    <TournamentCard key={t.id} tournament={t} status="inactive" />
+                                ))}
                             </div>
-                        </CardContent>
-                        <CardFooter>
-                            <Button asChild className="w-full" variant="outline">
-                                <Link href={`/create?id=${t.id}`}>View Dashboard</Link>
-                            </Button>
-                        </CardFooter>
-                    </Card>
-                    ))}
+                        </section>
+                    )}
                 </div>
             ) : (
                 <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-border py-24 text-center">
