@@ -46,7 +46,7 @@ const createFormSchema = (tournament: Tournament) => z.object({
         }
     }
     
-    if ((data.tournamentType === 'hybrid' || data.tournamentType === 'round-robin') && data.roundRobinGrouping === 'grouped') {
+    if (data.tournamentType === 'hybrid' && data.roundRobinGrouping === 'grouped') {
          if (!data.teamsPerGroup) {
             ctx.addIssue({ code: z.ZodIssueCode.custom, message: "Teams per group is required.", path: ["teamsPerGroup"] });
         } else if (data.teamsPerGroup <= 1) {
@@ -86,7 +86,11 @@ export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivil
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     startTransition(() => {
-        onUpdate(values);
+        const dataToUpdate = { ...values };
+        if (dataToUpdate.tournamentType === 'round-robin') {
+            dataToUpdate.roundRobinGrouping = 'all-play-all';
+        }
+        onUpdate(dataToUpdate);
     });
   }
 
@@ -143,7 +147,7 @@ export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivil
                     )}
                   />
 
-                {(watchedTournamentType === 'round-robin' || watchedTournamentType === 'hybrid') && (
+                {watchedTournamentType === 'hybrid' && (
                     <div className="space-y-6">
                         <FormField
                             control={form.control}
