@@ -77,7 +77,7 @@ export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivil
       awayGoalsRule: tournament.awayGoalsRule ?? false,
       fixtureGeneration: tournament.fixtureGeneration ?? 'predefined',
     });
-  }, [tournament, form.reset]);
+  }, [tournament, form]);
 
   const watchedTournamentType = form.watch("tournamentType");
   const roundRobinGrouping = form.watch("roundRobinGrouping");
@@ -89,6 +89,7 @@ export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivil
         const dataToUpdate = { ...values };
         if (dataToUpdate.tournamentType === 'round-robin') {
             dataToUpdate.roundRobinGrouping = 'all-play-all';
+            dataToUpdate.teamsPerGroup = tournament.numberOfTeams;
         }
         onUpdate(dataToUpdate);
     });
