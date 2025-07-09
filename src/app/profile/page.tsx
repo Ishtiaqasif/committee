@@ -6,14 +6,33 @@ import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Loader, KeyRound, Mail, PlusCircle, LayoutGrid, Calendar, Users, Trophy, Crown, Shield, Activity, Archive } from "lucide-react";
+import { Loader, KeyRound, Mail, PlusCircle, LayoutGrid, Calendar, Users, Trophy, Crown, Shield, Activity, Archive, Trash2, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { getTournamentsForUserWithRoles } from "@/lib/firebase/firestore";
+import { getTournamentsForUserWithRoles, deleteTournament } from "@/lib/firebase/firestore";
 import { Tournament } from "@/types";
 import { Button } from "@/components/ui/button";
 import { format } from 'date-fns';
 import { Badge } from "@/components/ui/badge";
+import { useToast } from "@/hooks/use-toast";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
+
 
 const RoleBadge = ({ role }: { role: string }) => {
     const roleStyles: { [key: string]: string } = {
@@ -35,7 +54,10 @@ const RoleBadge = ({ role }: { role: string }) => {
     );
 };
 
-const TournamentCard = ({ tournament, status }: { tournament: Tournament; status: 'ongoing' | 'finished' | 'inactive' }) => (
+const TournamentCard = ({ tournament, status, onDelete }: { tournament: Tournament; status: 'ongoing' | 'finished' | 'inactive'; onDelete: (id: string) => void }) => {
+    const isOwner = tournament.roles?.includes('owner');
+    
+    return (
     <Card key={tournament.id} className="flex flex-col">
         <CardHeader>
             <CardTitle className="flex items-start justify-between">
@@ -67,13 +89,38 @@ const TournamentCard = ({ tournament, status }: { tournament: Tournament; status
                 {tournament.roles?.map(role => <RoleBadge key={role} role={role} />)}
             </div>
         </CardContent>
-        <CardFooter>
-            <Button asChild className="w-full" variant="outline">
-                <Link href={`/create?id=${tournament.id}`}>View Dashboard</Link>
-            </Button>
+        <CardFooter className="pt-4">
+            <div className={cn("grid w-full gap-2", isOwner ? "grid-cols-2" : "grid-cols-1")}>
+                <Button asChild className="w-full" variant="outline">
+                    <Link href={`/create?id=${tournament.id}`}>View Dashboard</Link>
+                </Button>
+                {isOwner && (
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="destructive" className="w-full">
+                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This action is permanent and cannot be undone. This will delete the tournament, its teams, and all associated data.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={() => onDelete(tournament.id)}>
+                                    Yes, Delete Tournament
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                )}
+            </div>
         </CardFooter>
     </Card>
-);
+)};
 
 
 export default function ProfilePage() {
@@ -81,6 +128,8 @@ export default function ProfilePage() {
   const router = useRouter();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loadingTournaments, setLoadingTournaments] = useState(true);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -104,6 +153,21 @@ export default function ProfilePage() {
       fetchTournaments();
     }
   }, [user]);
+  
+  const handleDeleteTournament = async (tournamentId: string) => {
+    if (isDeleting) return;
+    setIsDeleting(true);
+    try {
+        await deleteTournament(tournamentId);
+        setTournaments(prev => prev.filter(t => t.id !== tournamentId));
+        toast({ title: "Tournament Deleted", description: "The tournament has been successfully removed." });
+    } catch (error) {
+        console.error("Failed to delete tournament:", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete the tournament.' });
+    } finally {
+        setIsDeleting(false);
+    }
+  };
 
   const { ongoingTournaments, finishedTournaments, inactiveTournaments } = useMemo(() => {
     const ongoing: Tournament[] = [];
@@ -188,7 +252,7 @@ export default function ProfilePage() {
                             <h2 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2 text-primary"><Activity className="h-6 w-6"/> Ongoing</h2>
                             <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                                 {ongoingTournaments.map((t) => (
-                                    <TournamentCard key={t.id} tournament={t} status="ongoing" />
+                                    <TournamentCard key={t.id} tournament={t} status="ongoing" onDelete={handleDeleteTournament} />
                                 ))}
                             </div>
                         </section>
@@ -198,19 +262,30 @@ export default function ProfilePage() {
                             <h2 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2 text-accent"><Trophy className="h-6 w-6"/> Finished</h2>
                             <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                                 {finishedTournaments.map((t) => (
-                                    <TournamentCard key={t.id} tournament={t} status="finished" />
+                                    <TournamentCard key={t.id} tournament={t} status="finished" onDelete={handleDeleteTournament} />
                                 ))}
                             </div>
                         </section>
                     )}
                     {inactiveTournaments.length > 0 && (
-                         <section>
-                            <h2 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2 text-muted-foreground"><Archive className="h-6 w-6"/> Inactive</h2>
-                            <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-                                {inactiveTournaments.map((t) => (
-                                    <TournamentCard key={t.id} tournament={t} status="inactive" />
-                                ))}
-                            </div>
+                        <section>
+                            <Collapsible defaultOpen={false}>
+                                <CollapsibleTrigger asChild>
+                                    <div className="flex w-full cursor-pointer items-center justify-between rounded-md p-2 hover:bg-muted">
+                                        <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2 text-muted-foreground">
+                                            <Archive className="h-6 w-6"/> Inactive ({inactiveTournaments.length})
+                                        </h2>
+                                        <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform data-[state=open]:rotate-180"/>
+                                    </div>
+                                </CollapsibleTrigger>
+                                <CollapsibleContent className="data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up overflow-hidden">
+                                    <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 pt-4">
+                                        {inactiveTournaments.map((t) => (
+                                            <TournamentCard key={t.id} tournament={t} status="inactive" onDelete={handleDeleteTournament} />
+                                        ))}
+                                    </div>
+                                </CollapsibleContent>
+                            </Collapsible>
                         </section>
                     )}
                 </div>

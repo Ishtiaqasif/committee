@@ -1,5 +1,5 @@
 
-import { doc, collection, addDoc, getDoc, getDocs, query, serverTimestamp, where, orderBy, updateDoc, setDoc, documentId, limit, QuerySnapshot, arrayUnion } from "firebase/firestore";
+import { doc, collection, addDoc, getDoc, getDocs, query, serverTimestamp, where, orderBy, updateDoc, setDoc, documentId, limit, QuerySnapshot, arrayUnion, deleteDoc } from "firebase/firestore";
 import { db, storage } from "./config";
 import { Tournament, TournamentCreationData, Team, UserProfile, UserRole } from "@/types";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
@@ -131,6 +131,20 @@ export async function getTournamentsForUserWithRoles(userId: string): Promise<To
 export async function updateTournament(tournamentId: string, data: Partial<Tournament>): Promise<void> {
     const tournamentRef = doc(db, "tournaments", tournamentId);
     await updateDoc(tournamentRef, data);
+}
+
+export async function deleteTournament(tournamentId: string): Promise<void> {
+    const teamsRef = collection(db, "tournaments", tournamentId, "teams");
+    const teamsSnapshot = await getDocs(teamsRef);
+    const deletePromises: Promise<void>[] = [];
+    teamsSnapshot.forEach(doc => {
+        deletePromises.push(deleteDoc(doc.ref));
+    });
+
+    await Promise.all(deletePromises);
+
+    const tournamentRef = doc(db, "tournaments", tournamentId);
+    await deleteDoc(tournamentRef);
 }
 
 
