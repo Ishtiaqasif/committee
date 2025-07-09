@@ -90,7 +90,7 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
                 Share Tournament
             </CardTitle>
             <CardDescription>
-                Use this public link to invite participants or share the tournament.
+                Use this public link to invite participants or share the tournament progress.
             </CardDescription>
         </CardHeader>
         <CardContent>

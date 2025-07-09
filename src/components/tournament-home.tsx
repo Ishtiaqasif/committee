@@ -484,14 +484,6 @@ export default function TournamentHome({ tournament, teams, onTournamentUpdate }
   const renderContent = () => {
     const approvedTeams = teams.filter(t => t.status === 'approved');
 
-    if (tournament.winner) {
-        return (
-            <div className="flex flex-col items-center">
-                <ChampionView winner={tournament.winner} />
-            </div>
-        )
-    }
-
     switch (activeView) {
       case 'overview':
         return (
