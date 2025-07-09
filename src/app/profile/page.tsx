@@ -6,10 +6,10 @@ import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Loader, KeyRound, Mail, PlusCircle, LayoutGrid, Calendar, Users, Trophy, Crown, Shield, Activity, Archive, Trash2, ChevronDown } from "lucide-react";
+import { Loader, KeyRound, Mail, PlusCircle, LayoutGrid, Calendar, Users, Trophy, Crown, Shield, Activity, Archive, ChevronDown } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { getTournamentsForUserWithRoles, deleteTournament } from "@/lib/firebase/firestore";
+import { getTournamentsForUserWithRoles, updateTournament } from "@/lib/firebase/firestore";
 import { Tournament } from "@/types";
 import { Button } from "@/components/ui/button";
 import { format } from 'date-fns';
@@ -55,7 +55,7 @@ const RoleBadge = ({ role }: { role: string }) => {
     );
 };
 
-const TournamentCard = ({ tournament, status, onDelete }: { tournament: Tournament; status: 'ongoing' | 'finished' | 'inactive'; onDelete: (id: string) => void }) => {
+const TournamentCard = ({ tournament, status, onArchive }: { tournament: Tournament; status: 'ongoing' | 'finished' | 'archived'; onArchive: (id: string) => void }) => {
     const isOwner = tournament.roles?.includes('owner');
     
     return (
@@ -103,21 +103,21 @@ const TournamentCard = ({ tournament, status, onDelete }: { tournament: Tourname
                 {isOwner && (
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="destructive" className="w-full">
-                                <Trash2 className="mr-2 h-4 w-4" /> Delete
+                            <Button variant="outline" className="w-full">
+                                <Archive className="mr-2 h-4 w-4" /> Archive
                             </Button>
                         </AlertDialogTrigger>
                         <AlertDialogContent>
                             <AlertDialogHeader>
-                                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                                <AlertDialogTitle>Archive Tournament?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                    This action is permanent and cannot be undone. This will delete the tournament, its teams, and all associated data.
+                                    This will move the tournament to your archived list. You can still view its details, but it won't appear in the ongoing list.
                                 </AlertDialogDescription>
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => onDelete(tournament.id)}>
-                                    Yes, Delete Tournament
+                                <AlertDialogAction onClick={() => onArchive(tournament.id)}>
+                                    Yes, Archive
                                 </AlertDialogAction>
                             </AlertDialogFooter>
                         </AlertDialogContent>
@@ -134,7 +134,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loadingTournaments, setLoadingTournaments] = useState(true);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [isArchiving, setIsArchiving] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -160,25 +160,27 @@ export default function ProfilePage() {
     }
   }, [user]);
   
-  const handleDeleteTournament = async (tournamentId: string) => {
-    if (isDeleting) return;
-    setIsDeleting(true);
+  const handleArchiveTournament = async (tournamentId: string) => {
+    if (isArchiving) return;
+    setIsArchiving(true);
     try {
-        await deleteTournament(tournamentId);
-        setTournaments(prev => prev.filter(t => t.id !== tournamentId));
-        toast({ title: "Tournament Deleted", description: "The tournament has been successfully removed." });
+        await updateTournament(tournamentId, { isActive: false });
+        setTournaments(prev => prev.map(t => 
+            t.id === tournamentId ? { ...t, isActive: false } : t
+        ));
+        toast({ title: "Tournament Archived", description: "The tournament has been moved to the archived list." });
     } catch (error) {
-        console.error("Failed to delete tournament:", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete the tournament.' });
+        console.error("Failed to archive tournament:", error);
+        toast({ variant: 'destructive', title: 'Error', description: 'Failed to archive the tournament.' });
     } finally {
-        setIsDeleting(false);
+        setIsArchiving(false);
     }
   };
 
-  const { ongoingTournaments, finishedTournaments, inactiveTournaments } = useMemo(() => {
+  const { ongoingTournaments, finishedTournaments, archivedTournaments } = useMemo(() => {
     const ongoing: Tournament[] = [];
     const finished: Tournament[] = [];
-    const inactive: Tournament[] = [];
+    const archived: Tournament[] = [];
 
     tournaments.forEach(t => {
       if (t.winner) {
@@ -186,14 +188,14 @@ export default function ProfilePage() {
       } else if (t.isActive) {
         ongoing.push(t);
       } else {
-        inactive.push(t);
+        archived.push(t);
       }
     });
 
     return { 
       ongoingTournaments: ongoing, 
       finishedTournaments: finished, 
-      inactiveTournaments: inactive 
+      archivedTournaments: archived 
     };
   }, [tournaments]);
 
@@ -258,7 +260,7 @@ export default function ProfilePage() {
                             <h2 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2 text-primary"><Activity className="h-6 w-6"/> Ongoing</h2>
                             <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                                 {ongoingTournaments.map((t) => (
-                                    <TournamentCard key={t.id} tournament={t} status="ongoing" onDelete={handleDeleteTournament} />
+                                    <TournamentCard key={t.id} tournament={t} status="ongoing" onArchive={handleArchiveTournament} />
                                 ))}
                             </div>
                         </section>
@@ -268,26 +270,26 @@ export default function ProfilePage() {
                             <h2 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2 text-accent"><Trophy className="h-6 w-6"/> Finished</h2>
                             <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                                 {finishedTournaments.map((t) => (
-                                    <TournamentCard key={t.id} tournament={t} status="finished" onDelete={handleDeleteTournament} />
+                                    <TournamentCard key={t.id} tournament={t} status="finished" onArchive={handleArchiveTournament} />
                                 ))}
                             </div>
                         </section>
                     )}
-                    {inactiveTournaments.length > 0 && (
+                    {archivedTournaments.length > 0 && (
                         <section>
                             <Collapsible defaultOpen={false}>
                                 <CollapsibleTrigger asChild>
                                     <div className="flex w-full cursor-pointer items-center justify-between rounded-md p-2 hover:bg-muted">
                                         <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2 text-muted-foreground">
-                                            <Archive className="h-6 w-6"/> Inactive ({inactiveTournaments.length})
+                                            <Archive className="h-6 w-6"/> Archived ({archivedTournaments.length})
                                         </h2>
                                         <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform data-[state=open]:rotate-180"/>
                                     </div>
                                 </CollapsibleTrigger>
                                 <CollapsibleContent className="data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up overflow-hidden">
                                     <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 pt-4">
-                                        {inactiveTournaments.map((t) => (
-                                            <TournamentCard key={t.id} tournament={t} status="inactive" onDelete={handleDeleteTournament} />
+                                        {archivedTournaments.map((t) => (
+                                            <TournamentCard key={t.id} tournament={t} status="archived" onArchive={handleArchiveTournament} />
                                         ))}
                                     </div>
                                 </CollapsibleContent>
@@ -309,3 +311,5 @@ export default function ProfilePage() {
     </div>
   );
 }
+
+    
