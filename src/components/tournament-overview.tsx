@@ -56,21 +56,28 @@ const getAllMatches = (fixture: Fixture | null): { id: string, roundName: string
 
 export default function TournamentOverview({ tournament, fixture, scores, teams, onGenerateFixture, onTournamentUpdate, isGeneratingFixture, isPrivilegedUser }: TournamentOverviewProps) {
   const [copied, setCopied] = useState(false);
-  const [registrationLink, setRegistrationLink] = useState('');
-  const [championLink, setChampionLink] = useState('');
+  const [publicShareLink, setPublicShareLink] = useState({ label: '', url: '' });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-        setRegistrationLink(`${window.location.origin}/register/${tournament.id}`);
-        if(tournament.winner) {
-            setChampionLink(`${window.location.origin}/champion/${tournament.id}`);
-        }
-    }
-  }, [tournament.id, tournament.winner]);
+        let label = 'Registration / Share Link';
+        let url = `${window.location.origin}/register/${tournament.id}`;
 
-  const handleCopyLink = (link: string) => {
-      if (!link) return;
-      navigator.clipboard.writeText(link);
+        if (tournament.winner) {
+            label = 'Champion Page Link';
+            url = `${window.location.origin}/champion/${tournament.id}`;
+        } else if (fixture && (tournament.tournamentType === 'single elimination' || tournament.tournamentType === 'hybrid')) {
+            label = 'Public Bracket Link';
+            url = `${window.location.origin}/knockout/${tournament.id}`;
+        }
+        
+        setPublicShareLink({ label, url });
+    }
+  }, [tournament.id, tournament.winner, tournament.tournamentType, fixture]);
+
+  const handleCopyLink = () => {
+      if (!publicShareLink.url) return;
+      navigator.clipboard.writeText(publicShareLink.url);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
   };
@@ -83,39 +90,19 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
                 Share Tournament
             </CardTitle>
             <CardDescription>
-                Use this link to invite participants or share public views.
+                Use this public link to invite participants or share the tournament.
             </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
-             <div>
-                <Label className="text-xs text-muted-foreground">Registration Link</Label>
+        <CardContent>
+            <div>
+                <Label className="text-xs text-muted-foreground">{publicShareLink.label}</Label>
                 <div className="flex gap-2">
-                    <Input readOnly value={registrationLink} placeholder="Loading link..." />
-                    <Button variant="outline" size="icon" onClick={() => handleCopyLink(registrationLink)} disabled={!registrationLink}>
+                    <Input readOnly value={publicShareLink.url} placeholder="Loading link..." />
+                    <Button variant="outline" size="icon" onClick={handleCopyLink} disabled={!publicShareLink.url}>
                         {copied ? <Check className="text-green-500" /> : <Clipboard />}
                     </Button>
                 </div>
             </div>
-             <div>
-                <Label className="text-xs text-muted-foreground">Public Knockout Bracket Link</Label>
-                <div className="flex gap-2">
-                    <Input readOnly value={`${window.location.origin}/knockout/${tournament.id}`} placeholder="Loading link..." />
-                     <Button variant="outline" size="icon" onClick={() => handleCopyLink(`${window.location.origin}/knockout/${tournament.id}`)}>
-                        {copied ? <Check className="text-green-500" /> : <Clipboard />}
-                    </Button>
-                </div>
-            </div>
-            {tournament.winner && (
-                <div>
-                    <Label className="text-xs text-muted-foreground">Champion Page Link</Label>
-                    <div className="flex gap-2">
-                        <Input id="champion-link" readOnly value={championLink} placeholder="Loading link..." />
-                        <Button variant="outline" size="icon" onClick={() => handleCopyLink(championLink)} disabled={!championLink}>
-                            {copied ? <Check className="text-green-500" /> : <Clipboard />}
-                        </Button>
-                    </div>
-                </div>
-            )}
         </CardContent>
     </Card>
   );
@@ -210,7 +197,7 @@ export default function TournamentOverview({ tournament, fixture, scores, teams,
       
       <div className="mt-6 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
         {tournament.winner && (
-            <Card className="md:col-span-2 lg:col-span-3 bg-accent/10 border-accent">
+            <Card className="md:col-span-3 bg-accent/10 border-accent">
                 <CardHeader className="text-center">
                     <Trophy className="w-10 h-10 text-accent mx-auto mb-2" />
                     <CardTitle>Tournament Champion</CardTitle>
