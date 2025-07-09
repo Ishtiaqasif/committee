@@ -9,11 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
-import { Settings, ArrowLeft } from "lucide-react";
+import { Settings, ArrowLeft, Loader } from "lucide-react";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useTransition } from "react";
 
 interface FixtureSettingsProps {
   tournament: Tournament;
@@ -59,7 +59,7 @@ const createFormSchema = (tournament: Tournament) => z.object({
 
 
 export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivilegedUser }: FixtureSettingsProps) {
-  
+  const [isPending, startTransition] = useTransition();
   const formSchema = useMemo(() => createFormSchema(tournament), [tournament]);
   
   const form = useForm<z.infer<typeof formSchema>>({
@@ -85,7 +85,9 @@ export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivil
   const knockoutHomeAndAway = form.watch("knockoutHomeAndAway");
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    onUpdate(values);
+    startTransition(() => {
+        onUpdate(values);
+    });
   }
 
   if (!isPrivilegedUser) {
@@ -122,7 +124,7 @@ export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivil
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Tournament Type</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value}>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={isPending}>
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="Select a type" />
@@ -154,6 +156,7 @@ export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivil
                                     onValueChange={field.onChange}
                                     value={field.value}
                                     className="space-y-2"
+                                    disabled={isPending}
                                     >
                                     <FormItem className="flex items-center space-x-3 space-y-0">
                                         <FormControl>
@@ -185,7 +188,7 @@ export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivil
                                 <FormItem>
                                     <FormLabel>Teams Per Group</FormLabel>
                                     <FormControl>
-                                    <Input type="number" placeholder="e.g., 4" {...field} value={field.value ?? ''} />
+                                    <Input type="number" placeholder="e.g., 4" {...field} value={field.value ?? ''} disabled={isPending}/>
                                     </FormControl>
                                     <FormDescription>
                                         Must be a divisor of the total teams ({tournament.numberOfTeams}).
@@ -205,7 +208,7 @@ export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivil
                         <FormItem>
                             <FormLabel>Teams Advancing to Knockout</FormLabel>
                             <FormControl>
-                            <Input type="number" placeholder="e.g., 4" {...field} value={field.value ?? ''} />
+                            <Input type="number" placeholder="e.g., 4" {...field} value={field.value ?? ''} disabled={isPending}/>
                             </FormControl>
                             <FormDescription>
                             Must be a power of two (2, 4, 8...).
@@ -232,6 +235,7 @@ export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivil
                         <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
+                            disabled={isPending}
                         />
                         </FormControl>
                     </FormItem>
@@ -255,6 +259,7 @@ export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivil
                         <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
+                            disabled={isPending}
                         />
                         </FormControl>
                     </FormItem>
@@ -277,7 +282,7 @@ export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivil
                         <Switch
                             checked={field.value}
                             onCheckedChange={field.onChange}
-                            disabled={!roundRobinHomeAndAway && !knockoutHomeAndAway}
+                            disabled={!roundRobinHomeAndAway && !knockoutHomeAndAway || isPending}
                         />
                         </FormControl>
                     </FormItem>
@@ -295,6 +300,7 @@ export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivil
                             onValueChange={field.onChange}
                             value={field.value}
                             className="space-y-2"
+                            disabled={isPending}
                         >
                             <FormItem className="flex items-center space-x-3 space-y-0">
                             <FormControl>
@@ -324,11 +330,14 @@ export default function FixtureSettings({ tournament, onUpdate, onBack, isPrivil
                  )}
             </CardContent>
             <CardFooter className="flex justify-center pt-6 gap-4">
-              <Button type="button" variant="outline" onClick={onBack}>
+              <Button type="button" variant="outline" onClick={onBack} disabled={isPending}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Back to Registration
               </Button>
-              <Button type="submit" size="lg">Save Settings & Continue</Button>
+              <Button type="submit" size="lg" disabled={isPending}>
+                {isPending && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                Save Settings & Continue
+              </Button>
             </CardFooter>
           </form>
         </Form>

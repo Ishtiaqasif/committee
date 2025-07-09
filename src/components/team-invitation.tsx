@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { collection, onSnapshot, query } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
 import { Team, Tournament, TeamStatus } from '@/types';
@@ -89,11 +89,11 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
     const [registrationLink, setRegistrationLink] = useState('');
     const { user } = useAuth();
     const { toast } = useToast();
+    const [isPending, startTransition] = useTransition();
 
     // Manual registration form state
     const [logo, setLogo] = useState('');
     const [isGeneratingLogo, setIsGeneratingLogo] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
     
     const manualRegForm = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -135,27 +135,31 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
     };
 
     const handleApproveTeam = async (teamId: string) => {
-        const teamToApprove = teams.find(t => t.id === teamId);
-        try {
-            await updateTeam(tournament.id, teamId, { status: 'approved' });
-            toast({
-                title: 'Team Approved',
-                description: teamToApprove ? `"${teamToApprove.name}" has been approved.` : 'Team has been approved.'
-            });
-        } catch (error) {
-            console.error("Failed to approve team:", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to approve team.' });
-        }
+        startTransition(async () => {
+            const teamToApprove = teams.find(t => t.id === teamId);
+            try {
+                await updateTeam(tournament.id, teamId, { status: 'approved' });
+                toast({
+                    title: 'Team Approved',
+                    description: teamToApprove ? `"${teamToApprove.name}" has been approved.` : 'Team has been approved.'
+                });
+            } catch (error) {
+                console.error("Failed to approve team:", error);
+                toast({ variant: 'destructive', title: 'Error', description: 'Failed to approve team.' });
+            }
+        });
     }
     
     const handleRejectTeam = async (teamId: string) => {
-        try {
-            await removeTeam(tournament.id, teamId);
-            toast({ title: 'Team Rejected', description: 'The registration has been removed.' });
-        } catch (error) {
-            console.error("Failed to reject team:", error);
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to reject team.' });
-        }
+        startTransition(async () => {
+            try {
+                await removeTeam(tournament.id, teamId);
+                toast({ title: 'Team Rejected', description: 'The registration has been removed.' });
+            } catch (error) {
+                console.error("Failed to reject team:", error);
+                toast({ variant: 'destructive', title: 'Error', description: 'Failed to reject team.' });
+            }
+        });
     }
     
     const handleGenerateLogo = async () => {
@@ -187,36 +191,33 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
             return;
         }
 
-        setIsSubmitting(true);
-        try {
-            const owner = await getUserByEmail(values.ownerEmail);
-            if (!owner) {
-                manualRegForm.setError('ownerEmail', { message: 'No registered user found with this email.' });
-                setIsSubmitting(false);
-                return;
-            }
+        startTransition(async () => {
+            try {
+                const owner = await getUserByEmail(values.ownerEmail);
+                if (!owner) {
+                    manualRegForm.setError('ownerEmail', { message: 'No registered user found with this email.' });
+                    return;
+                }
 
-            if (teams.some(t => t.ownerId === owner.uid)) {
-                manualRegForm.setError('ownerEmail', { message: 'This user has already registered a team for this tournament.'});
-                setIsSubmitting(false);
-                return;
-            }
+                if (teams.some(t => t.ownerId === owner.uid)) {
+                    manualRegForm.setError('ownerEmail', { message: 'This user has already registered a team for this tournament.'});
+                    return;
+                }
 
-            await addTeamToTournament(tournament.id, {
-                name: values.teamName,
-                ownerId: owner.uid,
-                ownerName: owner.displayName || 'Participant',
-                logo: logo
-            }, true);
-            toast({ title: 'Team Added', description: `${values.teamName} has been approved and registered.` });
-            manualRegForm.reset();
-            setLogo('');
-        } catch (error: any) {
-            console.error(error);
-            toast({ variant: 'destructive', title: 'Registration Failed', description: error.message || 'Could not register team.' });
-        } finally {
-            setIsSubmitting(false);
-        }
+                await addTeamToTournament(tournament.id, {
+                    name: values.teamName,
+                    ownerId: owner.uid,
+                    ownerName: owner.displayName || 'Participant',
+                    logo: logo
+                }, true);
+                toast({ title: 'Team Added', description: `${values.teamName} has been approved and registered.` });
+                manualRegForm.reset();
+                setLogo('');
+            } catch (error: any) {
+                console.error(error);
+                toast({ variant: 'destructive', title: 'Registration Failed', description: error.message || 'Could not register team.' });
+            }
+        });
     };
 
     const handleFinalize = () => {
@@ -228,8 +229,10 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
             });
             return;
         }
-        onTournamentUpdate({ numberOfTeams: approvedTeams.length });
-        onTeamsFinalized(approvedTeams);
+        startTransition(() => {
+            onTournamentUpdate({ numberOfTeams: approvedTeams.length });
+            onTeamsFinalized(approvedTeams);
+        });
     }
 
     const isPrivilegedUser = user?.uid === tournament.creatorId || tournament.admins?.includes(user?.uid ?? '');
@@ -268,10 +271,10 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
                                 </div>
                                 {isPrivilegedUser && team.status === 'pending' && (
                                   <div className="flex gap-1">
-                                    <Button size="icon" variant="ghost" className="h-7 w-7 text-green-600 hover:text-green-600 hover:bg-green-100" onClick={() => handleApproveTeam(team.id)}><CheckCircle className="w-4 h-4" /></Button>
+                                    <Button size="icon" variant="ghost" className="h-7 w-7 text-green-600 hover:text-green-600 hover:bg-green-100" onClick={() => handleApproveTeam(team.id)} disabled={isPending}><CheckCircle className="w-4 h-4" /></Button>
                                     <AlertDialog>
                                         <AlertDialogTrigger asChild>
-                                            <Button size="icon" variant="ghost" className="h-7 w-7 text-red-600 hover:text-red-600 hover:bg-red-100"><XCircle className="w-4 h-4" /></Button>
+                                            <Button size="icon" variant="ghost" className="h-7 w-7 text-red-600 hover:text-red-600 hover:bg-red-100" disabled={isPending}><XCircle className="w-4 h-4" /></Button>
                                         </AlertDialogTrigger>
                                         <AlertDialogContent>
                                             <AlertDialogHeader>
@@ -323,7 +326,7 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
                     <FormLabel className="flex items-center gap-2"><Shield className="h-4 w-4" /> Team Name</FormLabel>
                     <div className="flex items-center gap-2">
                       <FormControl><Input placeholder="Enter team name" {...field} /></FormControl>
-                      <Button type="button" variant="outline" size="icon" onClick={handleGenerateLogo} disabled={isGeneratingLogo} title="Generate Logo">
+                      <Button type="button" variant="outline" size="icon" onClick={handleGenerateLogo} disabled={isGeneratingLogo || isPending} title="Generate Logo">
                         {isGeneratingLogo ? <Loader className="animate-spin" /> : <Sparkles />}
                       </Button>
                     </div>
@@ -340,7 +343,7 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
                     <UserSearchCombobox
                       value={field.value}
                       onChange={field.onChange}
-                      disabled={isSubmitting || isGeneratingLogo}
+                      disabled={isPending || isGeneratingLogo}
                     />
                      <FormDescription>
                         Search for a registered user by name or email.
@@ -349,8 +352,8 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
                   </FormItem>
                 )}
               />
-              <Button type="submit" disabled={isSubmitting || isGeneratingLogo} className="w-full">
-                {isSubmitting ? <Loader className="animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
+              <Button type="submit" disabled={isPending || isGeneratingLogo} className="w-full">
+                {isPending ? <Loader className="animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
                 Add Team
               </Button>
             </form>
@@ -373,7 +376,7 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
                     <label htmlFor="invite-link" className="text-sm font-medium">Unique Registration Link</label>
                     <div className="flex gap-2">
                         <Input id="invite-link" readOnly value={registrationLink} />
-                        <Button variant="outline" size="icon" onClick={handleCopyLink}>
+                        <Button variant="outline" size="icon" onClick={handleCopyLink} disabled={isPending}>
                             {copied ? <Check className="text-green-500" /> : <Clipboard />}
                         </Button>
                     </div>
@@ -421,12 +424,14 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
             </CardContent>
             <CardFooter className="flex-col gap-3 pt-6">
                  {isPrivilegedUser && !tournament.isTeamCountFixed && (
-                    <Button size="lg" onClick={handleFinalize} disabled={approvedTeams.length < 3}>
+                    <Button size="lg" onClick={handleFinalize} disabled={approvedTeams.length < 3 || isPending}>
+                        {isPending && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                         Finalize Registration & Proceed <ArrowRight className="ml-2 h-4 w-4"/>
                     </Button>
                  )}
                  {tournament.isTeamCountFixed && (
-                    <Button size="lg" disabled={!isReadyToProceed} onClick={() => onTeamsFinalized(approvedTeams)}>
+                    <Button size="lg" disabled={!isReadyToProceed || isPending} onClick={() => startTransition(() => onTeamsFinalized(approvedTeams))}>
+                        {isPending && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                         {isReadyToProceed ? "All Teams Registered! Proceed" : "Waiting for all teams..."}
                         <ArrowRight className="ml-2 h-4 w-4"/>
                     </Button>

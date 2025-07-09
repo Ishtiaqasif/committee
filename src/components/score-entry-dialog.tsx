@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState } from 'react';
+import { useState, useTransition } from 'react';
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Switch } from '@/components/ui/switch';
-import { Lock, Unlock } from 'lucide-react';
+import { Lock, Unlock, Loader } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Label } from '@/components/ui/label';
 
@@ -45,6 +45,7 @@ const formSchema = z.object({
 
 export default function ScoreEntryDialog({ match, currentScore, onScoreSave, children, readOnly, allowTiebreaker }: ScoreEntryDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -75,24 +76,26 @@ export default function ScoreEntryDialog({ match, currentScore, onScoreSave, chi
   }
 
   function onSubmit(values: z.infer<typeof formSchema>) {
-    if (values.score1 !== null && values.score2 !== null) {
-       onScoreSave({
-           score1: values.score1,
-           score2: values.score2,
-           score1_tiebreak: values.score1_tiebreak,
-           score2_tiebreak: values.score2_tiebreak,
-           locked: values.locked,
-       });
-    } else {
-         onScoreSave({
-           score1: null,
-           score2: null,
-           score1_tiebreak: null,
-           score2_tiebreak: null,
-           locked: false,
-       });
-    }
-    setIsOpen(false);
+    startTransition(() => {
+        if (values.score1 !== null && values.score2 !== null) {
+           onScoreSave({
+               score1: values.score1,
+               score2: values.score2,
+               score1_tiebreak: values.score1_tiebreak,
+               score2_tiebreak: values.score2_tiebreak,
+               locked: values.locked,
+           });
+        } else {
+             onScoreSave({
+               score1: null,
+               score2: null,
+               score1_tiebreak: null,
+               score2_tiebreak: null,
+               locked: false,
+           });
+        }
+        setIsOpen(false);
+    });
   }
 
   return (
@@ -104,7 +107,7 @@ export default function ScoreEntryDialog({ match, currentScore, onScoreSave, chi
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-             <fieldset disabled={readOnly} className="space-y-6">
+             <fieldset disabled={readOnly || isPending} className="space-y-6">
                 <div>
                     <div className="flex items-center justify-between">
                         <span className="text-lg font-semibold w-2/5 text-right">{match.team1.name}</span>
@@ -235,7 +238,10 @@ export default function ScoreEntryDialog({ match, currentScore, onScoreSave, chi
               <DialogClose asChild>
                 <Button type="button" variant="secondary">Cancel</Button>
               </DialogClose>
-              {!readOnly && <Button type="submit">Save Score</Button>}
+              {!readOnly && <Button type="submit" disabled={isPending}>
+                {isPending && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                Save Score
+              </Button>}
             </DialogFooter>
           </form>
         </Form>
