@@ -6,7 +6,7 @@ import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { KeyRound, Mail, PlusCircle, LayoutGrid, Calendar, Users, Trophy, Crown, Shield, Activity, Archive, ChevronDown } from "lucide-react";
+import { KeyRound, Mail, PlusCircle, LayoutGrid, Calendar, Users, Trophy, Crown, Shield, Activity, Archive, ChevronDown, Settings } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getTournamentsForUserWithRoles, updateTournament } from "@/lib/firebase/firestore";
@@ -56,8 +56,9 @@ const RoleBadge = ({ role }: { role: string }) => {
     );
 };
 
-const TournamentCard = ({ tournament, status, onArchive }: { tournament: Tournament; status: 'ongoing' | 'finished' | 'archived'; onArchive: (id: string) => void }) => {
+const TournamentCard = ({ tournament, status, onArchive }: { tournament: Tournament; status: 'ongoing' | 'finished' | 'archived' | 'unconfigured'; onArchive: (id: string) => void }) => {
     const isOwner = tournament.roles?.includes('owner');
+    const canBeArchived = status !== 'archived';
     
     return (
     <Card key={tournament.id} className="flex flex-col overflow-hidden">
@@ -75,6 +76,12 @@ const TournamentCard = ({ tournament, status, onArchive }: { tournament: Tournam
                         Active
                     </Badge>
                 )}
+                {status === 'unconfigured' && (
+                     <Badge variant="outline" className="text-primary border-primary gap-1.5 flex-shrink-0">
+                        <Settings className="h-3 w-3" />
+                        Needs Setup
+                    </Badge>
+                )}
                 {status === 'finished' && (
                     <Trophy className="h-5 w-5 text-accent flex-shrink-0" />
                 )}
@@ -84,7 +91,7 @@ const TournamentCard = ({ tournament, status, onArchive }: { tournament: Tournam
         <CardContent className="space-y-3 text-sm text-muted-foreground flex-grow">
             <div className="flex items-center gap-2">
                 <Users className="h-4 w-4" />
-                <span>{tournament.numberOfTeams} Teams</span>
+                <span>{tournament.numberOfTeams ? `${tournament.numberOfTeams} Teams` : 'Open Registration'}</span>
             </div>
             <div className="flex items-center gap-2">
                 <Calendar className="h-4 w-4" />
@@ -97,11 +104,11 @@ const TournamentCard = ({ tournament, status, onArchive }: { tournament: Tournam
             </div>
         </CardContent>
         <CardFooter className="pt-4">
-            <div className={cn("grid w-full gap-2", isOwner ? "grid-cols-2" : "grid-cols-1")}>
+            <div className={cn("grid w-full gap-2", (isOwner && canBeArchived) ? "grid-cols-2" : "grid-cols-1")}>
                 <Button asChild className="w-full" variant="outline">
                     <Link href={`/create?id=${tournament.id}`}>View Dashboard</Link>
                 </Button>
-                {isOwner && (
+                {isOwner && canBeArchived && (
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="outline" className="w-full">
@@ -178,14 +185,17 @@ export default function ProfilePage() {
     }
   };
 
-  const { ongoingTournaments, finishedTournaments, archivedTournaments } = useMemo(() => {
+  const { ongoingTournaments, finishedTournaments, unconfiguredTournaments, archivedTournaments } = useMemo(() => {
     const ongoing: Tournament[] = [];
     const finished: Tournament[] = [];
+    const unconfigured: Tournament[] = [];
     const archived: Tournament[] = [];
 
     tournaments.forEach(t => {
       if (t.winner) {
         finished.push(t);
+      } else if (!t.fixture) {
+        unconfigured.push(t);
       } else if (t.isActive) {
         ongoing.push(t);
       } else {
@@ -195,7 +205,8 @@ export default function ProfilePage() {
 
     return { 
       ongoingTournaments: ongoing, 
-      finishedTournaments: finished, 
+      finishedTournaments: finished,
+      unconfiguredTournaments: unconfigured,
       archivedTournaments: archived 
     };
   }, [tournaments]);
@@ -250,9 +261,30 @@ export default function ProfilePage() {
                 <FootballLoader className="h-64 w-full" />
             ) : tournaments.length > 0 ? (
                 <div className="space-y-12">
+                     {unconfiguredTournaments.length > 0 && (
+                        <section>
+                            <Collapsible defaultOpen={true}>
+                                <CollapsibleTrigger asChild>
+                                    <div className="flex w-full cursor-pointer items-center justify-between rounded-md p-2 hover:bg-muted">
+                                        <h2 className="text-2xl font-bold tracking-tight flex items-center gap-2 text-primary">
+                                            <Settings className="h-6 w-6"/> Unconfigured ({unconfiguredTournaments.length})
+                                        </h2>
+                                        <ChevronDown className="h-5 w-5 text-muted-foreground transition-transform data-[state=open]:rotate-180"/>
+                                    </div>
+                                </CollapsibleTrigger>
+                                <CollapsibleContent className="data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up overflow-hidden">
+                                    <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 pt-4">
+                                        {unconfiguredTournaments.map((t) => (
+                                            <TournamentCard key={t.id} tournament={t} status="unconfigured" onArchive={handleArchiveTournament} />
+                                        ))}
+                                    </div>
+                                </CollapsibleContent>
+                            </Collapsible>
+                        </section>
+                    )}
                      {ongoingTournaments.length > 0 && (
                         <section>
-                            <h2 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2 text-primary"><Activity className="h-6 w-6"/> Ongoing</h2>
+                            <h2 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2 text-accent"><Activity className="h-6 w-6"/> Ongoing</h2>
                             <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                                 {ongoingTournaments.map((t) => (
                                     <TournamentCard key={t.id} tournament={t} status="ongoing" onArchive={handleArchiveTournament} />
