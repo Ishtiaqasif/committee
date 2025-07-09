@@ -484,6 +484,24 @@ export default function TournamentHome({ tournament, teams, onTournamentUpdate }
   const renderContent = () => {
     const approvedTeams = teams.filter(t => t.status === 'approved');
 
+    if (tournament.winner && activeView !== 'overview') {
+        return (
+            <div className="flex flex-col items-center justify-center text-center">
+                <TournamentOverview 
+                    tournament={tournament} 
+                    fixture={fixture} 
+                    scores={scores} 
+                    teams={teams}
+                    onGenerateFixture={handleGenerateFixture}
+                    onTournamentUpdate={onTournamentUpdate}
+                    isGeneratingFixture={isGeneratingFixture}
+                    isPrivilegedUser={isPrivilegedUser}
+                />
+                 <p className="mt-8 text-muted-foreground">This tournament is complete. You can review the details using the sidebar.</p>
+            </div>
+        )
+    }
+
     switch (activeView) {
       case 'overview':
         return (
@@ -511,7 +529,7 @@ export default function TournamentHome({ tournament, teams, onTournamentUpdate }
             </div>
         );
       case 'teams':
-        return <TeamsList teams={approvedTeams} fixture={fixture} scores={scores} currentUserId={user?.uid} />;
+        return <TeamsList teams={approvedTeams} fixture={fixture} scores={scores} tournament={tournament} currentUserId={user?.uid} />;
       case 'points-table':
         return <PointsTableView fixture={fixture!} teams={approvedTeams} scores={scores} tournament={tournament} currentUserId={user?.uid} />;
       case 'knockout':

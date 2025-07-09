@@ -1,13 +1,148 @@
 
 "use client";
 
-import { Team, Fixture, Score, Match, Round } from '@/types';
+import { Team, Fixture, Score, Match, Round, Tournament, MatchTeam } from '@/types';
 import { Card, CardContent } from '@/components/ui/card';
 import { Shield, User, Swords } from 'lucide-react';
 import Image from 'next/image';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
+
+// This function will process knockout rounds to fill in placeholders
+const processKnockoutFixture = (knockoutRounds: Round[] | undefined, scores: Record<string, Score>, knockoutHomeAndAway: boolean, awayGoalsRule: boolean): Round[] => {
+    if (!knockoutRounds) return [];
+    
+    const newRounds = JSON.parse(JSON.stringify(knockoutRounds));
+
+    for (let i = 0; i < newRounds.length - 1; i++) {
+        const currentRound = newRounds[i];
+        const nextRound = newRounds[i + 1];
+        
+        const getSingleMatchWinner = (match: Match): MatchTeam | null => {
+            const matchId = `r${currentRound.round}m${match.match}`;
+            const matchScores = scores[matchId];
+            let winner: MatchTeam | null = null;
+            
+            if (match.team1.name.toLowerCase() === 'bye') return match.team2;
+            if (match.team2.name.toLowerCase() === 'bye') return match.team1;
+
+            if (matchScores && matchScores.score1 !== null && matchScores.score2 !== null) {
+                if (matchScores.score1 > matchScores.score2) {
+                    winner = match.team1;
+                } else if (matchScores.score2 > matchScores.score1) {
+                    winner = match.team2;
+                } else { // Draw, check tiebreaker
+                    if (matchScores.score1_tiebreak != null && matchScores.score2_tiebreak != null) {
+                        if (matchScores.score1_tiebreak > matchScores.score2_tiebreak) {
+                            winner = match.team1;
+                        } else if (matchScores.score2_tiebreak > matchScores.score1_tiebreak) {
+                            winner = match.team2;
+                        }
+                    }
+                }
+            }
+            return winner;
+        }
+
+        const advanceWinner = (winner: MatchTeam | null, match: Match) => {
+            if (!winner) return;
+            const nextMatchIndex = Math.floor((match.match - 1) / 2);
+            const nextMatch = nextRound.matches[nextMatchIndex];
+            if(nextMatch) {
+                if ((match.match - 1) % 2 === 0) {
+                    nextMatch.team1 = winner;
+                } else {
+                    nextMatch.team2 = winner;
+                }
+            }
+        }
+        
+        if (knockoutHomeAndAway) {
+            const ties = new Map<string, Match[]>();
+            const singleMatches: Match[] = [];
+
+            currentRound.matches.forEach((match: Match) => {
+                if (match.team1.name.toLowerCase() === 'bye' || match.team2.name.toLowerCase() === 'bye') {
+                    singleMatches.push(match);
+                } else {
+                    const tieKey = [match.team1.name, match.team2.name].sort().join(' vs ');
+                    if (!ties.has(tieKey)) ties.set(tieKey, []);
+                    ties.get(tieKey)!.push(match);
+                }
+            });
+
+            singleMatches.forEach(match => {
+                const winner = getSingleMatchWinner(match);
+                advanceWinner(winner, match);
+            });
+
+            ties.forEach(tieMatches => {
+                if (tieMatches.length !== 2) {
+                    tieMatches.forEach(match => {
+                        const winner = getSingleMatchWinner(match);
+                        advanceWinner(winner, match);
+                    })
+                    return;
+                }
+                
+                const [leg1, leg2] = tieMatches.sort((a,b) => a.match - b.match);
+                const teamA = leg1.team1; 
+                const teamB = leg1.team2;
+
+                const leg1Id = `r${currentRound.round}m${leg1.match}`;
+                const leg2Id = `r${currentRound.round}m${leg2.match}`;
+
+                const score1 = scores[leg1Id];
+                const score2 = scores[leg2Id];
+
+                let winner: MatchTeam | null = null;
+
+                if (score1 && score1.score1 !== null && score1.score2 !== null && score2 && score2.score1 !== null && score2.score2 !== null) {
+                    const teamA_s1 = score1.score1; // A is home in leg 1
+                    const teamB_s1 = score1.score2;
+                    
+                    const teamA_s2 = score2.score2; // A is away in leg 2
+                    const teamB_s2 = score2.score1;
+
+                    const teamA_aggregate = teamA_s1 + teamA_s2;
+                    const teamB_aggregate = teamB_s1 + teamB_s2;
+                    
+                    if (teamA_aggregate > teamB_aggregate) {
+                        winner = teamA;
+                    } else if (teamB_aggregate > teamA_aggregate) {
+                        winner = teamB;
+                    } else {
+                        if (awayGoalsRule) {
+                            const teamA_away_goals = teamA_s2;
+                            const teamB_away_goals = teamB_s1;
+
+                            if (teamA_away_goals > teamB_away_goals) {
+                                winner = teamA;
+                            } else if (teamB_away_goals > teamA_away_goals) {
+                                winner = teamB;
+                            }
+                        }
+                        
+                        if (!winner && score2.score1_tiebreak != null && score2.score2_tiebreak != null) {
+                           if(score2.score1_tiebreak > score2.score2_tiebreak) winner = leg2.team1;
+                           else if (score2.score2_tiebreak > score2.score1_tiebreak) winner = leg2.team2;
+                        }
+                    }
+                }
+                advanceWinner(winner, leg1);
+            });
+
+        } else {
+             currentRound.matches.forEach((match: Match) => {
+                const winner = getSingleMatchWinner(match);
+                advanceWinner(winner, match);
+            });
+        }
+    }
+    return newRounds;
+};
+
 
 // Helper function to get all matches for a specific team from the fixture
 const getMatchesForTeam = (teamName: string, fixture: Fixture | null): { match: Match, roundName: string, matchId: string }[] => {
@@ -59,7 +194,7 @@ const getMatchesForTeam = (teamName: string, fixture: Fixture | null): { match: 
 };
 
 
-export default function TeamsList({ teams, fixture, scores, currentUserId }: { teams: Team[]; fixture: Fixture | null; scores: Record<string, Score>, currentUserId?: string }) {
+export default function TeamsList({ teams, fixture, scores, tournament, currentUserId }: { teams: Team[]; fixture: Fixture | null; scores: Record<string, Score>, tournament: Tournament, currentUserId?: string }) {
     
     const sortedTeams = useMemo(() => {
         if (!currentUserId) return teams;
@@ -75,6 +210,30 @@ export default function TeamsList({ teams, fixture, scores, currentUserId }: { t
         return teams;
 
     }, [teams, currentUserId]);
+
+    const processedFixture = useMemo(() => {
+        if (!fixture) return null;
+        if (tournament.tournamentType === 'round-robin' && !fixture.knockoutStage) return fixture;
+
+        const newFixture = JSON.parse(JSON.stringify(fixture));
+        const knockoutRounds = newFixture.knockoutStage?.rounds ?? newFixture.rounds;
+        
+        const processedKnockoutRounds = processKnockoutFixture(
+            knockoutRounds,
+            scores,
+            tournament.knockoutHomeAndAway ?? false,
+            tournament.awayGoalsRule ?? false
+        );
+
+        if (newFixture.knockoutStage) {
+            newFixture.knockoutStage.rounds = processedKnockoutRounds;
+        } else if (newFixture.rounds) {
+            newFixture.rounds = processedKnockoutRounds;
+        }
+
+        return newFixture;
+
+    }, [fixture, scores, tournament]);
 
     if (!fixture) {
         // Render original view if no fixture is generated
@@ -119,7 +278,7 @@ export default function TeamsList({ teams, fixture, scores, currentUserId }: { t
             <p className="text-muted-foreground">Expand each team to see their schedule.</p>
             <Accordion type="single" collapsible className="w-full mt-6 space-y-2">
                 {sortedTeams.map(team => {
-                    const teamMatches = getMatchesForTeam(team.name, fixture);
+                    const teamMatches = getMatchesForTeam(team.name, processedFixture);
 
                     return (
                         <AccordionItem value={team.id} key={team.id} className={cn(
