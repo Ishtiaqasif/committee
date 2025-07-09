@@ -11,7 +11,7 @@ import SingleEliminationBracket from "@/components/single-elimination-bracket";
 import TeamsList from "@/components/teams-list";
 import PointsTableView from "./points-table-view";
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { Loader, Trophy, Gamepad2, ListOrdered, Users, Settings, LayoutDashboard, ShieldCheck, UserCog, Bot, BookOpen } from "lucide-react";
+import { Loader, Trophy, Gamepad2, ListOrdered, Users, Settings, LayoutDashboard, ShieldCheck, UserCog, Bot, BookOpen, Clipboard, Check } from "lucide-react";
 import QualificationSummaryView from "./qualification-summary-view";
 import { ThemeToggle } from "./theme-toggle";
 import TournamentSettings from "./tournament-settings";
@@ -38,6 +38,8 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Input } from "./ui/input";
+import { Label } from "./ui/label";
 
 
 interface TournamentHomeProps {
@@ -56,6 +58,8 @@ export default function TournamentHome({ tournament, teams, onTournamentUpdate }
   const { user } = useAuth();
   
   const [userRole, setUserRole] = useState<UserRole>('guest');
+  const [championLink, setChampionLink] = useState('');
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (user && tournament) {
@@ -82,6 +86,18 @@ export default function TournamentHome({ tournament, teams, onTournamentUpdate }
     setFixture(tournament.fixture || null);
     setScores(tournament.scores || {});
   }, [tournament.fixture, tournament.scores]);
+  
+  useEffect(() => {
+    if (tournament.winner) {
+        setChampionLink(`${window.location.origin}/register/${tournament.id}`);
+    }
+  }, [tournament.winner, tournament.id]);
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(championLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
 
   const handleGenerateFixture = () => {
     startGenerateFixture(async () => {
@@ -578,12 +594,16 @@ export default function TournamentHome({ tournament, teams, onTournamentUpdate }
           <ThemeToggle />
         </div>
         <ChampionView winner={tournament.winner} />
-        <Button asChild className="mt-12">
-          <Link href="/create">
-            <Trophy className="mr-2 h-4 w-4" />
-            Create Another Tournament
-          </Link>
-        </Button>
+        <div className="mt-12 w-full max-w-md text-center">
+            <Label htmlFor="champion-link" className="text-sm font-medium">Share The Victory</Label>
+            <div className="flex gap-2 mt-2">
+                <Input id="champion-link" readOnly value={championLink} />
+                <Button variant="outline" size="icon" onClick={handleCopyLink} disabled={!championLink}>
+                    {copied ? <Check className="text-green-500" /> : <Clipboard />}
+                </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">Share this link to show off the champion.</p>
+        </div>
       </div>
     );
   }

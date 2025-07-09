@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { getTournament, addTeamToTournament, getTeamsForTournament } from '@/lib/firebase/firestore';
 import { Tournament, Team } from '@/types';
-import { Loader, UserPlus, ClipboardList, Shield, CheckCircle, Sparkles, Image as ImageIcon, User } from 'lucide-react';
+import { Loader, UserPlus, ClipboardList, Shield, CheckCircle, Sparkles, Image as ImageIcon, User, Trophy, Clipboard, Check } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { FootballLoader } from '@/components/football-loader';
 import { query, where, getDocs, collection } from 'firebase/firestore';
 import { db } from '@/lib/firebase/config';
+import { Label } from '@/components/ui/label';
 
 const formSchema = z.object({
   teamName: z.string().min(1, 'Team name is required.'),
@@ -82,6 +83,8 @@ export default function RegisterTeamPage() {
   const [logo, setLogo] = useState('');
   const [isGeneratingLogo, setIsGeneratingLogo] = useState(false);
   const [userHasRegistered, setUserHasRegistered] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [championLink, setChampionLink] = useState('');
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -89,6 +92,19 @@ export default function RegisterTeamPage() {
       teamName: '',
     },
   });
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        setChampionLink(window.location.href);
+    }
+  }, []);
+
+  const handleCopyLink = () => {
+      if (!championLink) return;
+      navigator.clipboard.writeText(championLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+  };
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -209,9 +225,16 @@ export default function RegisterTeamPage() {
             <p className="text-muted-foreground">This tournament is complete.</p>
         </div>
         <ChampionView winner={tournament.winner} />
-         <Button asChild className="mt-12">
-            <Link href="/">Create Your Own Tournament</Link>
-        </Button>
+         <div className="mt-12 w-full max-w-md text-center">
+            <Label htmlFor="champion-link" className="text-sm font-medium">Share The Victory</Label>
+            <div className="flex gap-2 mt-2">
+                <Input id="champion-link" readOnly value={championLink} />
+                <Button variant="outline" size="icon" onClick={handleCopyLink} disabled={!championLink}>
+                    {copied ? <Check className="text-green-500" /> : <Clipboard />}
+                </Button>
+            </div>
+            <p className="text-xs text-muted-foreground mt-2">Share this link to show off the champion.</p>
+        </div>
       </div>
     )
   }
