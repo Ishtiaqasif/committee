@@ -7,13 +7,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { Tournament, UserProfile } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader, UserPlus, UserMinus, KeyRound, Shield, Crown, Mail } from 'lucide-react';
 import { getUserProfiles, getUserByEmail } from '@/lib/firebase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserSearchCombobox } from './user-search-combobox';
 
 
 interface UserManagementProps {
@@ -210,9 +210,13 @@ export default function UserManagement({ tournament, onUpdate }: UserManagementP
                             name="adminEmail"
                             render={({ field }) => (
                                 <FormItem className="flex-grow">
-                                    <FormLabel className="flex items-center gap-2"><Mail className="h-4 w-4" /> Admin's Email</FormLabel>
+                                    <FormLabel className="flex items-center gap-2"><Mail className="h-4 w-4" /> Admin User</FormLabel>
                                     <FormControl>
-                                        <Input placeholder="Enter admin's email address" {...field} />
+                                        <UserSearchCombobox
+                                            value={field.value}
+                                            onChange={field.onChange}
+                                            disabled={isUpdating}
+                                        />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

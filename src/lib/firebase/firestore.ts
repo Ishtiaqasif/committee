@@ -210,6 +210,46 @@ export async function getUserByEmail(email: string): Promise<UserProfile | null>
     return { uid: userDoc.id, ...userDoc.data() } as UserProfile;
 }
 
+export async function searchUsers(searchText: string): Promise<UserProfile[]> {
+    if (!searchText) return [];
+    
+    // As Firestore queries are case-sensitive and don't support lowercase searching on the server-side
+    // without a dedicated field, we perform prefix searches.
+    // This is a basic implementation. For full-text, case-insensitive search, a service like Algolia is recommended.
+    const nameQuery = query(
+        collection(db, "users"),
+        where("displayName", ">=", searchText),
+        where("displayName", "<=", searchText + '\uf8ff'),
+        limit(5)
+    );
+    const emailQuery = query(
+        collection(db, "users"),
+        where("email", ">=", searchText),
+        where("email", "<=", searchText + '\uf8ff'),
+        limit(5)
+    );
+
+    const [nameSnapshot, emailSnapshot] = await Promise.all([
+        getDocs(nameQuery),
+        getDocs(emailQuery)
+    ]);
+    
+    const usersMap = new Map<string, UserProfile>();
+
+    nameSnapshot.forEach(doc => {
+        const userData = { uid: doc.id, ...doc.data() } as UserProfile;
+        usersMap.set(doc.id, userData);
+    });
+
+    emailSnapshot.forEach(doc => {
+        const userData = { uid: doc.id, ...doc.data() } as UserProfile;
+        usersMap.set(doc.id, userData); // Replaces duplicate if already added by name query
+    });
+
+    return Array.from(usersMap.values());
+}
+
+
 export async function updateTeam(tournamentId: string, teamId: string, data: Partial<Omit<Team, 'id'>>): Promise<void> {
     const teamRef = doc(db, "tournaments", tournamentId, "teams", teamId);
     await updateDoc(teamRef, data);

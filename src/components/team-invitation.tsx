@@ -33,6 +33,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from './ui/badge';
+import { UserSearchCombobox } from './user-search-combobox';
 
 interface TeamInvitationProps {
     tournament: Tournament;
@@ -330,13 +331,15 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
                 control={manualRegForm.control}
                 name="ownerEmail"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="flex items-center gap-2"><User className="h-4 w-4" /> Team Owner's Email</FormLabel>
-                    <FormControl>
-                      <Input placeholder="owner@example.com" {...field} />
-                    </FormControl>
+                  <FormItem className="flex flex-col">
+                    <FormLabel className="flex items-center gap-2"><User className="h-4 w-4" /> Team Owner</FormLabel>
+                    <UserSearchCombobox
+                      value={field.value}
+                      onChange={field.onChange}
+                      disabled={isSubmitting || isGeneratingLogo}
+                    />
                      <FormDescription>
-                        The owner must be a registered user on Committee.
+                        Search for a registered user by name or email.
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
