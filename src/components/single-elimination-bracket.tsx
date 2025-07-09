@@ -433,31 +433,29 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTou
                     </div>
                     )}
 
-                    {process.env.NODE_ENV !== 'production' && (
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button variant="outline" disabled={isSimulating} className="mt-2">
-                                    <Bot className="mr-2 h-4 w-4" />
-                                    Simulate Round
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                <AlertDialogTitle>Simulate Current Round?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This will generate random scores for all unplayed matches in the current round. This is for testing purposes and can be undone by manually editing scores.
-                                </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={onSimulateRound} disabled={isSimulating}>
-                                    {isSimulating && <Loader className="mr-2 h-4 w-4 animate-spin" />}
-                                    Continue
-                                </AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
-                    )}
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button variant="outline" disabled={isSimulating} className="mt-2">
+                                <Bot className="mr-2 h-4 w-4" />
+                                Simulate Round
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                            <AlertDialogTitle>Simulate Current Round?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                                This will generate random scores for all unplayed matches in the current round. This is for testing purposes and can be undone by manually editing scores.
+                            </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction onClick={onSimulateRound} disabled={isSimulating}>
+                                {isSimulating && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                                Continue
+                            </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
                 </div>
             )}
         </div>
