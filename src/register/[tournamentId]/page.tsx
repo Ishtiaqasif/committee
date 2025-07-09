@@ -6,7 +6,7 @@ import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
 import { getTournament, addTeamToTournament, getTeamsForTournament } from '@/lib/firebase/firestore';
 import { Tournament, Team } from '@/types';
-import { Loader, UserPlus, ClipboardList, Shield, CheckCircle, Sparkles, Image as ImageIcon, User } from 'lucide-react';
+import { Loader, UserPlus, ClipboardList, Shield, CheckCircle, Sparkles, Image as ImageIcon, User, Trophy } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -210,7 +210,10 @@ export default function RegisterTeamPage() {
         </div>
         <ChampionView winner={tournament.winner} />
          <Button asChild className="mt-12">
-            <Link href="/">Create Your Own Tournament</Link>
+            <Link href="/create">
+                <Trophy className="mr-2 h-4 w-4"/>
+                Create Your Own Tournament
+            </Link>
         </Button>
       </div>
     )

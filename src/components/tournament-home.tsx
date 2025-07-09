@@ -11,18 +11,7 @@ import SingleEliminationBracket from "@/components/single-elimination-bracket";
 import TeamsList from "@/components/teams-list";
 import PointsTableView from "./points-table-view";
 import { SidebarProvider, Sidebar, SidebarHeader, SidebarContent, SidebarFooter, SidebarMenu, SidebarMenuItem, SidebarMenuButton, SidebarInset, SidebarTrigger } from "@/components/ui/sidebar";
-import { Loader, Trophy, RefreshCw, Gamepad2, ListOrdered, Users, Settings, LayoutDashboard, ShieldCheck, UserCog, Bot, BookOpen } from "lucide-react";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
+import { Loader, Trophy, Gamepad2, ListOrdered, Users, Settings, LayoutDashboard, ShieldCheck, UserCog, Bot, BookOpen } from "lucide-react";
 import QualificationSummaryView from "./qualification-summary-view";
 import { ThemeToggle } from "./theme-toggle";
 import TournamentSettings from "./tournament-settings";
@@ -37,15 +26,27 @@ import TournamentRules from "./tournament-rules";
 import { calculatePointsTable } from '@/lib/calculate-points-table';
 import Image from "next/image";
 import FixtureSettings from "./fixture-settings";
+import Link from 'next/link';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+
 
 interface TournamentHomeProps {
   tournament: Tournament;
   teams: Team[];
-  onReset: () => void;
   onTournamentUpdate: (data: Partial<Tournament>) => void;
 }
 
-export default function TournamentHome({ tournament, teams, onReset, onTournamentUpdate }: TournamentHomeProps) {
+export default function TournamentHome({ tournament, teams, onTournamentUpdate }: TournamentHomeProps) {
   const [fixture, setFixture] = useState<Fixture | null>(null);
   const [isGeneratingFixture, startGenerateFixture] = useTransition();
   const [isSimulating, startSimulating] = useTransition();
@@ -577,29 +578,12 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
           <ThemeToggle />
         </div>
         <ChampionView winner={tournament.winner} />
-        {isPrivilegedUser && (
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" className="mt-8">
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Reset Tournament
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will reset the entire
-                  tournament, including teams and fixtures.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={onReset}>Continue</AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        )}
+        <Button asChild className="mt-12">
+          <Link href="/create">
+            <Trophy className="mr-2 h-4 w-4" />
+            Create Another Tournament
+          </Link>
+        </Button>
       </div>
     );
   }
@@ -700,26 +684,12 @@ export default function TournamentHome({ tournament, teams, onReset, onTournamen
                 </SidebarMenu>
             </SidebarContent>
             <SidebarFooter>
-                <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                        <Button variant="outline" className="w-full" disabled={!isPrivilegedUser}>
-                            <RefreshCw className="mr-2 h-4 w-4" />
-                             <span className="group-data-[collapsible=icon]:hidden">Reset Tournament</span>
-                        </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                        <AlertDialogHeader>
-                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                        <AlertDialogDescription>
-                            This action cannot be undone. This will reset the entire tournament, including teams and fixtures.
-                        </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction onClick={onReset}>Continue</AlertDialogAction>
-                        </AlertDialogFooter>
-                    </AlertDialogContent>
-                </AlertDialog>
+                <Button asChild variant="outline" className="w-full">
+                    <Link href="/profile">
+                        <LayoutDashboard className="mr-2 h-4 w-4" />
+                        <span className="group-data-[collapsible=icon]:hidden">My Tournaments</span>
+                    </Link>
+                </Button>
                 <div className="flex w-full items-center justify-between border-t border-sidebar-border pt-2 mt-2 group-data-[collapsible=icon]:flex-col group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:gap-2 group-data-[collapsible=icon]:border-none group-data-[collapsible=icon]:mt-2 group-data-[collapsible=icon]:pt-0">
                     <ThemeToggle />
                     <AuthButton />

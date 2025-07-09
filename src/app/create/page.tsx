@@ -140,10 +140,6 @@ function CreatePageComponent() {
     setAppState("fixture");
   };
 
-  const handleReset = () => {
-    router.push('/create');
-  };
-
   const renderContent = () => {
     switch (appState) {
       case "configuring":
@@ -163,7 +159,6 @@ function CreatePageComponent() {
           <TournamentHome
             tournament={tournament}
             teams={teams}
-            onReset={handleReset}
             onTournamentUpdate={handleTournamentUpdate}
           />
         );
