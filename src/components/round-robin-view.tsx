@@ -1,10 +1,10 @@
 
 "use client"
 
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useTransition } from 'react';
 import { Team, Match, Round, Group, Score, Tournament, TiebreakerRule } from '@/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Dices, MapPin, Lock, ArrowRight, Shield, ArrowLeft, Trophy } from 'lucide-react';
+import { Dices, MapPin, Lock, ArrowRight, Shield, ArrowLeft, Trophy, Loader } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from '@/components/ui/button';
 import ScoreEntryDialog from './score-entry-dialog';
@@ -119,6 +119,7 @@ const GroupedRoundRobinView = ({ group, viewedRound, activeRound, scores, onScor
 export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, onTournamentUpdate, isHybrid, onProceedToKnockout, activeRound, onActiveRoundChange, readOnly, currentUserId, tournament }: RoundRobinViewProps) {
   const [viewMode, setViewMode] = useState<'short' | 'full'>('short');
   const [viewedRound, setViewedRound] = useState(activeRound);
+  const [isProceeding, startProceeding] = useTransition();
 
   const userTeam = useMemo(() => teams.find(t => t.ownerId === currentUserId), [teams, currentUserId]);
   
@@ -177,26 +178,28 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
 
 
   const handleProceed = () => {
-    if (fixture.groups) {
-        fixture.groups.forEach(group => {
-            group.rounds.filter(r => r.round === activeRound).forEach(round => {
+    startProceeding(() => {
+        if (fixture.groups) {
+            fixture.groups.forEach(group => {
+                group.rounds.filter(r => r.round === activeRound).forEach(round => {
+                    round.matches.forEach(match => {
+                        const matchId = `g${group.groupName}r${round.round}m${match.match}`;
+                        const score = scores[matchId] || { score1: null, score2: null, locked: false };
+                        onScoreUpdate(matchId, { ...score, locked: true });
+                    });
+                });
+            });
+        } else if (fixture.rounds) {
+            fixture.rounds.filter(r => r.round === activeRound).forEach(round => {
                 round.matches.forEach(match => {
-                    const matchId = `g${group.groupName}r${round.round}m${match.match}`;
+                    const matchId = `r${round.round}m${match.match}`;
                     const score = scores[matchId] || { score1: null, score2: null, locked: false };
                     onScoreUpdate(matchId, { ...score, locked: true });
                 });
             });
-        });
-    } else if (fixture.rounds) {
-        fixture.rounds.filter(r => r.round === activeRound).forEach(round => {
-            round.matches.forEach(match => {
-                const matchId = `r${round.round}m${match.match}`;
-                const score = scores[matchId] || { score1: null, score2: null, locked: false };
-                onScoreUpdate(matchId, { ...score, locked: true });
-            });
-        });
-    }
-    onActiveRoundChange(activeRound + 1);
+        }
+        onActiveRoundChange(activeRound + 1);
+    });
   };
 
   const allRounds = fixture.rounds || [];
@@ -236,7 +239,8 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
             {hasNextRound && isRoundComplete && !isRoundLocked && (
                 <>
                     <p className="text-sm text-muted-foreground">All matches in the current round are complete.</p>
-                    <Button size="lg" onClick={handleProceed}>
+                    <Button size="lg" onClick={handleProceed} disabled={isProceeding}>
+                        {isProceeding && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                         Lock Round & Proceed <ArrowRight className="ml-2 h-4 w-4" />
                     </Button>
                 </>
@@ -251,7 +255,8 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
             {!hasNextRound && isRoundComplete && (
                  <>
                     {isHybrid && onProceedToKnockout ? (
-                        <Button size="lg" onClick={onProceedToKnockout}>
+                        <Button size="lg" onClick={() => startProceeding(() => onProceedToKnockout())} disabled={isProceeding}>
+                            {isProceeding && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                             Proceed to Knockout Stage <ArrowRight className="ml-2 h-4 w-4" />
                         </Button>
                     ) : finalWinner ? (
@@ -259,7 +264,8 @@ export default function RoundRobinView({ fixture, teams, scores, onScoreUpdate, 
                             <p className="text-lg font-semibold text-primary">
                                 Tournament Complete! The winner is {finalWinner.name}.
                             </p>
-                            <Button size="lg" onClick={() => onTournamentUpdate({ winner: finalWinner })}>
+                            <Button size="lg" onClick={() => startProceeding(() => onTournamentUpdate({ winner: finalWinner }))} disabled={isProceeding}>
+                                {isProceeding && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                                 <Trophy className="mr-2 h-4 w-4" /> Crown Champion & Finish
                             </Button>
                         </div>

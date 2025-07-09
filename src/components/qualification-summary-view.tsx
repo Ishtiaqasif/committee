@@ -1,13 +1,13 @@
 
 "use client"
 
-import { useMemo } from 'react';
+import { useMemo, useTransition } from 'react';
 import { Fixture, Team, Score, Tournament } from '@/types';
 import { calculatePointsTable } from '@/lib/calculate-points-table';
 import PointsTable from './points-table';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './ui/card';
 import { Button } from './ui/button';
-import { ArrowRight, Trophy } from 'lucide-react';
+import { ArrowRight, Trophy, Loader } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
@@ -21,6 +21,8 @@ interface QualificationSummaryViewProps {
 }
 
 export default function QualificationSummaryView({ groupStage, teams, scores, tournament, onProceed, isPrivilegedUser }: QualificationSummaryViewProps) {
+  const [isProceeding, startProceeding] = useTransition();
+
   const { tables, teamsAdvancingPerGroup } = useMemo(() => {
     if (!groupStage?.groups) {
       return { tables: [], teamsAdvancingPerGroup: 0 };
@@ -75,7 +77,8 @@ export default function QualificationSummaryView({ groupStage, teams, scores, to
         <div className="text-center">
             {isPrivilegedUser ? (
               <>
-                <Button size="lg" onClick={onProceed}>
+                <Button size="lg" onClick={() => startProceeding(onProceed)} disabled={isProceeding}>
+                    {isProceeding && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                     Generate Knockout Fixture <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
                 <p className="text-sm text-muted-foreground mt-2">

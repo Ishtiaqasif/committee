@@ -3,8 +3,8 @@
 
 import { Match, Round, Score, Tournament, MatchTeam } from '@/types';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { useMemo, useState, useEffect } from 'react';
-import { MapPin, Lock, ArrowRight, Shield, ArrowLeft, Trophy } from 'lucide-react';
+import { useMemo, useState, useEffect, useTransition } from 'react';
+import { MapPin, Lock, ArrowRight, Shield, ArrowLeft, Trophy, Loader } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import ScoreEntryDialog from './score-entry-dialog';
 import { cn } from '@/lib/utils';
@@ -100,7 +100,8 @@ const MatchComponent = ({ match, round, onScoreUpdate, currentScores, isActive, 
 }
 
 export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTournamentUpdate, scores, knockoutHomeAndAway, awayGoalsRule, activeRound, onActiveRoundChange, readOnly, currentUserId, tournament }: SingleEliminationBracketProps) {
-    
+    const [isProceeding, startProceeding] = useTransition();
+
     const { isRoundComplete, hasNextRound, isRoundLocked } = useMemo(() => {
         const currentRound = fixture.rounds.find(r => r.round === activeRound);
         if (!currentRound) return { isRoundComplete: false, hasNextRound: false, isRoundLocked: false };
@@ -131,16 +132,18 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTou
 
     const handleProceed = () => {
         if (readOnly) return;
-        const currentRound = fixture.rounds.find(r => r.round === activeRound);
-        if (!currentRound) return;
+        startProceeding(() => {
+            const currentRound = fixture.rounds.find(r => r.round === activeRound);
+            if (!currentRound) return;
 
-        currentRound.matches.forEach(match => {
-            const matchId = `r${currentRound.round}m${match.match}`;
-            const score = scores[matchId] || { score1: null, score2: null, locked: false };
-            onScoreUpdate(matchId, { ...score, locked: true });
+            currentRound.matches.forEach(match => {
+                const matchId = `r${currentRound.round}m${match.match}`;
+                const score = scores[matchId] || { score1: null, score2: null, locked: false };
+                onScoreUpdate(matchId, { ...score, locked: true });
+            });
+
+            onActiveRoundChange(activeRound + 1);
         });
-
-        onActiveRoundChange(activeRound + 1);
     };
 
     const processedFixture = useMemo(() => {
@@ -382,7 +385,8 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTou
                             <p className="text-sm text-muted-foreground">
                                 All matches in this round are complete.
                             </p>
-                            <Button size="lg" onClick={handleProceed}>
+                            <Button size="lg" onClick={handleProceed} disabled={isProceeding}>
+                                {isProceeding && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                                 Lock Round & Proceed <ArrowRight className="ml-2 h-4 w-4" />
                             </Button>
                         </>
@@ -399,8 +403,9 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTou
                         <p className="text-lg font-semibold text-primary">
                         Final match complete! {finalWinner.name} is the potential champion.
                         </p>
-                        <Button size="lg" onClick={() => onTournamentUpdate({ winner: finalWinner })}>
-                        <Trophy className="mr-2 h-4 w-4" /> Crown Champion & Finish
+                        <Button size="lg" onClick={() => startProceeding(() => onTournamentUpdate({ winner: finalWinner }))} disabled={isProceeding}>
+                            {isProceeding && <Loader className="mr-2 h-4 w-4 animate-spin" />}
+                            <Trophy className="mr-2 h-4 w-4" /> Crown Champion & Finish
                         </Button>
                     </div>
                     )}

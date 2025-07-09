@@ -1,12 +1,12 @@
 
 "use client";
 
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState, useMemo, useTransition } from "react";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { KeyRound, Mail, PlusCircle, LayoutGrid, Calendar, Users, Trophy, Crown, Shield, Activity, Archive, ChevronDown, Settings } from "lucide-react";
+import { KeyRound, Mail, PlusCircle, LayoutGrid, Calendar, Users, Trophy, Crown, Shield, Activity, Archive, ChevronDown, Settings, Loader } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { getTournamentsForUserWithRoles, updateTournament } from "@/lib/firebase/firestore";
@@ -56,7 +56,7 @@ const RoleBadge = ({ role }: { role: string }) => {
     );
 };
 
-const TournamentCard = ({ tournament, status, onArchive }: { tournament: Tournament; status: 'ongoing' | 'finished' | 'archived' | 'unconfigured'; onArchive: (id: string) => void }) => {
+const TournamentCard = ({ tournament, status, onArchive, isArchiving }: { tournament: Tournament; status: 'ongoing' | 'finished' | 'archived' | 'unconfigured'; onArchive: (id: string) => void; isArchiving: boolean; }) => {
     const isOwner = tournament.roles?.includes('owner');
     const canBeArchived = status !== 'archived';
     
@@ -111,7 +111,7 @@ const TournamentCard = ({ tournament, status, onArchive }: { tournament: Tournam
                 {isOwner && canBeArchived && (
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
-                            <Button variant="outline" className="w-full">
+                            <Button variant="outline" className="w-full" disabled={isArchiving}>
                                 <Archive className="mr-2 h-4 w-4" /> Archive
                             </Button>
                         </AlertDialogTrigger>
@@ -124,7 +124,8 @@ const TournamentCard = ({ tournament, status, onArchive }: { tournament: Tournam
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                                 <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => onArchive(tournament.id)}>
+                                <AlertDialogAction onClick={() => onArchive(tournament.id)} disabled={isArchiving}>
+                                    {isArchiving && <Loader className="mr-2 h-4 w-4 animate-spin" />}
                                     Yes, Archive
                                 </AlertDialogAction>
                             </AlertDialogFooter>
@@ -142,7 +143,7 @@ export default function ProfilePage() {
   const router = useRouter();
   const [tournaments, setTournaments] = useState<Tournament[]>([]);
   const [loadingTournaments, setLoadingTournaments] = useState(true);
-  const [isArchiving, setIsArchiving] = useState(false);
+  const [isArchiving, startArchiving] = useTransition();
   const { toast } = useToast();
 
   useEffect(() => {
@@ -169,20 +170,18 @@ export default function ProfilePage() {
   }, [user]);
   
   const handleArchiveTournament = async (tournamentId: string) => {
-    if (isArchiving) return;
-    setIsArchiving(true);
-    try {
-        await updateTournament(tournamentId, { isActive: false });
-        setTournaments(prev => prev.map(t => 
-            t.id === tournamentId ? { ...t, isActive: false } : t
-        ));
-        toast({ title: "Tournament Archived", description: "The tournament has been moved to the archived list." });
-    } catch (error) {
-        console.error("Failed to archive tournament:", error);
-        toast({ variant: 'destructive', title: 'Error', description: 'Failed to archive the tournament.' });
-    } finally {
-        setIsArchiving(false);
-    }
+    startArchiving(async () => {
+        try {
+            await updateTournament(tournamentId, { isActive: false });
+            setTournaments(prev => prev.map(t => 
+                t.id === tournamentId ? { ...t, isActive: false } : t
+            ));
+            toast({ title: "Tournament Archived", description: "The tournament has been moved to the archived list." });
+        } catch (error) {
+            console.error("Failed to archive tournament:", error);
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to archive the tournament.' });
+        }
+    });
   };
 
   const { ongoingTournaments, finishedTournaments, unconfiguredTournaments, archivedTournaments } = useMemo(() => {
@@ -276,7 +275,7 @@ export default function ProfilePage() {
                                 <CollapsibleContent className="data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up overflow-hidden">
                                     <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 pt-4">
                                         {unconfiguredTournaments.map((t) => (
-                                            <TournamentCard key={t.id} tournament={t} status="unconfigured" onArchive={handleArchiveTournament} />
+                                            <TournamentCard key={t.id} tournament={t} status="unconfigured" onArchive={handleArchiveTournament} isArchiving={isArchiving}/>
                                         ))}
                                     </div>
                                 </CollapsibleContent>
@@ -288,7 +287,7 @@ export default function ProfilePage() {
                             <h2 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2 text-accent"><Activity className="h-6 w-6"/> Ongoing</h2>
                             <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                                 {ongoingTournaments.map((t) => (
-                                    <TournamentCard key={t.id} tournament={t} status="ongoing" onArchive={handleArchiveTournament} />
+                                    <TournamentCard key={t.id} tournament={t} status="ongoing" onArchive={handleArchiveTournament} isArchiving={isArchiving} />
                                 ))}
                             </div>
                         </section>
@@ -307,7 +306,7 @@ export default function ProfilePage() {
                                <CollapsibleContent className="data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up overflow-hidden">
                                    <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 pt-4">
                                        {finishedTournaments.map((t) => (
-                                           <TournamentCard key={t.id} tournament={t} status="finished" onArchive={handleArchiveTournament} />
+                                           <TournamentCard key={t.id} tournament={t} status="finished" onArchive={handleArchiveTournament} isArchiving={isArchiving} />
                                        ))}
                                    </div>
                                </CollapsibleContent>
@@ -328,7 +327,7 @@ export default function ProfilePage() {
                                 <CollapsibleContent className="data-[state=open]:animate-accordion-down data-[state=closed]:animate-accordion-up overflow-hidden">
                                     <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 pt-4">
                                         {archivedTournaments.map((t) => (
-                                            <TournamentCard key={t.id} tournament={t} status="archived" onArchive={handleArchiveTournament} />
+                                            <TournamentCard key={t.id} tournament={t} status="archived" onArchive={handleArchiveTournament} isArchiving={isArchiving} />
                                         ))}
                                     </div>
                                 </CollapsibleContent>
