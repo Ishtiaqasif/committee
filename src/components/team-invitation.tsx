@@ -87,12 +87,12 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
     const { user } = useAuth();
     const { toast } = useToast();
 
-    // Owner registration form state
+    // Manual registration form state
     const [logo, setLogo] = useState('');
     const [isGeneratingLogo, setIsGeneratingLogo] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     
-    const ownerForm = useForm<z.infer<typeof formSchema>>({
+    const manualRegForm = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
         defaultValues: { teamName: '' },
     });
@@ -152,9 +152,9 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
     }
     
     const handleGenerateLogo = async () => {
-        const teamName = ownerForm.getValues('teamName');
+        const teamName = manualRegForm.getValues('teamName');
         if (!teamName) {
-            ownerForm.setError('teamName', { message: 'Please enter a team name first.' });
+            manualRegForm.setError('teamName', { message: 'Please enter a team name first.' });
             return;
         }
 
@@ -172,11 +172,11 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
         }
     };
 
-    const onOwnerSubmit = async (values: z.infer<typeof formSchema>) => {
+    const onManualSubmit = async (values: z.infer<typeof formSchema>) => {
         if (!tournament.id || !user) return;
         
         if (teams.some(team => team.name.toLowerCase() === values.teamName.toLowerCase())) {
-            ownerForm.setError('teamName', { message: 'This team name is already taken.'});
+            manualRegForm.setError('teamName', { message: 'This team name is already taken.'});
             return;
         }
 
@@ -188,12 +188,12 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
             ownerName: user.displayName || 'Participant',
             logo: logo
           });
-          toast({ title: 'Success!', description: tournament.isTeamCountFixed ? 'Your team has been registered.' : 'Your team registration is pending approval.' });
-          ownerForm.reset();
+          toast({ title: 'Team Added', description: `${values.teamName} has been submitted for registration.` });
+          manualRegForm.reset();
           setLogo('');
         } catch (error: any) {
           console.error(error);
-          toast({ variant: 'destructive', title: 'Registration Failed', description: error.message || 'Could not register your team.' });
+          toast({ variant: 'destructive', title: 'Registration Failed', description: error.message || 'Could not register team.' });
         } finally {
           setIsSubmitting(false);
         }
@@ -214,10 +214,9 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
 
     const isPrivilegedUser = user?.uid === tournament.creatorId || tournament.admins?.includes(user?.uid ?? '');
     const isReadyToProceed = tournament.isTeamCountFixed && approvedTeams.length === tournament.numberOfTeams;
-    const ownerHasRegistered = teams.some(t => t.ownerId === user?.uid);
     const isTournamentFull = tournament.isTeamCountFixed && approvedTeams.length >= (tournament.numberOfTeams ?? 0);
 
-    const TeamList = ({ teamList, title, showStatus, children }: { teamList: Team[], title: string, showStatus?: boolean, children?: React.ReactNode }) => (
+    const TeamList = ({ teamList, title, children }: { teamList: Team[], title: string, children?: React.ReactNode }) => (
         <div>
             <h3 className="font-semibold text-lg flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2">{children}{title}</div>
@@ -282,15 +281,15 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
         </div>
     );
     
-    const OwnerRegistration = () => (
+    const ManualTeamRegistration = () => (
       <Card className="mt-8 border-primary/50">
         <CardHeader>
-          <CardTitle>Register Your Team</CardTitle>
-          <CardDescription>As a tournament admin, you can register your own team here.</CardDescription>
+          <CardTitle>Manually Add a Team</CardTitle>
+          <CardDescription>Add a team directly to the tournament. If registration requires approval, the team will appear in the pending list.</CardDescription>
         </CardHeader>
         <CardContent>
-          <Form {...ownerForm}>
-            <form onSubmit={ownerForm.handleSubmit(onOwnerSubmit)} className="space-y-6">
+          <Form {...manualRegForm}>
+            <form onSubmit={manualRegForm.handleSubmit(onManualSubmit)} className="space-y-6">
               <div className="flex justify-center">
                 <div className="relative h-24 w-24 bg-muted rounded-full flex items-center justify-center border-2 border-dashed">
                   {logo ? <Image src={logo} alt="Team Logo" layout="fill" className="rounded-full object-cover" /> : <ImageIcon className="h-10 w-10 text-muted-foreground" />}
@@ -298,13 +297,13 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
                 </div>
               </div>
               <FormField
-                control={ownerForm.control}
+                control={manualRegForm.control}
                 name="teamName"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="flex items-center gap-2"><Shield className="h-4 w-4" /> Your Team Name</FormLabel>
+                    <FormLabel className="flex items-center gap-2"><Shield className="h-4 w-4" /> Team Name</FormLabel>
                     <div className="flex items-center gap-2">
-                      <FormControl><Input placeholder="Enter your team name" {...field} /></FormControl>
+                      <FormControl><Input placeholder="Enter team name" {...field} /></FormControl>
                       <Button type="button" variant="outline" size="icon" onClick={handleGenerateLogo} disabled={isGeneratingLogo} title="Generate Logo">
                         {isGeneratingLogo ? <Loader className="animate-spin" /> : <Sparkles />}
                       </Button>
@@ -315,7 +314,7 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
               />
               <Button type="submit" disabled={isSubmitting || isGeneratingLogo} className="w-full">
                 {isSubmitting ? <Loader className="animate-spin" /> : <UserPlus className="mr-2 h-4 w-4" />}
-                Register My Team
+                Add Team
               </Button>
             </form>
           </Form>
@@ -375,10 +374,10 @@ export default function TeamInvitation({ tournament, onTeamsFinalized, onTournam
                     </TeamList>
                 </div>
                 
-                {isPrivilegedUser && !ownerHasRegistered && !isTournamentFull && (
+                {isPrivilegedUser && !isTournamentFull && (
                     <>
                         <Separator />
-                        <OwnerRegistration />
+                        <ManualTeamRegistration />
                     </>
                 )}
 
