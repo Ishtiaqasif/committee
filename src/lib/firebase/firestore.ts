@@ -180,13 +180,20 @@ export async function upsertUserProfile(user: Pick<User, 'uid' | 'displayName' |
         return; // Do not create profiles for anonymous users
     }
     const userRef = doc(db, "users", user.uid);
-    // Only save public-safe information
-    await setDoc(userRef, {
+    const existingDoc = await getDoc(userRef);
+
+    const dataToSet: Partial<UserProfile> = {
         displayName: user.displayName || 'Unnamed User',
         email: user.email,
         photoURL: user.photoURL,
-        createdAt: serverTimestamp(),
-    }, { merge: true });
+    };
+
+    // Only set createdAt if the document doesn't exist yet
+    if (!existingDoc.exists()) {
+        dataToSet.createdAt = serverTimestamp();
+    }
+    
+    await setDoc(userRef, dataToSet, { merge: true });
 }
 
 export async function getUserProfiles(uids: string[]): Promise<Record<string, UserProfile>> {
@@ -298,3 +305,5 @@ export async function getRecentUsers(count: number): Promise<UserProfile[]> {
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }) as UserProfile);
 }
+
+    
