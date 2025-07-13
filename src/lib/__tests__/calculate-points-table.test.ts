@@ -13,22 +13,22 @@ const rounds: Round[] = [
   {
     round: 1,
     matches: [
-      { match: 1, team1: teams[0], team2: teams[1] },
-      { match: 2, team1: teams[2], team2: teams[3] },
+      { match: 1, team1: { name: 'Team A' }, team2: { name: 'Team B' } },
+      { match: 2, team1: { name: 'Team C' }, team2: { name: 'Team D' } },
     ],
   },
   {
     round: 2,
     matches: [
-      { match: 3, team1: teams[0], team2: teams[2] },
-      { match: 4, team1: teams[1], team2: teams[3] },
+      { match: 3, team1: { name: 'Team A' }, team2: { name: 'Team C' } },
+      { match: 4, team1: { name: 'Team B' }, team2: { name: 'Team D' } },
     ],
   },
   {
     round: 3,
     matches: [
-      { match: 5, team1: teams[0], team2: teams[3] },
-      { match: 6, team1: teams[1], team2: teams[2] },
+      { match: 5, team1: { name: 'Team A' }, team2: { name: 'Team D' } },
+      { match: 6, team1: { name: 'Team B' }, team2: { name: 'Team C' } },
     ],
   },
 ];
@@ -76,28 +76,23 @@ describe('calculatePointsTable', () => {
 
   it('should sort by goal difference on points tie', () => {
     const scores: Record<string, Score> = {
-      // A beats B (2-1), B beats C (1-0), C beats A (1-0) -> All have 3 pts
-      'r1m1': { score1: 2, score2: 1, locked: false }, // A vs B
-      'r2m4': { score1: 1, score2: 0, locked: false }, // B vs D (irrelevant)
-      'r3m6': { score1: 1, score2: 0, locked: false }, // B vs C
-      'r2m3': { score1: 0, score2: 1, locked: false }, // A vs C
+        // A beats B 2-0. C beats D 1-0. Both have 3 points. A has better GD.
+      'r1m1': { score1: 2, score2: 0, locked: false },
+      'r1m2': { score1: 1, score2: 0, locked: false },
     };
-
-    const relevantTeams = [teams[0], teams[1], teams[2]];
-    const relevantRounds = rounds;
-
-    const table = calculatePointsTable(relevantTeams, relevantRounds, scores, false);
-    
-    // GD: A= +0 (2-2), B= +0 (2-2), C= +0 (1-1). Should sort by next rule (goalsFor)
-    // GF: A=2, B=2, C=1
-    expect(table.map(t => t.teamName)).toEqual(['Team A', 'Team B', 'Team C']);
+    const table = calculatePointsTable(teams, rounds.slice(0,1), scores, false, 'GroupA');
+    expect(table.map(t => t.teamName)).toEqual(['Team A', 'Team C', 'Team D', 'Team B']);
+    expect(table[0].teamName).toBe('Team A');
+    expect(table[0].goalDifference).toBe(2);
+    expect(table[1].teamName).toBe('Team C');
+    expect(table[1].goalDifference).toBe(1);
   });
 
   it('should sort by goals for on goal difference tie', () => {
     const scores: Record<string, Score> = {
-      // A wins B 1-0, C wins D 2-0. A & C have 3pts, same GD. C has more GF.
+      // A wins B 1-0 (+1 GD), C wins D 2-1 (+1 GD). A & C have 3pts, same GD. C has more GF.
       'r1m1': { score1: 1, score2: 0, locked: false },
-      'r1m2': { score1: 2, score2: 0, locked: false },
+      'r1m2': { score1: 2, score2: 1, locked: false },
     };
 
     const table = calculatePointsTable(teams, rounds.slice(0,1), scores, false);
@@ -107,25 +102,38 @@ describe('calculatePointsTable', () => {
     expect(table[1].teamName).toBe('Team A');
   });
 
-  it('should handle head-to-head tiebreaker', () => {
+  it('should handle head-to-head tiebreaker with aggregate score', () => {
     const tiebreakerRules: TiebreakerRule[] = ['headToHead', 'goalDifference', 'goalsFor'];
     const scores: Record<string, Score> = {
-        // A and B both win their other games by 1-0. A beats B 2-1.
-        // A beats D 1-0
-        'r3m5': { score1: 1, score2: 0, locked: false },
-        // B beats C 1-0
-        'r3m6': { score1: 1, score2: 0, locked: false },
-        // A beats B 2-1
-        'r1m1': { score1: 2, score2: 1, locked: false },
+        // A and B both have 6 points, GD of +1, and GF of 2.
+        // A beat C 1-0. B beat C 1-0
+        // A beat B 2-1
+        'r1m1': { score1: 2, score2: 1, locked: false }, // A vs B
+        'r2m3': { score1: 1, score2: 0, locked: false }, // A vs C
+        'r3m6': { score1: 1, score2: 0, locked: false }, // B vs C
     };
-    const relevantTeams = [teams[0], teams[1]];
-    const relevantRounds = rounds;
-
-    // A and B will have same points, same GD, same GF. A should win on H2H.
-    const table = calculatePointsTable(relevantTeams, relevantRounds, scores, false, undefined, undefined, tiebreakerRules);
+    
+    const table = calculatePointsTable([teams[0], teams[1], teams[2]], rounds, scores, false, undefined, undefined, tiebreakerRules);
     
     expect(table[0].teamName).toBe('Team A');
     expect(table[1].teamName).toBe('Team B');
+  });
+
+  it('should handle head-to-head with away goals rule', () => {
+    const tiebreakerRules: TiebreakerRule[] = ['headToHead', 'goalDifference', 'goalsFor'];
+     const twoLegRounds: Round[] = [
+      { round: 1, matches: [{ match: 1, team1: { name: 'Team A' }, team2: { name: 'Team B' } }] }, // A hosts
+      { round: 2, matches: [{ match: 2, team1: { name: 'Team B' }, team2: { name: 'Team A' } }] }, // B hosts
+    ];
+    const scores: Record<string, Score> = {
+        // Aggregate is 3-3. A scored 2 away goals, B scored 1. A should win.
+        'r1m1': { score1: 1, score2: 2, locked: false }, // A 1-2 B
+        'r2m2': { score1: 1, score2: 2, locked: false }, // B 1-2 A
+    };
+     const table = calculatePointsTable([teams[0], teams[1]], twoLegRounds, scores, true, undefined, undefined, tiebreakerRules);
+     // Since they both have one win and one loss, they are tied on points. H2H should decide.
+     expect(table[0].teamName).toBe('Team A');
+     expect(table[1].teamName).toBe('Team B');
   });
 
   it('should correctly identify qualified teams', () => {
@@ -157,5 +165,88 @@ describe('calculatePointsTable', () => {
 
     expect(teams).toEqual(originalTeams);
     expect(rounds).toEqual(originalRounds);
+  });
+
+  it('should handle bye matches correctly', () => {
+    const roundsWithBye: Round[] = [{
+      round: 1,
+      matches: [
+        { match: 1, team1: { name: 'Team A' }, team2: { name: 'Bye' } },
+        { match: 2, team1: { name: 'Team B' }, team2: { name: 'Team C' } }
+      ]
+    }];
+    const scores: Record<string, Score> = {
+      'r1m2': { score1: 2, score2: 1, locked: false } // B beats C
+    };
+    
+    const table = calculatePointsTable([teams[0], teams[1], teams[2]], roundsWithBye, scores, false);
+
+    const teamA = table.find(t => t.teamName === 'Team A')!;
+    const teamB = table.find(t => t.teamName === 'Team B')!;
+    const teamC = table.find(t => t.teamName === 'Team C')!;
+
+    expect(teamA.played).toBe(0);
+    expect(teamA.points).toBe(0);
+    expect(teamB.played).toBe(1);
+    expect(teamB.points).toBe(3);
+    expect(teamC.played).toBe(1);
+    expect(teamC.points).toBe(0);
+  });
+  
+  it('should handle unscored matches correctly', () => {
+    const scores: Record<string, Score> = {
+      // Only one match scored
+      'r1m1': { score1: 1, score2: 0, locked: false } // A beats B
+    };
+    const table = calculatePointsTable(teams, rounds.slice(0,1), scores, false);
+    
+    const teamA = table.find(t => t.teamName === 'Team A')!;
+    const teamB = table.find(t => t.teamName === 'Team B')!;
+    const teamC = table.find(t => t.teamName === 'Team C')!;
+    const teamD = table.find(t => t.teamName === 'Team D')!;
+
+    expect(teamA.played).toBe(1);
+    expect(teamA.points).toBe(3);
+    expect(teamB.played).toBe(1);
+    expect(teamB.points).toBe(0);
+    // C and D haven't played
+    expect(teamC.played).toBe(0);
+    expect(teamC.points).toBe(0);
+    expect(teamD.played).toBe(0);
+    expect(teamD.points).toBe(0);
+  });
+  
+  it('should handle match IDs with group names', () => {
+    const scores: Record<string, Score> = {
+      'gGroupAr1m1': { score1: 5, score2: 0, locked: false }, // A wins B in Group A
+    };
+    const table = calculatePointsTable([teams[0], teams[1]], rounds.slice(0,1), scores, false, 'GroupA');
+    
+    const teamA = table.find(t => t.teamName === 'Team A')!;
+    const teamB = table.find(t => t.teamName === 'Team B')!;
+
+    expect(teamA.played).toBe(1);
+    expect(teamA.points).toBe(3);
+    expect(teamB.played).toBe(1);
+    expect(teamB.points).toBe(0);
+  });
+  
+  it('should use alphabetical sort as final tie-breaker', () => {
+    const tiebreakerRules: TiebreakerRule[] = ['goalDifference', 'goalsFor', 'headToHead'];
+    // Two teams, complete mirror match
+    const newTeams = [
+        { id: '1', name: 'Z-Team', ownerId: 'user1', ownerName: 'Owner 1', logo: '', status: 'approved' },
+        { id: '2', name: 'A-Team', ownerId: 'user2', ownerName: 'Owner 2', logo: '', status: 'approved' },
+    ];
+    const twoLegRounds: Round[] = [
+      { round: 1, matches: [{ match: 1, team1: { name: 'A-Team' }, team2: { name: 'Z-Team' } }] },
+    ];
+    const scores: Record<string, Score> = {
+        'r1m1': { score1: 1, score2: 1, locked: false }, // A-Team draws Z-Team
+    };
+     const table = calculatePointsTable(newTeams, twoLegRounds, scores, false, undefined, undefined, tiebreakerRules);
+     
+     // All stats are equal, so A-Team should come before Z-Team alphabetically
+     expect(table.map(t => t.teamName)).toEqual(['A-Team', 'Z-Team']);
   });
 });
