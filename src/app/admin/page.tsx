@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -8,6 +9,7 @@ import {
   getAppStats,
   getRecentTournaments,
   getRecentUsers,
+  getDailyCreationStats,
 } from "@/lib/firebase/firestore";
 import { Tournament, UserProfile } from "@/types";
 import { FootballLoader } from "@/components/football-loader";
@@ -18,22 +20,45 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Users, Trophy, BarChart, Clock } from "lucide-react";
+import { Users, Trophy, BarChart, Clock, LineChart, Calendar } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { format } from "date-fns";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  ChartLegend,
+  ChartLegendContent,
+} from "@/components/ui/chart";
+import { Area, AreaChart, CartesianGrid, XAxis, YAxis } from "recharts";
+
 
 interface AppStats {
   userCount: number;
   tournamentCount: number;
 }
 
+interface DailyStats {
+  users: { date: string, count: number }[];
+  tournaments: { date: string, count: number }[];
+}
+
+const userChartConfig = {
+  count: { label: "Users", color: "hsl(var(--chart-1))" },
+};
+
+const tournamentChartConfig = {
+  count: { label: "Tournaments", color: "hsl(var(--chart-2))" },
+};
+
 export default function AdminPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
 
   const [stats, setStats] = useState<AppStats | null>(null);
+  const [dailyStats, setDailyStats] = useState<DailyStats | null>(null);
   const [recentTournaments, setRecentTournaments] = useState<Tournament[]>([]);
   const [recentUsers, setRecentUsers] = useState<UserProfile[]>([]);
   const [loadingData, setLoadingData] = useState(true);
@@ -61,14 +86,17 @@ export default function AdminPage() {
       try {
         const [
           appStats,
+          dailyStats,
           fetchedTournaments,
           fetchedUsers,
         ] = await Promise.all([
           getAppStats(),
+          getDailyCreationStats(7),
           getRecentTournaments(5),
           getRecentUsers(5),
         ]);
         setStats(appStats);
+        setDailyStats(dailyStats);
         setRecentTournaments(fetchedTournaments);
         setRecentUsers(fetchedUsers);
       } catch (error) {
@@ -143,6 +171,62 @@ export default function AdminPage() {
                 </Card>
               </div>
             </section>
+            
+            <section>
+                <h2 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2 text-primary">
+                    <Calendar className="h-6 w-6" /> Last 7 Days Activity
+                </h2>
+                <div className="grid gap-6 md:grid-cols-2">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><LineChart className="h-5 w-5"/> New Users</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                           {dailyStats && (
+                                <ChartContainer config={userChartConfig} className="aspect-video w-full">
+                                    <AreaChart data={dailyStats.users} margin={{ left: -20, right: 10, top: 10, bottom: 0 }}>
+                                        <defs>
+                                            <linearGradient id="fillUsers" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.8} />
+                                                <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0.1} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid vertical={false} />
+                                        <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0, 3)} />
+                                        <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+                                        <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+                                        <Area dataKey="count" type="natural" fill="url(#fillUsers)" stroke="hsl(var(--chart-1))" stackId="a" />
+                                    </AreaChart>
+                                </ChartContainer>
+                           )}
+                        </CardContent>
+                    </Card>
+                     <Card>
+                        <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><LineChart className="h-5 w-5"/> New Tournaments</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                           {dailyStats && (
+                                <ChartContainer config={tournamentChartConfig} className="aspect-video w-full">
+                                    <AreaChart data={dailyStats.tournaments} margin={{ left: -20, right: 10, top: 10, bottom: 0 }}>
+                                        <defs>
+                                            <linearGradient id="fillTournaments" x1="0" y1="0" x2="0" y2="1">
+                                                <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.8} />
+                                                <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0.1} />
+                                            </linearGradient>
+                                        </defs>
+                                        <CartesianGrid vertical={false} />
+                                        <XAxis dataKey="date" tickLine={false} axisLine={false} tickMargin={8} tickFormatter={(value) => value.slice(0, 3)} />
+                                        <YAxis allowDecimals={false} tickLine={false} axisLine={false} />
+                                        <ChartTooltip cursor={false} content={<ChartTooltipContent indicator="dot" />} />
+                                        <Area dataKey="count" type="natural" fill="url(#fillTournaments)" stroke="hsl(var(--chart-2))" stackId="a" />
+                                    </AreaChart>
+                                </ChartContainer>
+                           )}
+                        </CardContent>
+                    </Card>
+                </div>
+            </section>
 
             <section>
               <h2 className="text-2xl font-bold tracking-tight mb-4 flex items-center gap-2 text-primary">
@@ -209,3 +293,4 @@ export default function AdminPage() {
     </div>
   );
 }
+

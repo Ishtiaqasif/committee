@@ -1,5 +1,6 @@
 
-import { doc, collection, addDoc, getDoc, getDocs, query, serverTimestamp, where, orderBy, updateDoc, setDoc, documentId, limit, QuerySnapshot, arrayUnion, deleteDoc,getCountFromServer } from "firebase/firestore";
+
+import { doc, collection, addDoc, getDoc, getDocs, query, serverTimestamp, where, orderBy, updateDoc, setDoc, documentId, limit, QuerySnapshot, arrayUnion, deleteDoc,getCountFromServer, Timestamp } from "firebase/firestore";
 import { db, storage } from "./config";
 import { Tournament, TournamentCreationData, Team, UserProfile, UserRole } from "@/types";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
@@ -304,6 +305,58 @@ export async function getRecentUsers(count: number): Promise<UserProfile[]> {
     const q = query(collection(db, "users"), orderBy("createdAt", "desc"), limit(count));
     const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }) as UserProfile);
+}
+
+export async function getDailyCreationStats(days: number): Promise<{
+  users: { date: string, count: number }[],
+  tournaments: { date: string, count: number }[]
+}> {
+  const endDate = new Date();
+  const startDate = new Date();
+  startDate.setDate(endDate.getDate() - (days - 1));
+  startDate.setHours(0, 0, 0, 0);
+
+  // Helper to process snapshots
+  const processSnapshot = (snapshot: QuerySnapshot) => {
+    const counts: Record<string, number> = {};
+    snapshot.forEach(doc => {
+      const createdAt = (doc.data().createdAt as Timestamp)?.toDate();
+      if (createdAt) {
+        const dateKey = createdAt.toISOString().split('T')[0];
+        counts[dateKey] = (counts[dateKey] || 0) + 1;
+      }
+    });
+    return counts;
+  };
+
+  const usersQuery = query(collection(db, "users"), where("createdAt", ">=", startDate));
+  const tournamentsQuery = query(collection(db, "tournaments"), where("createdAt", ">=", startDate));
+
+  const [usersSnapshot, tournamentsSnapshot] = await Promise.all([
+    getDocs(usersQuery),
+    getDocs(tournamentsQuery)
+  ]);
+
+  const userCounts = processSnapshot(usersSnapshot);
+  const tournamentCounts = processSnapshot(tournamentsSnapshot);
+
+  // Create a template for the last `days` days
+  const result: {
+    users: { date: string, count: number }[],
+    tournaments: { date: string, count: number }[]
+  } = { users: [], tournaments: [] };
+  
+  for (let i = 0; i < days; i++) {
+    const date = new Date(startDate);
+    date.setDate(startDate.getDate() + i);
+    const dateKey = date.toISOString().split('T')[0];
+    const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+
+    result.users.push({ date: formattedDate, count: userCounts[dateKey] || 0 });
+    result.tournaments.push({ date: formattedDate, count: tournamentCounts[dateKey] || 0 });
+  }
+
+  return result;
 }
 
     
