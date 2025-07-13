@@ -20,11 +20,13 @@ export const signUpWithEmailPassword = async (email: string, password: string, d
         const result = await createUserWithEmailAndPassword(auth, email, password);
         await updateProfile(result.user, { displayName });
         
+        // After updateProfile, result.user object might not be updated immediately in the mock/real env.
+        // It's safer to construct the profile data with the known values.
         const profileData = {
             uid: result.user.uid,
             displayName,
             email: result.user.email,
-            photoURL: result.user.photoURL,
+            photoURL: result.user.photoURL ?? null, // Ensure photoURL is not undefined
         };
         await upsertUserProfile(profileData);
         return result.user;
@@ -51,5 +53,3 @@ export const signOutUser = async () => {
     console.error("Error signing out: ", error);
   }
 };
-
-    

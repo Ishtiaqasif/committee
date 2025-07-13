@@ -86,7 +86,7 @@ describe('Firebase Auth Functions', () => {
       const mockUser = {
         uid: 'test-uid',
         email: 'new@example.com',
-        photoURL: 'photo.jpg',
+        photoURL: null, // Start with null photoURL
       };
       const mockUserCredential = { user: mockUser };
       mockedCreateUserWithEmailAndPassword.mockResolvedValue(mockUserCredential);
@@ -98,11 +98,13 @@ describe('Firebase Auth Functions', () => {
       
       expect(createUserWithEmailAndPassword).toHaveBeenCalledWith(auth, 'new@example.com', 'password123');
       expect(updateProfile).toHaveBeenCalledWith(mockUser, { displayName });
+      
+      // The user object passed to upsertUserProfile should have the correct shape
       expect(upsertUserProfile).toHaveBeenCalledWith({
         uid: mockUser.uid,
         displayName,
         email: mockUser.email,
-        photoURL: mockUser.photoURL,
+        photoURL: null, // It will be null initially
       });
       expect(user).toEqual(mockUser);
     });
