@@ -1,4 +1,5 @@
 
+
 export type TournamentType = 'round-robin' | 'single elimination' | 'hybrid';
 
 export type UserRole = 'owner' | 'admin' | 'participant' | 'guest';
@@ -8,6 +9,7 @@ export interface UserProfile {
   displayName: string | null;
   email: string | null;
   photoURL: string | null;
+  createdAt?: any; 
 }
 
 export type TiebreakerRule = 'goalDifference' | 'goalsFor' | 'headToHead';

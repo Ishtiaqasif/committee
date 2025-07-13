@@ -1,5 +1,5 @@
 
-import { doc, collection, addDoc, getDoc, getDocs, query, serverTimestamp, where, orderBy, updateDoc, setDoc, documentId, limit, QuerySnapshot, arrayUnion, deleteDoc } from "firebase/firestore";
+import { doc, collection, addDoc, getDoc, getDocs, query, serverTimestamp, where, orderBy, updateDoc, setDoc, documentId, limit, QuerySnapshot, arrayUnion, deleteDoc,getCountFromServer } from "firebase/firestore";
 import { db, storage } from "./config";
 import { Tournament, TournamentCreationData, Team, UserProfile, UserRole } from "@/types";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
@@ -185,6 +185,7 @@ export async function upsertUserProfile(user: Pick<User, 'uid' | 'displayName' |
         displayName: user.displayName || 'Unnamed User',
         email: user.email,
         photoURL: user.photoURL,
+        createdAt: serverTimestamp(),
     }, { merge: true });
 }
 
@@ -268,4 +269,32 @@ export async function updateTeam(tournamentId: string, teamId: string, data: Par
 export async function removeTeam(tournamentId: string, teamId: string): Promise<void> {
     const teamRef = doc(db, "tournaments", tournamentId, "teams", teamId);
     await deleteDoc(teamRef);
+}
+
+// Admin Dashboard Functions
+export async function getAppStats() {
+    const usersCol = collection(db, "users");
+    const tournamentsCol = collection(db, "tournaments");
+
+    const [userSnapshot, tournamentSnapshot] = await Promise.all([
+        getCountFromServer(usersCol),
+        getCountFromServer(tournamentsCol)
+    ]);
+
+    return {
+        userCount: userSnapshot.data().count,
+        tournamentCount: tournamentSnapshot.data().count,
+    };
+}
+
+export async function getRecentTournaments(count: number): Promise<Tournament[]> {
+    const q = query(collection(db, "tournaments"), orderBy("createdAt", "desc"), limit(count));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }) as Tournament);
+}
+
+export async function getRecentUsers(count: number): Promise<UserProfile[]> {
+    const q = query(collection(db, "users"), orderBy("createdAt", "desc"), limit(count));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }) as UserProfile);
 }

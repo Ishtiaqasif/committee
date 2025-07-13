@@ -15,7 +15,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { LogOut, PlusCircle, User } from "lucide-react";
+import { LogOut, PlusCircle, User, Shield } from "lucide-react";
 
 export default function AuthButton() {
   const { user } = useAuth();
@@ -26,6 +26,8 @@ export default function AuthButton() {
     router.push("/");
   };
   
+  const isOwner = user?.uid === process.env.NEXT_PUBLIC_APP_OWNER_UID;
+
   if (!user) {
     return (
       <Button onClick={() => router.push('/login')}>
@@ -54,6 +56,14 @@ export default function AuthButton() {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {isOwner && (
+            <DropdownMenuItem asChild>
+                <Link href="/admin">
+                    <Shield className="mr-2 h-4 w-4" />
+                    <span>Admin Dashboard</span>
+                </Link>
+            </DropdownMenuItem>
+        )}
         <DropdownMenuItem asChild>
           <Link href="/profile">
             <User className="mr-2 h-4 w-4" />
