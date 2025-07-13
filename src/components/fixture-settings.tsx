@@ -133,11 +133,11 @@ export default function FixtureSettings({ tournament, onUpdate, isPrivilegedUser
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="round-robin">Round-robin</SelectItem>
+                            <SelectItem value="round-robin">League</SelectItem>
                             <SelectItem value="single elimination">
-                              Single Elimination
+                              Knockout
                             </SelectItem>
-                            <SelectItem value="hybrid">Hybrid (Group + Knockout)</SelectItem>
+                            <SelectItem value="hybrid">Group &#x2794; Knockout</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
