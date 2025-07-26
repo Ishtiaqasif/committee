@@ -1,9 +1,10 @@
 
+
 "use client";
 
 import { useState, useEffect, Suspense, useTransition } from "react";
 import { useSearchParams } from "next/navigation";
-import { Tournament, Team, TournamentCreationData } from "@/types";
+import { Tournament, Team } from "@/types";
 import TournamentCreator from "@/components/tournament-creator";
 import TeamInvitation from "@/components/team-invitation";
 import TournamentHome from "@/components/tournament-home";
@@ -84,7 +85,7 @@ function TournamentPageComponent() {
     }
   }, [searchParams, user, router, toast, tournament?.id]);
 
-  const handleTournamentCreated = async (data: TournamentCreationData) => {
+  const handleTournamentCreated = async (data: Partial<Tournament>) => {
     if (!user) {
       toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to create a tournament.' });
       return;

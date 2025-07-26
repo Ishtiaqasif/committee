@@ -125,7 +125,7 @@ export default function KnockoutPage() {
             <KnockoutBracketView 
                 fixture={fixture} 
                 scores={tournament?.scores || {}}
-                knockoutHomeAndAway={tournament.knockoutHomeAndAway}
+                knockoutHomeAndAway={tournament.knockoutHomeAndAway ?? false}
                 awayGoalsRule={tournament.awayGoalsRule ?? false}
             />
         )}

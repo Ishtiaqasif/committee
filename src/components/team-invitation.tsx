@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useEffect, useState, useTransition } from 'react';
@@ -15,7 +16,7 @@ import { useAuth } from '@/context/auth-context';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { generateTeamLogo } from '@/ai/flows/generate-team-logo';
 import { addTeamToTournament, updateTeam, removeTeam, getUserByEmail } from '@/lib/firebase/firestore';
@@ -36,6 +37,13 @@ import { Badge } from './ui/badge';
 import { UserSearchCombobox } from './user-search-combobox';
 import { FootballLoader } from './football-loader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
+
+interface TeamInvitationProps {
+  tournament: Tournament;
+  onTeamsFinalized: (teams: Team[]) => void;
+  onTournamentUpdate: (data: Partial<Tournament>) => void;
+}
+
 
 // Helper function to resize and compress the image, moved to top-level
 const compressImage = (dataUri: string, maxWidth: number, maxHeight: number): Promise<string> => {

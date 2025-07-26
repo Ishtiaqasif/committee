@@ -1,3 +1,4 @@
+
 import { calculatePointsTable } from '../calculate-points-table';
 import { Team, Round, Score, PointsTableEntry, TiebreakerRule } from '@/types';
 
@@ -13,22 +14,22 @@ const rounds: Round[] = [
   {
     round: 1,
     matches: [
-      { match: 1, team1: { name: 'Team A' }, team2: { name: 'Team B' } },
-      { match: 2, team1: { name: 'Team C' }, team2: { name: 'Team D' } },
+      { match: 1, team1: { name: 'Team A', score: null }, team2: { name: 'Team B', score: null } },
+      { match: 2, team1: { name: 'Team C', score: null }, team2: { name: 'Team D', score: null } },
     ],
   },
   {
     round: 2,
     matches: [
-      { match: 3, team1: { name: 'Team A' }, team2: { name: 'Team C' } },
-      { match: 4, team1: { name: 'Team B' }, team2: { name: 'Team D' } },
+      { match: 3, team1: { name: 'Team A', score: null }, team2: { name: 'Team C', score: null } },
+      { match: 4, team1: { name: 'Team B', score: null }, team2: { name: 'Team D', score: null } },
     ],
   },
   {
     round: 3,
     matches: [
-      { match: 5, team1: { name: 'Team A' }, team2: { name: 'Team D' } },
-      { match: 6, team1: { name: 'Team B' }, team2: { name: 'Team C' } },
+      { match: 5, team1: { name: 'Team A', score: null }, team2: { name: 'Team D', score: null } },
+      { match: 6, team1: { name: 'Team B', score: null }, team2: { name: 'Team C', score: null } },
     ],
   },
 ];
@@ -122,8 +123,8 @@ describe('calculatePointsTable', () => {
   it('should handle head-to-head with away goals rule', () => {
     const tiebreakerRules: TiebreakerRule[] = ['headToHead', 'goalDifference', 'goalsFor'];
      const twoLegRounds: Round[] = [
-      { round: 1, matches: [{ match: 1, team1: { name: 'Team A' }, team2: { name: 'Team B' } }] }, // A hosts
-      { round: 2, matches: [{ match: 2, team1: { name: 'Team B' }, team2: { name: 'Team A' } }] }, // B hosts
+      { round: 1, matches: [{ match: 1, team1: { name: 'Team A', score: null }, team2: { name: 'Team B', score: null } }] }, // A hosts
+      { round: 2, matches: [{ match: 2, team1: { name: 'Team B', score: null }, team2: { name: 'Team A', score: null } }] }, // B hosts
     ];
     const scores: Record<string, Score> = {
         // Aggregate is 3-3. A scored 2 away goals, B scored 1. A should win.
@@ -170,9 +171,10 @@ describe('calculatePointsTable', () => {
   it('should handle bye matches correctly', () => {
     const roundsWithBye: Round[] = [{
       round: 1,
+      name: "Round 1",
       matches: [
-        { match: 1, team1: { name: 'Team A' }, team2: { name: 'Bye' } },
-        { match: 2, team1: { name: 'Team B' }, team2: { name: 'Team C' } }
+        { match: 1, team1: { name: 'Team A', score: null }, team2: { name: 'Bye', score: null } },
+        { match: 2, team1: { name: 'Team B', score: null }, team2: { name: 'Team C', score: null } }
       ]
     }];
     const scores: Record<string, Score> = {
@@ -239,7 +241,7 @@ describe('calculatePointsTable', () => {
         { id: '2', name: 'A-Team', ownerId: 'user2', ownerName: 'Owner 2', logo: '', status: 'approved' },
     ];
     const twoLegRounds: Round[] = [
-      { round: 1, matches: [{ match: 1, team1: { name: 'A-Team' }, team2: { name: 'Z-Team' } }] },
+      { round: 1, matches: [{ match: 1, team1: { name: 'A-Team', score: null }, team2: { name: 'Z-Team', score: null } }] },
     ];
     const scores: Record<string, Score> = {
         'r1m1': { score1: 1, score2: 1, locked: false }, // A-Team draws Z-Team

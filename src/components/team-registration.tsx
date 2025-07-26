@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState } from "react";
@@ -50,9 +51,12 @@ export default function TeamRegistration({ numberOfTeams, onTeamsRegistered }: T
 
   function onSubmit(values: z.infer<typeof formSchema>) {
     const teams = values.teams.map((team, index) => ({
-      id: index + 1,
+      id: `${index + 1}`,
       name: team.name,
       logo: logos[index + 1],
+      ownerId: 'placeholder',
+      ownerName: 'Placeholder',
+      status: 'approved'
     }));
     onTeamsRegistered(teams);
   }

@@ -2,12 +2,12 @@
 
 import { doc, collection, addDoc, getDoc, getDocs, query, serverTimestamp, where, orderBy, updateDoc, setDoc, documentId, limit, QuerySnapshot, arrayUnion, deleteDoc,getCountFromServer, Timestamp } from "firebase/firestore";
 import { db, storage } from "./config";
-import { Tournament, TournamentCreationData, Team, UserProfile, UserRole } from "@/types";
+import { Tournament, Team, UserProfile, UserRole } from "@/types";
 import { getDownloadURL, ref, uploadString } from "firebase/storage";
 import { User } from "firebase/auth";
 
-export async function createTournament(tournamentData: TournamentCreationData, userId: string): Promise<string> {
-    const dataToSave: Partial<TournamentCreationData> = { ...tournamentData };
+export async function createTournament(tournamentData: Partial<Tournament>, userId: string): Promise<string> {
+    const dataToSave: Partial<Tournament> = { ...tournamentData };
 
     // Upload logo if it's a data URI
     if (dataToSave.logo && dataToSave.logo.startsWith('data:image')) {
@@ -22,7 +22,7 @@ export async function createTournament(tournamentData: TournamentCreationData, u
     }
 
 
-    (Object.keys(dataToSave) as Array<keyof TournamentCreationData>).forEach(key => {
+    (Object.keys(dataToSave) as Array<keyof Tournament>).forEach(key => {
         if (dataToSave[key] === undefined) {
             delete dataToSave[key];
         }
@@ -304,7 +304,7 @@ export async function getRecentTournaments(count: number): Promise<Tournament[]>
 export async function getRecentUsers(count: number): Promise<UserProfile[]> {
     const q = query(collection(db, "users"), orderBy("createdAt", "desc"), limit(count));
     const snapshot = await getDocs(q);
-    return snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }) as UserProfile);
+    return snapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() } as UserProfile));
 }
 
 export async function getDailyCreationStats(days: number): Promise<{
@@ -358,5 +358,3 @@ export async function getDailyCreationStats(days: number): Promise<{
 
   return result;
 }
-
-    

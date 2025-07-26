@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -90,7 +91,7 @@ export default function UserManagement({ tournament, onUpdate }: UserManagementP
       }
 
       const newAdmins = [...currentAdmins, userToAdd.uid];
-      await onUpdate({ admins: newAdmins });
+      onUpdate({ admins: newAdmins });
       form.reset();
       toast({ title: 'Success', description: 'New admin added.' });
     } catch (e) {
@@ -105,7 +106,7 @@ export default function UserManagement({ tournament, onUpdate }: UserManagementP
     setIsUpdating(true);
     const newAdmins = (tournament.admins || []).filter(id => id !== adminId);
      try {
-      await onUpdate({ admins: newAdmins });
+      onUpdate({ admins: newAdmins });
       toast({ title: 'Success', description: 'Admin removed.' });
     } catch (e) {
       toast({ variant: 'destructive', title: 'Error', description: 'Failed to remove admin.' });

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -343,5 +344,3 @@ export default function FixtureSettings({ tournament, onUpdate, isPrivilegedUser
       </Card>
   );
 }
-
-    

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { Team, Fixture, Score, Match, Round, Tournament, MatchTeam } from '@/types';
@@ -342,9 +343,9 @@ export default function TeamsList({ teams, fixture, scores, tournament, currentU
                                             }
 
                                             let scoreString = 'TBD';
-                                            if (scoreData) {
+                                            if (scoreData && teamScore !== null) {
                                                 scoreString = `${teamScore ?? '-'} : ${opponentScore ?? '-'}`;
-                                                if (teamScore !== null && teamScore === opponentScore && teamTiebreakScore != null && opponentTiebreakScore != null) {
+                                                if (teamScore === opponentScore && teamTiebreakScore != null && opponentTiebreakScore != null) {
                                                     scoreString += ` (${teamTiebreakScore} - ${opponentTiebreakScore})`;
                                                 }
                                             }

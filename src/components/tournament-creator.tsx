@@ -1,11 +1,12 @@
 
+
 "use client";
 
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
-import { TournamentCreationData } from "@/types";
+import { Tournament } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from "@/components/ui/form";
@@ -17,7 +18,7 @@ import { generateTournamentLogo } from "@/ai/flows/generate-tournament-logo";
 import Image from "next/image";
 
 interface TournamentCreatorProps {
-  onTournamentCreated: (data: TournamentCreationData) => Promise<void>;
+  onTournamentCreated: (data: Partial<Tournament>) => Promise<void>;
 }
 
 const formSchema = z.object({
@@ -122,7 +123,7 @@ export default function TournamentCreator({ onTournamentCreated }: TournamentCre
 
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    const dataToSubmit: TournamentCreationData = { ...values };
+    const dataToSubmit: Partial<Tournament> = { ...values };
     if (!values.isTeamCountFixed) {
         delete dataToSubmit.numberOfTeams;
     }

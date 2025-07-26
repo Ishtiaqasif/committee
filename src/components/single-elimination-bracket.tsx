@@ -1,4 +1,5 @@
 
+
 "use client"
 
 import { Match, Round, Score, Tournament, MatchTeam } from '@/types';
@@ -432,7 +433,6 @@ export default function SingleEliminationBracket({ fixture, onScoreUpdate, onTou
                         Enter final match score to determine the winner!
                     </div>
                     )}
-
                     <AlertDialog>
                         <AlertDialogTrigger asChild>
                             <Button variant="outline" disabled={isSimulating} className="mt-2">

@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
@@ -61,8 +62,6 @@ export function UserSearchCombobox({ value, onChange, disabled }: UserSearchComb
     setSearchQuery(user.displayName ?? '');
     setOpen(false);
   };
-
-  const displayValue = selectedUser ? selectedUser.displayName : 'Select a user...';
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import { useForm } from 'react-hook-form';
@@ -60,8 +61,8 @@ export default function TournamentRules({ tournament, onUpdate, isPrivilegedUser
   });
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    startTransition(async () => {
-      await onUpdate({ tiebreakerRules: [values.tiebreakerRule1, values.tiebreakerRule2, values.tiebreakerRule3] });
+    startTransition(() => {
+      onUpdate({ tiebreakerRules: [values.tiebreakerRule1, values.tiebreakerRule2, values.tiebreakerRule3] });
       toast({ title: 'Success', description: 'Tie-breaker rules have been updated.' });
     });
   };
