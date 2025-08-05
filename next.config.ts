@@ -1,7 +1,7 @@
 import { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  transpilePackages: ['firebase', '@firebase/auth', '@firebase/firestore'],
+  
   eslint: {
     ignoreDuringBuilds: true,
   },
@@ -22,12 +22,7 @@ const nextConfig: NextConfig = {
         port: '',
         pathname: '/**',
       },
-      {
-        protocol: 'https',
-        hostname: 'firebasestorage.googleapis.com',
-        port: '',
-        pathname: '/**',
-      },
+      
     ],
   },
 };
