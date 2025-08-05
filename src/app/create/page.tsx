@@ -11,7 +11,7 @@ import { Loader } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useAuth } from "@/context/auth-context";
 import { useRouter } from "next/navigation";
-import { createTournament, getTournament, getTeamsForTournament, updateTournament } from "@/lib/firebase/firestore";
+import { createTournament, getTournament, getTeamsForTournament, updateTournament } from "@/lib/supabase/firestore";
 import { useToast } from "@/hooks/use-toast";
 import AuthButton from "@/components/auth-button";
 

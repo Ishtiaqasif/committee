@@ -11,7 +11,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 
-import { signInWithGoogle, signUpWithEmailPassword, signInWithEmailPassword } from "@/lib/firebase/auth";
+import { signInWithGoogle, signUpWithEmailPassword, signInWithEmailPassword } from "@/lib/supabase/auth";
 import { useAuth } from "@/context/auth-context";
 import { ClipboardList, Loader } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";

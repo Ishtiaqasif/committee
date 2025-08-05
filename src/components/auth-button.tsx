@@ -2,7 +2,7 @@
 "use client";
 
 import { useAuth } from "@/context/auth-context";
-import { signOutUser } from "@/lib/firebase/auth";
+import { signOutUser } from "@/lib/supabase/auth";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";

@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Loader, UserPlus, UserMinus, KeyRound, Shield, Crown, Mail } from 'lucide-react';
-import { getUserProfiles, getUserByEmail } from '@/lib/firebase/firestore';
+import { getUserProfiles, getUserByEmail } from '@/lib/supabase/firestore';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 

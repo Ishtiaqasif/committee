@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { getTournament, getTeamsForTournament } from '@/lib/firebase/firestore';
+import { getTournament, getTeamsForTournament } from '@/lib/supabase/firestore';
 import { Tournament, Team, Fixture } from '@/types';
 import { Loader, ClipboardList, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';

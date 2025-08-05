@@ -9,7 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter }
 import { Loader, KeyRound, Mail, User as UserIcon, PlusCircle, LayoutGrid, Calendar, Users, Trophy, Crown, Shield } from "lucide-react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { getTournamentsForUserWithRoles } from "@/lib/firebase/firestore";
+import { getTournamentsForUserWithRoles } from "@/lib/supabase/firestore";
 import { Tournament } from "@/types";
 import { Button } from "@/components/ui/button";
 import { format } from 'date-fns';

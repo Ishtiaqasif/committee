@@ -2,8 +2,7 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { collection, onSnapshot, query } from 'firebase/firestore';
-import { db } from '@/lib/firebase/config';
+import { supabase } from '@/lib/supabase/config';
 import { Team, Tournament } from '@/types';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -18,7 +17,7 @@ import * as z from 'zod';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { useToast } from '@/hooks/use-toast';
 import { generateTeamLogo } from '@/ai/flows/generate-team-logo';
-import { addTeamToTournament } from '@/lib/firebase/firestore';
+import { addTeamToTournament } from '@/lib/supabase/firestore';
 import { Separator } from './ui/separator';
 
 interface TeamInvitationProps {
